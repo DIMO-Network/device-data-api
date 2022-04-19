@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/DIMO-Network/device-data-api/internal/config"
 	"github.com/DIMO-Network/device-data-api/internal/controllers"
+	"github.com/DIMO-Network/shared"
 	"github.com/ansrivas/fiberprometheus/v2"
 	swagger "github.com/arsmn/fiber-swagger/v2"
 	"github.com/gofiber/fiber/v2"
@@ -33,7 +34,7 @@ func main() {
 		Str("git-sha1", gitSha1).
 		Logger()
 
-	settings, err := config.LoadConfig("settings.yaml")
+	settings, err := shared.LoadConfig[config.Settings]("settings.yaml")
 	if err != nil {
 		logger.Fatal().Err(err).Msg("could not load settings")
 	}
@@ -45,7 +46,7 @@ func main() {
 
 	// start the actual stuff
 	startPrometheus(logger)
-	startWebAPI(logger, settings)
+	startWebAPI(logger, &settings)
 }
 
 func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
