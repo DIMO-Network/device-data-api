@@ -30,7 +30,7 @@ func main() {
 	//ctx := context.Background()
 	logger := zerolog.New(os.Stdout).With().
 		Timestamp().
-		Str("app", "devices-api").
+		Str("app", "device-data-api").
 		Str("git-sha1", gitSha1).
 		Logger()
 

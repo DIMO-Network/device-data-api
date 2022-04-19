@@ -1,6 +1,6 @@
 package services
 
-// API wrapper to call devices-api to get the userDevices associated with a userId and other use cases.
+// API wrapper to call device-data-api to get the userDevices associated with a userId and other use cases.
 // ideally this would then be with grpc
 
 //go:generate mockgen -source device_api_service.go -destination mocks/device_api_service_mock.go

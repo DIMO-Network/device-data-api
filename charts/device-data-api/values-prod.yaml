@@ -1,0 +1,50 @@
+replicaCount: 2
+image:
+  repository: dimozone/device-data-api
+  pullPolicy: IfNotPresent
+  tag: 0.5.5
+#cronJob:
+#  enabled: true
+#  schedule: 0 0 * * 0
+env:
+  ENVIRONMENT: prod
+  PORT: '8080'
+  LOG_LEVEL: info
+  SERVICE_NAME: device-data-api
+  JWT_KEY_SET_URL: https://auth.dimo.zone/keys
+  DEPLOYMENT_BASE_URL: https://device-data-api.dimo.zone
+  DEVICE_DATA_INDEX_NAME: device-status-prod*
+  GRPC_PORT: 8086
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/auth-tls-secret: ingress/cf-origin-ca
+    nginx.ingress.kubernetes.io/auth-tls-verify-client: 'on'
+    nginx.ingress.kubernetes.io/enable-cors: 'true'
+    nginx.ingress.kubernetes.io/cors-allow-origin: https://app.dimo.zone
+    nginx.ingress.kubernetes.io/limit-rps: '9'
+    external-dns.alpha.kubernetes.io/hostname: device-data-api.dimo.zone
+  hosts:
+    - host: device-data-api.dimo.zone
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+resources:
+  limits:
+    cpu: 1
+    memory: 1024Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+nodeSelector: {}
+tolerations: []
+affinity: {}
+podDisruptionBudget:
+  minAvailable: 1

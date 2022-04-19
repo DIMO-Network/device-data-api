@@ -1,0 +1,97 @@
+replicaCount: 1
+image:
+  repository: dimozone/device-data-api
+  pullPolicy: IfNotPresent
+  tag: a51c3d2
+imagePullSecrets: []
+nameOverride: ''
+fullnameOverride: ''
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ''
+podAnnotations: {}
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1001
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - all
+#cronJob:
+#  enabled: true
+#  schedule: 0 0 * * 0
+env:
+  ENVIRONMENT: dev
+  PORT: '8080'
+  LOG_LEVEL: info
+  SERVICE_NAME: device-data-api
+  JWT_KEY_SET_URL: https://auth.dev.dimo.zone/keys
+  DEPLOYMENT_BASE_URL: https://device-data-api.dev.dimo.zone
+  DEVICE_DATA_INDEX_NAME: device-status-dev*
+  GRPC_PORT: 8086
+service:
+  type: ClusterIP
+  ports:
+    mon-http:
+      port: 8888
+      targetPort: mon-http
+      protocol: TCP
+    http:
+      port: 8080
+      targetPort: http
+      protocol: TCP
+    grpc:
+      port: 8086
+      targetPort: grpc
+      protocol: TCP
+ports:
+  - name: mon-http
+    containerPort: 8888
+    protocol: TCP
+  - name: http
+    containerPort: 8080
+    protocol: TCP
+  - name: grpc
+    containerPort: 8086
+    protocol: TCP
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/auth-tls-secret: ingress/cf-origin-ca
+    nginx.ingress.kubernetes.io/auth-tls-verify-client: 'on'
+    nginx.ingress.kubernetes.io/enable-cors: 'true'
+    nginx.ingress.kubernetes.io/cors-allow-origin: https://app.dev.dimo.zone
+    nginx.ingress.kubernetes.io/limit-rps: '3'
+    external-dns.alpha.kubernetes.io/hostname: device-data-api.dev.dimo.zone
+  hosts:
+    - host: device-data-api.dev.dimo.zone
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+resources:
+  limits:
+    cpu: 250m
+    memory: 256Mi
+  requests:
+    cpu: 50m
+    memory: 128Mi
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+nodeSelector: {}
+tolerations: []
+affinity: {}
+podDisruptionBudget:
+  minAvailable: 0
+serviceMonitor:
+  enabled: true
+  path: /metrics
+  port: mon-http
+  interval: 30s
