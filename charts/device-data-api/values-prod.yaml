@@ -14,7 +14,7 @@ env:
   JWT_KEY_SET_URL: https://auth.dimo.zone/keys
   DEPLOYMENT_BASE_URL: https://device-data-api.dimo.zone
   DEVICE_DATA_INDEX_NAME: device-status-prod*
-  GRPC_PORT: 8086
+  DEVICES_APIGRPC_ADDR: devices-api-prod:8086
 ingress:
   enabled: true
   className: nginx

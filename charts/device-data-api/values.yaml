@@ -28,7 +28,7 @@ env:
   JWT_KEY_SET_URL: https://auth.dev.dimo.zone/keys
   DEPLOYMENT_BASE_URL: https://device-data-api.dev.dimo.zone
   DEVICE_DATA_INDEX_NAME: device-status-dev*
-  GRPC_PORT: 8086
+  DEVICES_APIGRPC_ADDR: devices-api-dev:8086
 service:
   type: ClusterIP
   ports:
