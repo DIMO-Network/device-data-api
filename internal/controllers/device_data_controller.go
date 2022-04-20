@@ -1,21 +1,22 @@
 package controllers
 
 import (
+	"io"
+	"time"
+
 	"github.com/DIMO-Network/device-data-api/internal/config"
 	"github.com/DIMO-Network/device-data-api/internal/services"
 	"github.com/aquasecurity/esquery"
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog"
-	"io"
-	"time"
 )
 
 type DeviceDataController struct {
 	Settings  *config.Settings
 	log       *zerolog.Logger
 	es        *elasticsearch.Client
-	deviceApi services.DeviceAPIService
+	deviceAPI services.DeviceAPIService
 }
 
 // NewDeviceDataController constructor
@@ -28,7 +29,7 @@ func NewDeviceDataController(settings *config.Settings, logger *zerolog.Logger) 
 		Settings:  settings,
 		log:       logger,
 		es:        es,
-		deviceApi: services.NewDeviceAPIService(settings.DevicesAPIGRPCAddr),
+		deviceAPI: services.NewDeviceAPIService(settings.DevicesAPIGRPCAddr),
 	}
 }
 
@@ -66,7 +67,7 @@ func (d *DeviceDataController) GetHistoricalRaw(c *fiber.Ctx) error {
 	}
 
 	// todo: cache user devices in memeory
-	exists, err := d.deviceApi.UserDeviceBelongsToUserId(c.Context(), userID, userDeviceID)
+	exists, err := d.deviceAPI.UserDeviceBelongsToUserID(c.Context(), userID, userDeviceID)
 	if err != nil {
 		return err
 	}

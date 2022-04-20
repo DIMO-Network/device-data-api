@@ -66,9 +66,9 @@ func (mr *MockDeviceAPIServiceMockRecorder) ListUserDevicesForUser(ctx, userID i
 }
 
 // UserDeviceBelongsToUserId mocks base method.
-func (m *MockDeviceAPIService) UserDeviceBelongsToUserId(ctx context.Context, userID, userDeviceID string) (bool, error) {
+func (m *MockDeviceAPIService) UserDeviceBelongsToUserID(ctx context.Context, userID, userDeviceID string) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UserDeviceBelongsToUserId", ctx, userID, userDeviceID)
+	ret := m.ctrl.Call(m, "UserDeviceBelongsToUserID", ctx, userID, userDeviceID)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
@@ -77,5 +77,5 @@ func (m *MockDeviceAPIService) UserDeviceBelongsToUserId(ctx context.Context, us
 // UserDeviceBelongsToUserId indicates an expected call of UserDeviceBelongsToUserId.
 func (mr *MockDeviceAPIServiceMockRecorder) UserDeviceBelongsToUserId(ctx, userID, userDeviceID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UserDeviceBelongsToUserId", reflect.TypeOf((*MockDeviceAPIService)(nil).UserDeviceBelongsToUserId), ctx, userID, userDeviceID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UserDeviceBelongsToUserID", reflect.TypeOf((*MockDeviceAPIService)(nil).UserDeviceBelongsToUserID), ctx, userID, userDeviceID)
 }

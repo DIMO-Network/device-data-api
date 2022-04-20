@@ -1,6 +1,12 @@
 package main
 
 import (
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
 	"github.com/DIMO-Network/device-data-api/internal/config"
 	"github.com/DIMO-Network/device-data-api/internal/controllers"
 	"github.com/DIMO-Network/shared"
@@ -12,11 +18,6 @@ import (
 	jwtware "github.com/gofiber/jwt/v3"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 )
 
 // @title                       DIMO Device Data API

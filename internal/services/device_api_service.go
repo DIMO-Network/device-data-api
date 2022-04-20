@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+
 	pb "github.com/DIMO-Network/shared/api/devices"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -11,7 +12,7 @@ import (
 type DeviceAPIService interface {
 	ListUserDevicesForUser(ctx context.Context, userID string) (*pb.ListUserDevicesForUserResponse, error)
 	GetUserDevice(ctx context.Context, userDeviceID string) (*pb.UserDevice, error)
-	UserDeviceBelongsToUserId(ctx context.Context, userID, userDeviceID string) (bool, error)
+	UserDeviceBelongsToUserID(ctx context.Context, userID, userDeviceID string) (bool, error)
 }
 
 // NewDeviceAPIService API wrapper to call device-data-api to get the userDevices associated with a userId over grpc
@@ -41,7 +42,7 @@ func (das *deviceAPIService) ListUserDevicesForUser(ctx context.Context, userID 
 	return devicesForUser, nil
 }
 
-func (das *deviceAPIService) UserDeviceBelongsToUserId(ctx context.Context, userID, userDeviceID string) (bool, error) {
+func (das *deviceAPIService) UserDeviceBelongsToUserID(ctx context.Context, userID, userDeviceID string) (bool, error) {
 	device, err := das.GetUserDevice(ctx, userDeviceID)
 	if err != nil {
 		return false, err
