@@ -1,28 +1,70 @@
 package services
 
-// API wrapper to call device-data-api to get the userDevices associated with a userId and other use cases.
-// ideally this would then be with grpc
+import (
+	"context"
+	pb "github.com/DIMO-Network/shared/api/devices"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+)
 
 //go:generate mockgen -source device_api_service.go -destination mocks/device_api_service_mock.go
 type DeviceAPIService interface {
-	GetUserDevices(userID string) ([]UserDeviceFull, error)
-	UserDeviceBelongsToUserId(userID, userDeviceID string) (bool, error)
+	ListUserDevicesForUser(ctx context.Context, userID string) (*pb.ListUserDevicesForUserResponse, error)
+	GetUserDevice(ctx context.Context, userDeviceID string) (*pb.UserDevice, error)
+	UserDeviceBelongsToUserId(ctx context.Context, userID, userDeviceID string) (bool, error)
 }
 
-func NewDeviceAPIService(deviceApiUrl string) DeviceAPIService {
-	return &deviceAPIService{deviceApiUrl: deviceApiUrl}
+// NewDeviceAPIService API wrapper to call device-data-api to get the userDevices associated with a userId over grpc
+func NewDeviceAPIService(devicesAPIGRPCAddr string) DeviceAPIService {
+	return &deviceAPIService{devicesAPIGRPCAddr: devicesAPIGRPCAddr}
 }
 
 type deviceAPIService struct {
-	deviceApiUrl string
+	devicesAPIGRPCAddr string
 }
 
-func (das deviceAPIService) GetUserDevices(userID string) ([]UserDeviceFull, error) {
-	return nil, nil
+func (das *deviceAPIService) ListUserDevicesForUser(ctx context.Context, userID string) (*pb.ListUserDevicesForUserResponse, error) {
+	conn, err := grpc.Dial(das.devicesAPIGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+	deviceClient := pb.NewUserDeviceServiceClient(conn)
+
+	devicesForUser, err := deviceClient.ListUserDevicesForUser(ctx, &pb.ListUserDevicesForUserRequest{
+		UserId: userID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return devicesForUser, nil
 }
 
-func (das deviceAPIService) UserDeviceBelongsToUserId(userID, userDeviceID string) (bool, error) {
-	return true, nil
+func (das *deviceAPIService) UserDeviceBelongsToUserId(ctx context.Context, userID, userDeviceID string) (bool, error) {
+	device, err := das.GetUserDevice(ctx, userDeviceID)
+	if err != nil {
+		return false, err
+	}
+	return device.UserId == userID, nil
+}
+
+func (das *deviceAPIService) GetUserDevice(ctx context.Context, userDeviceID string) (*pb.UserDevice, error) {
+	conn, err := grpc.Dial(das.devicesAPIGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+	deviceClient := pb.NewUserDeviceServiceClient(conn)
+
+	userDevice, err := deviceClient.GetUserDevice(ctx, &pb.GetUserDeviceRequest{
+		Id: userDeviceID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return userDevice, nil
 }
 
 // UserDeviceFull represents object user's see on frontend for listing of their devices

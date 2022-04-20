@@ -28,7 +28,7 @@ func NewDeviceDataController(settings *config.Settings, logger *zerolog.Logger) 
 		Settings:  settings,
 		log:       logger,
 		es:        es,
-		deviceApi: services.NewDeviceAPIService(settings.DevicesAPIBaseURL),
+		deviceApi: services.NewDeviceAPIService(settings.DevicesAPIGRPCAddr),
 	}
 }
 
@@ -65,8 +65,8 @@ func (d *DeviceDataController) GetHistoricalRaw(c *fiber.Ctx) error {
 		}
 	}
 
-	// todo: cache this
-	exists, err := d.deviceApi.UserDeviceBelongsToUserId(userID, userDeviceID)
+	// todo: cache user devices in memeory
+	exists, err := d.deviceApi.UserDeviceBelongsToUserId(c.Context(), userID, userDeviceID)
 	if err != nil {
 		return err
 	}
