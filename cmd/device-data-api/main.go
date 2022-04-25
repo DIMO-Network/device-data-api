@@ -68,7 +68,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 	}))
 	app.Use(cors.New())
 
-	app.Get("/health", healthCheck)
+	app.Get("/", healthCheck)
 	sc := swagger.Config{ // custom
 		// Expand ("list") or Collapse ("none") tag groups by default
 		//DocExpansion: "list",
