@@ -7,6 +7,7 @@ import (
 	"syscall"
 	"time"
 
+	_ "github.com/DIMO-Network/device-data-api/docs"
 	"github.com/DIMO-Network/device-data-api/internal/config"
 	"github.com/DIMO-Network/device-data-api/internal/controllers"
 	"github.com/DIMO-Network/shared"
