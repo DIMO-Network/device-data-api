@@ -77,7 +77,10 @@ func (d *DeviceDataController) GetHistoricalRaw(c *fiber.Ctx) error {
 	res, err := esquery.Search().
 		Query(esquery.Bool().Must(
 			esquery.Term("subject", userDeviceID),
-			esquery.Exists("data.odometer"),
+			esquery.Bool().Should(
+				esquery.Exists("data.odometer"),
+				esquery.Exists("data.latitude"),
+			),
 			esquery.Range("data.timestamp").
 				Gte(startDate).
 				Lte(endDate))).
