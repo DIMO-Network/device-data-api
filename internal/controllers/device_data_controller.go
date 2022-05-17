@@ -76,18 +76,25 @@ func (d *DeviceDataController) GetHistoricalRaw(c *fiber.Ctx) error {
 	}
 	res, err := esquery.Search().
 		Query(
-			esquery.Bool().
-				Filter(
-					esquery.Term("subject", userDeviceID),
-					esquery.Range("data.timestamp").Gte(startDate).Lte(endDate),
-				).
-				Should(
-					esquery.Exists("data.odometer"),
-					esquery.Exists("data.latitude"),
-				).
-				MinimumShouldMatch(1),
+			esquery.CustomQuery(
+				map[string]any{
+					"function_score": map[string]any{
+						"query": esquery.Bool().
+							Filter(
+								esquery.Term("subject", userDeviceID),
+								esquery.Range("data.timestamp").Gte(startDate).Lte(endDate),
+							).
+							Should(
+								esquery.Exists("data.odometer"),
+								esquery.Exists("data.latitude"),
+							).
+							MinimumShouldMatch(1).Map(),
+						"random_score": map[string]any{},
+					},
+				},
+			),
 		).
-		Size(500).
+		Size(100).
 		Sort("data.timestamp", "desc").
 		Run(d.es, d.es.Search.WithContext(c.Context()), d.es.Search.WithIndex(d.Settings.DeviceDataIndexName))
 	if err != nil {
