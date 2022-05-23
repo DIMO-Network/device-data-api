@@ -100,9 +100,16 @@ func (d *DeviceDataController) GetHistoricalRaw(c *fiber.Ctx) error {
 		return err
 	}
 	defer res.Body.Close()
-	body, _ := io.ReadAll(res.Body)
-
-	c.Set("Content-type", "application/json")
+	if res.StatusCode >= fiber.StatusBadRequest {
+		d.log.Error().Str("userDeviceId", userDeviceID).Interface("response", res).Msgf("Got status code %d from Elastic.", res.StatusCode)
+		return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
+	}
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		d.log.Err(err).Str("userDeviceId", userDeviceID).Msg("Failed to read Elastic response body.")
+		return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
+	}
+	c.Set("Content-Type", fiber.MIMEApplicationJSON)
 	return c.Status(fiber.StatusOK).Send(body)
 }
 
