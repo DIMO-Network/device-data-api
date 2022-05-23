@@ -94,8 +94,7 @@ func (d *DeviceDataController) GetHistoricalRaw(c *fiber.Ctx) error {
 				},
 			),
 		).
-		Size(100).
-		Sort("data.timestamp", "desc").
+		Size(1000).
 		Run(d.es, d.es.Search.WithContext(c.Context()), d.es.Search.WithIndex(d.Settings.DeviceDataIndexName))
 	if err != nil {
 		return err
