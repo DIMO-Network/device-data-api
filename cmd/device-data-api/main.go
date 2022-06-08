@@ -88,6 +88,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 
 	v1Auth := app.Group("/v1", jwtAuth)
 	v1Auth.Get("/user/device-data/:userDeviceID/historical", deviceDataController.GetHistoricalRaw)
+	v1Auth.Get("/user/device-data/:userDeviceID/distance-driven", deviceDataController.GetDistanceDriven)
 
 	logger.Info().Msg("Server started on port " + settings.Port)
 	// Start Server from a different go routine
