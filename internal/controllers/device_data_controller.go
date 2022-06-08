@@ -3,7 +3,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"github.com/pkg/errors"
 	"io"
 	"time"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/aquasecurity/esquery"
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/gofiber/fiber/v2"
+	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/tidwall/gjson"
 )
