@@ -4,6 +4,28 @@ info:
   title: DIMO Device Data API
   version: "1.0"
 paths:
+  /user/device-data/{userDeviceID}/distance-driven:
+    get:
+      description: |-
+        Get kilometers driven for a userDeviceID since connected (ie. since we have data available)
+        if it returns 0 for distanceDriven it means we have no odometer data.
+      parameters:
+      - description: user device id
+        in: path
+        name: userDeviceID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "404":
+          description: no device found for user with provided parameters
+      security:
+      - BearerAuth: []
+      tags:
+      - device-data
   /user/device-data/{userDeviceID}/historical:
     get:
       description: Get all historical data for a userDeviceID, within start and end
