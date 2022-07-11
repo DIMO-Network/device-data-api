@@ -169,6 +169,7 @@ func (d *DeviceDataController) queryOdometer(ctx context.Context, order esquery.
 	}
 	defer res.Body.Close() // nolint
 	body, _ := io.ReadAll(res.Body)
+	d.log.Info().RawJSON("respBody", body).Str("userDeviceID", userDeviceID).Str("order", string(order)).Msg("Queried for odometer")
 	result := gjson.GetBytes(body, "hits.hits.1._source.data.odometer")
 	if result.Exists() {
 		return result.Float(), nil
