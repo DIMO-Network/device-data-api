@@ -54,7 +54,7 @@ func (aqs *AggregateQueryService) DownloadUserData(user, key, start, end, ipfsAd
 		var err error
 		bts, err := json.Marshal(ud.Data)
 		if err != nil {
-			aqs.log.Err(err).Msg("user data download: unable to query elasticsearch")
+			aqs.log.Err(err).Msg("user data download: unable to marshal data")
 		}
 		ud.EncryptedData, err = encrypt(bts, key)
 		if err != nil {
