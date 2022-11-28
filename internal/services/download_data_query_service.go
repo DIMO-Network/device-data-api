@@ -37,6 +37,7 @@ func (aqs *AggregateQueryService) DownloadUserData(user, key, start, end, ipfsAd
 		response, err := aqs.executeESQuery(query)
 		if err != nil {
 			aqs.log.Err(err).Msg("user data download: unable to query elasticsearch")
+			return ud, err
 		}
 
 		respSize = int(gjson.Get(response, "hits.hits.#").Int())
@@ -44,6 +45,7 @@ func (aqs *AggregateQueryService) DownloadUserData(user, key, start, end, ipfsAd
 		err = json.Unmarshal([]byte(gjson.Get(response, "hits.hits").Raw), &data)
 		if err != nil {
 			aqs.log.Err(err).Msg("user data download: unable to unmarshal data")
+			return ud, err
 		}
 		ud.Data = append(ud.Data, data...)
 		sA := gjson.Get(response, fmt.Sprintf("hits.hits.%d.sort.0", respSize-1))
@@ -55,6 +57,7 @@ func (aqs *AggregateQueryService) DownloadUserData(user, key, start, end, ipfsAd
 		bts, err := json.Marshal(ud.Data)
 		if err != nil {
 			aqs.log.Err(err).Msg("user data download: unable to marshal data")
+			return ud, err
 		}
 		ud.EncryptedData, err = encrypt(bts, key)
 		if err != nil {
