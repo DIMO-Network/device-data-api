@@ -40,9 +40,6 @@ func (d *DataDownloadController) DownloadHandler(c *fiber.Ctx) error {
 	}
 
 	var params QueryValues
-	// defaults to past 24 horus if no time range is specified
-	params.RangeStart = "now/d-1d"
-	params.RangeEnd = "now"
 	err = ValidateQueryParams(&params, c)
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
