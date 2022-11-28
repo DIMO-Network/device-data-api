@@ -9,6 +9,7 @@ import (
 	"encoding/gob"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"time"
@@ -60,7 +61,7 @@ func (aqs *AggregateQueryService) DownloadUserData(user, key, start, end, ipfsAd
 	if ipfs {
 		url, err := uploadIPFS(ud.EncryptedData, ipfsAddress)
 		if err != nil {
-			return ud, err
+			return userData{}, err
 		}
 		ud.IPFS = url
 		ud.EncryptedData = ""
@@ -70,19 +71,21 @@ func (aqs *AggregateQueryService) DownloadUserData(user, key, start, end, ipfsAd
 }
 
 func uploadIPFS(encryptedData, ipfsAddress string) (string, error) {
-	sh := shell.NewShell(ipfsAddress)
+	if encryptedData == "" {
+		invalidUploadError := errors.New("failed to upload to ipfs: data must be encrypted")
+		return "", invalidUploadError
+	}
 
+	sh := shell.NewShell(ipfsAddress)
 	var buf bytes.Buffer
 	err := json.NewEncoder(&buf).Encode(encryptedData)
 	if err != nil {
 		return "", err
 	}
-
 	cid, err := sh.Add(&buf)
 	if err != nil {
 		return "", err
 	}
-
 	// data available at link
 	url := fmt.Sprintf("https://ipfs.io/ipfs/%s", cid)
 

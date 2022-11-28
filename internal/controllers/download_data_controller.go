@@ -45,6 +45,9 @@ func (d *DataDownloadController) DownloadHandler(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 	response, err := d.querySvc.DownloadUserData(userDeviceID, params.EncryptionKey, params.RangeStart, params.RangeEnd, d.ipfsAddress, params.IPFS)
+	if err != nil {
+		return c.JSON(map[string]string{"Error": err.Error()})
+	}
 	return c.JSON(&response)
 }
 
