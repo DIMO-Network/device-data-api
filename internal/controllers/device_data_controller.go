@@ -24,7 +24,7 @@ type DeviceDataController struct {
 }
 
 // NewDeviceDataController constructor
-func NewDeviceDataController(settings *config.Settings, logger *zerolog.Logger) DeviceDataController {
+func NewDeviceDataController(settings *config.Settings, logger *zerolog.Logger, deviceAPIService services.DeviceAPIService) DeviceDataController {
 	es, err := connect(settings)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("could not connect to elastic search")
@@ -33,7 +33,7 @@ func NewDeviceDataController(settings *config.Settings, logger *zerolog.Logger) 
 		Settings:  settings,
 		log:       logger,
 		es:        es,
-		deviceAPI: services.NewDeviceAPIService(settings.DevicesAPIGRPCAddr),
+		deviceAPI: deviceAPIService,
 	}
 }
 

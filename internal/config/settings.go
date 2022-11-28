@@ -13,4 +13,6 @@ type Settings struct {
 	ElasticSearchAnalyticsPassword string `yaml:"ELASTIC_SEARCH_ANALYTICS_PASSWORD"`
 	DeviceDataIndexName            string `yaml:"DEVICE_DATA_INDEX_NAME"`
 	DevicesAPIGRPCAddr             string `yaml:"DEVICES_APIGRPC_ADDR"`
+	IPFSAddress                    string `yaml:"IPFS_ADDRESS"`
+	ElasticIndex                   string `yaml:"ELASTIC_INDEX"`
 }

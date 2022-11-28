@@ -10,9 +10,11 @@ import (
 	_ "github.com/DIMO-Network/device-data-api/docs"
 	"github.com/DIMO-Network/device-data-api/internal/config"
 	"github.com/DIMO-Network/device-data-api/internal/controllers"
+	"github.com/DIMO-Network/device-data-api/internal/services"
 	"github.com/DIMO-Network/shared"
 	"github.com/ansrivas/fiberprometheus/v2"
 	swagger "github.com/arsmn/fiber-swagger/v2"
+	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/recover"
@@ -84,11 +86,24 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 		KeyRefreshUnknownKID: &keyRefreshUnknownKID,
 	})
 
-	deviceDataController := controllers.NewDeviceDataController(settings, &logger)
+	esClient, err := elasticsearch.NewClient(elasticsearch.Config{
+		Addresses: []string{settings.ElasticSearchAnalyticsHost},
+		Username:  settings.ElasticSearchAnalyticsUsername,
+		Password:  settings.ElasticSearchAnalyticsPassword,
+	})
+	if err != nil {
+		panic(err)
+	}
+	querySvc := services.NewAggregateQueryService(esClient, &logger, settings.ElasticIndex)
+	deviceAPIService := services.NewDeviceAPIService(settings.DevicesAPIGRPCAddr)
+
+	deviceDataController := controllers.NewDeviceDataController(settings, &logger, deviceAPIService)
+	dataDownloadController := controllers.NewDataDownloadController(settings, &logger, querySvc, deviceAPIService)
 
 	v1Auth := app.Group("/v1", jwtAuth)
 	v1Auth.Get("/user/device-data/:userDeviceID/historical", deviceDataController.GetHistoricalRaw)
 	v1Auth.Get("/user/device-data/:userDeviceID/distance-driven", deviceDataController.GetDistanceDriven)
+	v1Auth.Get("/user/device-data/:userDeviceID/download", dataDownloadController.DownloadHandler)
 
 	logger.Info().Msg("Server started on port " + settings.Port)
 	// Start Server from a different go routine
