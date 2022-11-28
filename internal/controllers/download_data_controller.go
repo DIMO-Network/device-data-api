@@ -50,8 +50,3 @@ func (d *DataDownloadController) DownloadHandler(c *fiber.Ctx) error {
 	}
 	return c.JSON(&response)
 }
-
-type userData struct {
-	TimeStamp string      `json:"timestamp"`
-	Data      interface{} `json:"data"`
-}

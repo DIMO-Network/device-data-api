@@ -6,7 +6,6 @@ import (
 	"crypto/cipher"
 	"crypto/md5"
 	"crypto/rand"
-	"encoding/gob"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -18,7 +17,7 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-func (aqs *AggregateQueryService) DownloadUserData(user, key, start, end, ipfsAddress string, ipfs bool) (userData, error) {
+func (aqs *AggregateQueryService) DownloadUserData(user, key, start, end, ipfsAddress string, ipfs bool) (UserData, error) {
 	var searchAfter string
 	query := eSQuery{}
 	query.Size = 1000
@@ -28,7 +27,7 @@ func (aqs *AggregateQueryService) DownloadUserData(user, key, start, end, ipfsAd
 	if searchAfter != "" {
 		query.SearchAfter = append(query.SearchAfter, searchAfter)
 	}
-	var ud userData
+	var ud UserData
 	ud.User = user
 	ud.RangeStart = start
 	ud.RangeEnd = end
@@ -43,6 +42,9 @@ func (aqs *AggregateQueryService) DownloadUserData(user, key, start, end, ipfsAd
 		respSize = int(gjson.Get(response, "hits.hits.#").Int())
 		data := make([]map[string]interface{}, respSize)
 		err = json.Unmarshal([]byte(gjson.Get(response, "hits.hits").Raw), &data)
+		if err != nil {
+			aqs.log.Err(err).Msg("user data download: unable to unmarshal data")
+		}
 		ud.Data = append(ud.Data, data...)
 		sA := gjson.Get(response, fmt.Sprintf("hits.hits.%d.sort.0", respSize-1))
 		query.SearchAfter = []string{sA.String()}
@@ -51,6 +53,9 @@ func (aqs *AggregateQueryService) DownloadUserData(user, key, start, end, ipfsAd
 	if key != "" {
 		var err error
 		bts, err := json.Marshal(ud.Data)
+		if err != nil {
+			aqs.log.Err(err).Msg("user data download: unable to query elasticsearch")
+		}
 		ud.EncryptedData, err = encrypt(bts, key)
 		if err != nil {
 			return ud, err
@@ -61,7 +66,7 @@ func (aqs *AggregateQueryService) DownloadUserData(user, key, start, end, ipfsAd
 	if ipfs {
 		url, err := uploadIPFS(ud.EncryptedData, ipfsAddress)
 		if err != nil {
-			return userData{}, err
+			return ud, err
 		}
 		ud.IPFS = url
 		ud.EncryptedData = ""
@@ -103,7 +108,7 @@ type sortBy struct {
 	DataTimestamp string `json:"data.timestamp"`
 }
 
-type userData struct {
+type UserData struct {
 	User          string                   `json:"user"`
 	RangeStart    string                   `json:"start"`
 	RangeEnd      string                   `json:"end"`
@@ -112,16 +117,6 @@ type userData struct {
 	EncryptedData string                   `json:"encryptedData,omitempty"`
 	DecryptedData []map[string]interface{} `json:"decryptedData,omitempty"`
 	IPFS          string                   `json:"ipfsAddress,omitempty"`
-}
-
-func responseToBytes(data []map[string]interface{}) ([]byte, error) {
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-	err := enc.Encode(data)
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
 }
 
 func createHash(key string) string {
@@ -145,23 +140,23 @@ func encrypt(data []byte, passphrase string) (string, error) {
 	return hex.EncodeToString(ciphertext), nil
 }
 
-func decrypt(data string, passphrase string) ([]byte, error) {
+// func decrypt(data string, passphrase string) ([]byte, error) {
 
-	dataBytes, err := hex.DecodeString(data)
-	key := []byte(createHash(passphrase))
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return []byte{}, err
-	}
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
-		return []byte{}, err
-	}
-	nonceSize := gcm.NonceSize()
-	nonce, ciphertext := dataBytes[:nonceSize], dataBytes[nonceSize:]
-	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
-	if err != nil {
-		return []byte{}, err
-	}
-	return plaintext, nil
-}
+// 	dataBytes, err := hex.DecodeString(data)
+// 	key := []byte(createHash(passphrase))
+// 	block, err := aes.NewCipher(key)
+// 	if err != nil {
+// 		return []byte{}, err
+// 	}
+// 	gcm, err := cipher.NewGCM(block)
+// 	if err != nil {
+// 		return []byte{}, err
+// 	}
+// 	nonceSize := gcm.NonceSize()
+// 	nonce, ciphertext := dataBytes[:nonceSize], dataBytes[nonceSize:]
+// 	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
+// 	if err != nil {
+// 		return []byte{}, err
+// 	}
+// 	return plaintext, nil
+// }
