@@ -28,19 +28,17 @@ func NewDataDownloadController(settings *config.Settings, log *zerolog.Logger, q
 // @Success      200  {object}  []models.UserData
 // @Router       /download [get]
 func (d *DataDownloadController) DownloadHandler(c *fiber.Ctx) error {
-	// userID := getUserID(c)
+	userID := getUserID(c)
 	userDeviceID := c.Params("userDeviceID")
-	fmt.Println(userDeviceID)
-	// exists, err := d.deviceAPI.UserDeviceBelongsToUserID(c.Context(), userID, userDeviceID)
-	// if err != nil {
-	// 	return err
-	// }
-	// if !exists {
-	// 	return fiber.NewError(fiber.StatusNotFound, fmt.Sprintf("No device %s found for user %s", userDeviceID, userID))
-	// }
+	exists, err := d.deviceAPI.UserDeviceBelongsToUserID(c.Context(), userID, userDeviceID)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return fiber.NewError(fiber.StatusNotFound, fmt.Sprintf("No device %s found for user %s", userDeviceID, userID))
+	}
 
 	var params QueryValues
-	var err error
 	err = ValidateQueryParams(&params, c)
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
