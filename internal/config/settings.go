@@ -21,5 +21,7 @@ type Settings struct {
 	EmailPassword                  string `yaml:"EMAIL_PASSWORD"`
 	EmailFrom                      string `yaml:"EMAIL_FROM"`
 	AWSBucketName                  string `yaml:"AWS_BUCKET_NAME"`
-	AWSRegion                      string `yaml:"AWS_DEFAULT_REGION"`
+	AWSAccessKeyID                 string `yaml:"AWS_ACCESS_KEY_ID"`
+	AWSSecretAccessKey             string `yaml:"AWS_SECRET_ACCESS_KEY"`
+	AWSDefaultRegion               string `yaml:"AWS_DEFAULT_REGION"`
 }

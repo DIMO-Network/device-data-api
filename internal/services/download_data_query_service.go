@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	shell "github.com/ipfs/go-ipfs-api"
@@ -277,9 +278,9 @@ func (uds *UserDataService) generatePreSignedURL(bucketname, keyName string, ses
 func (uds *UserDataService) uploadUserData(ud UserData, keyName string) (string, error) {
 	dataBytes, err := json.Marshal(ud)
 
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(uds.settings.AWSRegion)}, //confirm this
-	)
+	creds := credentials.NewStaticCredentials(uds.settings.AWSAccessKeyID, uds.settings.AWSSecretAccessKey, "")
+	cfg := aws.NewConfig().WithRegion(uds.settings.AWSDefaultRegion).WithCredentials(creds)
+	sess, err := session.NewSession(cfg)
 	svc := s3.New(sess)
 
 	err = uds.putObjectS3(uds.settings.AWSBucketName, keyName, dataBytes, svc)
