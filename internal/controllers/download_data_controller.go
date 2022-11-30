@@ -12,12 +12,12 @@ import (
 // DataDownloadController provides endpoints for user to download their data or save it (encrypted) to IPFS
 type DataDownloadController struct {
 	log         *zerolog.Logger
-	querySvc    *services.AggregateQueryService
+	querySvc    *services.UserDataService
 	ipfsAddress string
 	deviceAPI   services.DeviceAPIService
 }
 
-func NewDataDownloadController(settings *config.Settings, log *zerolog.Logger, querySvc *services.AggregateQueryService, deviceAPIService services.DeviceAPIService) *DataDownloadController {
+func NewDataDownloadController(settings *config.Settings, log *zerolog.Logger, querySvc *services.UserDataService, deviceAPIService services.DeviceAPIService) *DataDownloadController {
 	return &DataDownloadController{ipfsAddress: settings.IPFSAddress, log: log, querySvc: querySvc, deviceAPI: deviceAPIService}
 }
 
@@ -28,18 +28,19 @@ func NewDataDownloadController(settings *config.Settings, log *zerolog.Logger, q
 // @Success      200  {object}  []models.UserData
 // @Router       /download [get]
 func (d *DataDownloadController) DownloadHandler(c *fiber.Ctx) error {
-	userID := getUserID(c)
+	// userID := getUserID(c)
 	userDeviceID := c.Params("userDeviceID")
-
-	exists, err := d.deviceAPI.UserDeviceBelongsToUserID(c.Context(), userID, userDeviceID)
-	if err != nil {
-		return err
-	}
-	if !exists {
-		return fiber.NewError(fiber.StatusNotFound, fmt.Sprintf("No device %s found for user %s", userDeviceID, userID))
-	}
+	fmt.Println(userDeviceID)
+	// exists, err := d.deviceAPI.UserDeviceBelongsToUserID(c.Context(), userID, userDeviceID)
+	// if err != nil {
+	// 	return err
+	// }
+	// if !exists {
+	// 	return fiber.NewError(fiber.StatusNotFound, fmt.Sprintf("No device %s found for user %s", userDeviceID, userID))
+	// }
 
 	var params QueryValues
+	var err error
 	err = ValidateQueryParams(&params, c)
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())

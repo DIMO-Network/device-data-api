@@ -8,47 +8,48 @@ import (
 	"io"
 	"reflect"
 
+	"github.com/DIMO-Network/device-data-api/internal/config"
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/rs/zerolog"
 )
 
-type AggregateQueryService struct {
-	es           *elasticsearch.Client
-	log          *zerolog.Logger
-	elasticIndex string
+type UserDataService struct {
+	settings *config.Settings
+	es       *elasticsearch.Client
+	log      *zerolog.Logger
 }
 
-func NewAggregateQueryService(es *elasticsearch.Client, log *zerolog.Logger, elasticIndex string) *AggregateQueryService {
-	return &AggregateQueryService{es: es, log: log, elasticIndex: elasticIndex}
+func NewAggregateQueryService(es *elasticsearch.Client, log *zerolog.Logger, settings *config.Settings) *UserDataService {
+	return &UserDataService{es: es, log: log, settings: settings}
 }
 
-func (aqs *AggregateQueryService) executeESQuery(q interface{}) (string, error) {
+func (uds *UserDataService) executeESQuery(q interface{}) (string, error) {
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(q); err != nil {
 		return "", err
 	}
 
-	res, err := aqs.es.Search(
-		aqs.es.Search.WithContext(context.Background()),
-		aqs.es.Search.WithIndex(aqs.elasticIndex),
-		aqs.es.Search.WithBody(&buf),
+	res, err := uds.es.Search(
+		uds.es.Search.WithContext(context.Background()),
+		uds.es.Search.WithIndex(uds.settings.ElasticIndex),
+		uds.es.Search.WithBody(&buf),
 	)
 	if err != nil {
-		aqs.log.Err(err).Msg("Could not query Elasticsearch")
+		uds.log.Err(err).Msg("Could not query Elasticsearch")
 		return "", err
 	}
 	defer res.Body.Close()
 
 	responseBytes, err := io.ReadAll(res.Body)
 	if err != nil {
-		aqs.log.Err(err).Msg("Could not parse Elasticsearch response body")
+		uds.log.Err(err).Msg("Could not parse Elasticsearch response body")
 		return "", err
 	}
 	response := string(responseBytes)
 
 	if res.StatusCode != 200 {
-		aqs.log.Info().RawJSON("elasticsearchResponseBody", responseBytes).Msg("Error from Elastic.")
-		aqs.log.Info().RawJSON("elasticRequest", buf.Bytes()).Msg("request sent to elastics")
+		uds.log.Info().RawJSON("elasticsearchResponseBody", responseBytes).Msg("Error from Elastic.")
+		uds.log.Info().RawJSON("elasticRequest", buf.Bytes()).Msg("request sent to elastics")
 
 		err := fmt.Errorf("invalid status code when querying elastic: %d", res.StatusCode)
 		return response, err
@@ -126,14 +127,22 @@ func (q *eSQuery) formatESQueryFilterRange(rangefield string, rangeMap map[strin
 
 }
 
+func (q *eSQuery) includeFields(terms []string) {
+	q.ResponseFields.Include = terms
+}
+
+func (q *eSQuery) excludeFields(terms []string) {
+	q.ResponseFields.Exclude = terms
+}
+
 type eSQuery struct {
-	Source      bool          `json:"_source,omitempty"`
-	Aggs        interface{}   `json:"aggs,omitempty"`
-	Size        int           `json:"size"`
-	Filter      filter        `json:"query,omitempty"`
-	Fields      []interface{} `json:"fields,omitempty"`
-	Sort        interface{}   `json:"sort,omitempty"`
-	SearchAfter []string      `json:"search_after,omitempty"`
+	ResponseFields responseFields `json:"_source,omitempty"`
+	Aggs           interface{}    `json:"aggs,omitempty"`
+	Size           int            `json:"size"`
+	Filter         filter         `json:"query,omitempty"`
+	Fields         []interface{}  `json:"fields,omitempty"`
+	Sort           interface{}    `json:"sort,omitempty"`
+	SearchAfter    []string       `json:"search_after,omitempty"`
 }
 
 type filter struct {
@@ -165,4 +174,9 @@ type dateRangeFormat struct {
 
 type dateRange struct {
 	DataTimestamp interface{} `json:"range"`
+}
+
+type responseFields struct {
+	Exclude []string `json:"exclude,omitempty"`
+	Include []string `json:"include,omitempty"`
 }

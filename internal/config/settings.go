@@ -15,4 +15,11 @@ type Settings struct {
 	DevicesAPIGRPCAddr             string `yaml:"DEVICES_APIGRPC_ADDR"`
 	IPFSAddress                    string `yaml:"IPFS_ADDRESS"`
 	ElasticIndex                   string `yaml:"ELASTIC_INDEX"`
+	EmailHost                      string `yaml:"EMAIL_HOST"`
+	EmailPort                      string `yaml:"EMAIL_PORT"`
+	EmailUsername                  string `yaml:"EMAIL_USERNAME"`
+	EmailPassword                  string `yaml:"EMAIL_PASSWORD"`
+	EmailFrom                      string `yaml:"EMAIL_FROM"`
+	AWSBucketName                  string `yaml:"AWS_BUCKET_NAME"`
+	AWSRegion                      string `yaml:"AWS_DEFAULT_REGION"`
 }

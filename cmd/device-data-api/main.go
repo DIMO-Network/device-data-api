@@ -94,7 +94,8 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 	if err != nil {
 		panic(err)
 	}
-	querySvc := services.NewAggregateQueryService(esClient, &logger, settings.ElasticIndex)
+
+	querySvc := services.NewAggregateQueryService(esClient, &logger, settings)
 	deviceAPIService := services.NewDeviceAPIService(settings.DevicesAPIGRPCAddr)
 
 	deviceDataController := controllers.NewDeviceDataController(settings, &logger, deviceAPIService)
@@ -103,7 +104,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 	v1Auth := app.Group("/v1", jwtAuth)
 	v1Auth.Get("/user/device-data/:userDeviceID/historical", deviceDataController.GetHistoricalRaw)
 	v1Auth.Get("/user/device-data/:userDeviceID/distance-driven", deviceDataController.GetDistanceDriven)
-	v1Auth.Get("/user/device-data/:userDeviceID/download", dataDownloadController.DownloadHandler)
+	app.Get("/user/device-data/:userDeviceID/download", dataDownloadController.DownloadHandler)
 
 	logger.Info().Msg("Server started on port " + settings.Port)
 	// Start Server from a different go routine
