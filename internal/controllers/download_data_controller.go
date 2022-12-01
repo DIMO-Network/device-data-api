@@ -21,13 +21,13 @@ func NewDataDownloadController(settings *config.Settings, log *zerolog.Logger, q
 	return &DataDownloadController{ipfsAddress: settings.IPFSAddress, log: log, querySvc: querySvc, deviceAPI: deviceAPIService}
 }
 
-// DownloadHandler godoc
-// @Description  returns all user data
-// @Tags         devices
+// JSONDownloadHandler godoc
+// @Description  returns user data as json
+// @Tags         device-data
 // @Produce      json
-// @Success      200  {object}  []models.UserData
-// @Router       /download [get]
-func (d *DataDownloadController) DownloadHandler(c *fiber.Ctx) error {
+// @Success      200  {object}
+// @Router       /user/device-data/:userDeviceID/export/json/email [get]
+func (d *DataDownloadController) JSONDownloadHandler(c *fiber.Ctx) error {
 	userID := getUserID(c)
 	userDeviceID := c.Params("userDeviceID")
 	exists, err := d.deviceAPI.UserDeviceBelongsToUserID(c.Context(), userID, userDeviceID)
@@ -43,9 +43,39 @@ func (d *DataDownloadController) DownloadHandler(c *fiber.Ctx) error {
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
-	response, err := d.querySvc.DownloadUserData(userDeviceID, params.EncryptionKey, params.RangeStart, params.RangeEnd, d.ipfsAddress, params.IPFS)
+	err = d.querySvc.UserDataJSONS3(userDeviceID, params.EncryptionKey, params.RangeStart, params.RangeEnd, d.ipfsAddress, params.IPFS)
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
-	return c.JSON(&response)
+	return c.JSON(map[string]string{"success": "data can be downloaded via links sent to user email on file"})
+}
+
+// GeoJSONDownloadHandler godoc
+// @Description  returns user data as geojson feature collection of points
+// @Tags         device-data
+// @Produce      geojson
+// @Success      200  {object}
+// @Router       /user/device-data/:userDeviceID/export/geojson/email [get]
+func (d *DataDownloadController) GeoJSONDownloadHandler(c *fiber.Ctx) error {
+	userID := getUserID(c)
+	userDeviceID := c.Params("userDeviceID")
+	exists, err := d.deviceAPI.UserDeviceBelongsToUserID(c.Context(), userID, userDeviceID)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return fiber.NewError(fiber.StatusNotFound, fmt.Sprintf("No device %s found for user %s", userDeviceID, userID))
+	}
+
+	var params QueryValues
+	err = ValidateQueryParams(&params, c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+	err = d.querySvc.UserDataGeoJSONS3(userDeviceID, params.EncryptionKey, params.RangeStart, params.RangeEnd, d.ipfsAddress, params.IPFS)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+
+	return c.JSON(map[string]string{"success": "data can be downloaded via links sent to user email on file"})
 }

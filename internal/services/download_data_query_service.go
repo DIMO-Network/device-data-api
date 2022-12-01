@@ -28,7 +28,7 @@ import (
 
 const presignDurationHours time.Duration = 24 * time.Hour
 
-func (uds *UserDataService) DownloadUserData(user, key, start, end, ipfsAddress string, ipfs bool) (string, error) {
+func (uds *UserDataService) UserDataJSONS3(user, key, start, end, ipfsAddress string, ipfs bool) error {
 	query := uds.formatUserDataRequest(user, start, end)
 	requested := time.Now().Format("2006-01-02 15:04:05")
 	respSize := query.Size
@@ -42,26 +42,61 @@ func (uds *UserDataService) DownloadUserData(user, key, start, end, ipfsAddress 
 		response, err := uds.executeESQuery(query)
 		if err != nil {
 			uds.log.Err(err).Msg("user data download: unable to query elasticsearch")
-			return "", err
+			return err
+		}
+
+		respSize = int(gjson.Get(response, "hits.hits.#").Int())
+		ud.RangeStart = gjson.Get(response, fmt.Sprintf("hits.hits.%d._source.data.timestamp", respSize-1)).String()
+		ud.RangeEnd = gjson.Get(response, "hits.hits.0._source.data.timestamp").String()
+
+		ud.Data = make([]map[string]interface{}, respSize)
+		err = json.Unmarshal([]byte(gjson.Get(response, "hits.hits").Raw), &ud.Data)
+		if err != nil {
+			uds.log.Err(err).Msg("user data download: unable to unmarshal data")
+			return err
+		}
+
+		keyName := "userDownloads/" + user + "/" + time.Now().Format(time.RFC3339) + ".json"
+		s3link, err := uds.uploadUserData(ud, keyName)
+		if err != nil {
+			return err
+		}
+		dataDownloadLinks = append(dataDownloadLinks, s3link)
+
+		sA := gjson.Get(response, fmt.Sprintf("hits.hits.%d.sort.0", respSize-1))
+		query.SearchAfter = []string{sA.String()}
+	}
+
+	return nil
+}
+
+func (uds *UserDataService) UserDataGeoJSONS3(user, key, start, end, ipfsAddress string, ipfs bool) error {
+	query := uds.formatUserDataRequest(user, start, end)
+	requested := time.Now().Format("2006-01-02 15:04:05")
+	respSize := query.Size
+	var dataDownloadLinks []string
+
+	for respSize == query.Size {
+		var ud UserData
+		ud.User = user
+		ud.RequestTimestamp = requested
+
+		response, err := uds.executeESQuery(query)
+		if err != nil {
+			uds.log.Err(err).Msg("user data download: unable to query elasticsearch")
+			return err
 		}
 
 		respSize = int(gjson.Get(response, "hits.hits.#").Int())
 
 		ud.RangeStart = gjson.Get(response, "hits.hits.0._source.data.timestamp").String()
 		ud.RangeEnd = gjson.Get(response, fmt.Sprintf("hits.hits.%d._source.data.timestamp", respSize-1)).String()
+		ud.Data = uds.formatGeoJSON(response)
 
-		ud.Data = make([]map[string]interface{}, respSize)
-		err = json.Unmarshal([]byte(gjson.Get(response, "hits.hits").Raw), &ud.Data)
-		if err != nil {
-			uds.log.Err(err).Msg("user data download: unable to unmarshal data")
-			return "", err
-		}
-
-		// comfirm what keyname and bucketname should be
 		keyName := "userDownloads/" + user + "/" + time.Now().Format(time.RFC3339) + ".json"
 		s3link, err := uds.uploadUserData(ud, keyName)
 		if err != nil {
-			return "", err
+			return err
 		}
 		dataDownloadLinks = append(dataDownloadLinks, s3link)
 
@@ -71,32 +106,9 @@ func (uds *UserDataService) DownloadUserData(user, key, start, end, ipfsAddress 
 
 	err := uds.sendEmail(user, dataDownloadLinks)
 	if err != nil {
-		return "", err
+		return err
 	}
-	// if key != "" {
-	// 	var err error
-	// 	bts, err := json.Marshal(ud.Data)
-	// 	if err != nil {
-	// 		aqs.log.Err(err).Msg("user data download: unable to marshal data")
-	// 		return ud, err
-	// 	}
-	// 	ud.EncryptedData, err = encrypt(bts, key)
-	// 	if err != nil {
-	// 		return ud, err
-	// 	}
-	// 	ud.Data = nil
-	// }
-
-	// if ipfs {
-	// 	url, err := uploadIPFS(ud.EncryptedData, ipfsAddress)
-	// 	if err != nil {
-	// 		return ud, err
-	// 	}
-	// 	ud.IPFS = url
-	// 	ud.EncryptedData = ""
-	// 	return ud, nil
-	// }
-	return "check user email address for download links", nil
+	return nil
 }
 
 func (uds *UserDataService) formatGeoJSON(data string) geojson.FeatureCollection {
@@ -168,7 +180,7 @@ type UserData struct {
 	RangeStart       string                   `json:"start"`
 	RangeEnd         string                   `json:"end"`
 	RequestTimestamp string                   `json:"requestTimestamp"`
-	Data             []map[string]interface{} `json:"data,omitempty"`
+	Data             interface{}              `json:"data,omitempty"`
 	EncryptedData    string                   `json:"encryptedData,omitempty"`
 	DecryptedData    []map[string]interface{} `json:"decryptedData,omitempty"`
 	IPFS             string                   `json:"ipfsAddress,omitempty"`
@@ -219,6 +231,9 @@ func encrypt(data []byte, passphrase string) (string, error) {
 func (uds *UserDataService) sendEmail(user string, links []string) error {
 
 	userEmail, err := getVerifiedEmailAddress(user)
+	if err != nil {
+		return err
+	}
 
 	auth := smtp.PlainAuth("", uds.settings.EmailUsername, uds.settings.EmailPassword, uds.settings.EmailHost)
 	addr := fmt.Sprintf("%s:%s", uds.settings.EmailHost, uds.settings.EmailPort)
