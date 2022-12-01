@@ -63,6 +63,7 @@ require (
 	github.com/aws/aws-sdk-go v1.44.149
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
+	github.com/customerio/go-customerio/v3 v3.4.1
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.20.0 // indirect

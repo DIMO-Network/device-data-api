@@ -68,6 +68,10 @@ func (uds *UserDataService) UserDataJSONS3(user, key, start, end, ipfsAddress st
 		query.SearchAfter = []string{sA.String()}
 	}
 
+	err := uds.sendEmail(user, dataDownloadLinks)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -255,16 +259,24 @@ func (uds *UserDataService) sendEmail(user string, links []string) error {
 		message += link + "\r\n"
 	}
 	message += "\n\n"
-
 	if _, err := pw.Write([]byte(message)); err != nil {
 		return err
 	}
 	pw.Close()
+	h, err := w.CreatePart(textproto.MIMEHeader{"Content-Type": {"text/html"}, "Content-Transfer-Encoding": {"quoted-printable"}})
+	if err != nil {
+		return err
+	}
 
+	hw := quotedprintable.NewWriter(h)
+	if err := uds.emailTemplate.Execute(hw, struct{ Links []string }{links}); err != nil {
+		return err
+	}
+	hw.Close()
 	var buffer bytes.Buffer
 	buffer.WriteString("From: DIMO <" + uds.settings.EmailUsername + ">\r\n" +
 		"To: " + userEmail + "\r\n" +
-		"Subject: [DIMO] User Download\r\n" +
+		"Subject: [DIMO] User Data Download\r\n" +
 		"Content-Type: text/plain charset=utf-8; boundary=\"" + w.Boundary() + "\"\r\n" +
 		"\r\n")
 	if _, err := partsBuffer.WriteTo(&buffer); err != nil {
@@ -330,10 +342,3 @@ func (uds *UserDataService) uploadUserData(ud UserData, keyName string) (string,
 	}
 	return uds.generatePreSignedURL(uds.settings.AWSBucketName, keyName, svc, presignDurationHours)
 }
-
-var emailTemplate string = `
-<html>
-	<h1>hello brother</h1>
-	<p><a href="%s">Click To Download</a></p>
-</html>
-`

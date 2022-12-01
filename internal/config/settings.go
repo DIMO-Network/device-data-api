@@ -24,4 +24,6 @@ type Settings struct {
 	AWSAccessKeyID                 string `yaml:"AWS_ACCESS_KEY_ID"`
 	AWSSecretAccessKey             string `yaml:"AWS_SECRET_ACCESS_KEY"`
 	AWSDefaultRegion               string `yaml:"AWS_DEFAULT_REGION"`
+	CIOSiteID                      string `yaml:"TO_DO_ONE"`
+	CIOApiKey                      string `yaml:"TO_DO_TWO"`
 }

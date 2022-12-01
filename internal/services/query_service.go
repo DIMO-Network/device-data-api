@@ -3,24 +3,41 @@ package services
 import (
 	"bytes"
 	"context"
+	_ "embed"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io"
 	"reflect"
 
 	"github.com/DIMO-Network/device-data-api/internal/config"
+	"github.com/customerio/go-customerio/v3"
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/rs/zerolog"
 )
 
+//go:embed data_download_email_template.html
+var rawDataDownloadEmail string
+
 type UserDataService struct {
-	settings *config.Settings
-	es       *elasticsearch.Client
-	log      *zerolog.Logger
+	settings      *config.Settings
+	es            *elasticsearch.Client
+	log           *zerolog.Logger
+	emailTemplate *template.Template
+	cioClient     *customerio.CustomerIO
 }
 
 func NewAggregateQueryService(es *elasticsearch.Client, log *zerolog.Logger, settings *config.Settings) *UserDataService {
-	return &UserDataService{es: es, log: log, settings: settings}
+	t := template.Must(template.New("data_download_email_template").Parse(rawDataDownloadEmail))
+	var cioClient *customerio.CustomerIO
+	if settings.CIOSiteID != "" && settings.CIOApiKey != "" {
+		cioClient = customerio.NewTrackClient(
+			settings.CIOSiteID,
+			settings.CIOApiKey,
+			customerio.WithRegion(customerio.RegionUS),
+		)
+	}
+	return &UserDataService{es: es, log: log, settings: settings, emailTemplate: t, cioClient: cioClient}
 }
 
 func (uds *UserDataService) executeESQuery(q interface{}) (string, error) {
