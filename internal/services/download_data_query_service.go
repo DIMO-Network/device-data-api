@@ -28,7 +28,6 @@ import (
 const presignDurationHours time.Duration = 24 * time.Hour
 
 func (uds *UserDataService) DownloadUserData(user, key, start, end, ipfsAddress string, ipfs bool) (string, error) {
-
 	query := uds.formatUserDataRequest(user, start, end)
 	requested := time.Now().Format("2006-01-02 15:04:05")
 	respSize := query.Size
@@ -47,8 +46,8 @@ func (uds *UserDataService) DownloadUserData(user, key, start, end, ipfsAddress 
 
 		respSize = int(gjson.Get(response, "hits.hits.#").Int())
 
-		ud.RangeStart = gjson.Get(response, "hits.hits.0.data.timestamp").Time().String()
-		ud.RangeEnd = gjson.Get(response, fmt.Sprintf("hits.hits.%d.data.timestamp", respSize-1)).Time().String()
+		ud.RangeStart = gjson.Get(response, "hits.hits.0._source.data.timestamp").String()
+		ud.RangeEnd = gjson.Get(response, fmt.Sprintf("hits.hits.%d._source.data.timestamp", respSize-1)).String()
 
 		ud.Data = make([]map[string]interface{}, respSize)
 		err = json.Unmarshal([]byte(gjson.Get(response, "hits.hits").Raw), &ud.Data)
@@ -100,15 +99,12 @@ func (uds *UserDataService) DownloadUserData(user, key, start, end, ipfsAddress 
 }
 
 func (uds *UserDataService) formatUserDataRequest(user, rangestart, rangeend string) eSQuery {
-	var searchAfter string
 	query := eSQuery{}
 	query.Size = 10000
 	query.formatESQuerySort(map[string]string{"data.timestamp": "desc"})
 	query.formatESQueryFilterMust(map[string]string{"subject": user})
 	query.formatESQueryFilterRange("data.timestamp", map[string]string{"gte": rangestart, "lte": rangeend})
 	query.excludeFields([]string{"data.makeSlug", "data.modelSlug"})
-	// set empty search after so this can be updated later
-	query.SearchAfter = append(query.SearchAfter, searchAfter)
 	return query
 }
 
@@ -277,15 +273,28 @@ func (uds *UserDataService) generatePreSignedURL(bucketname, keyName string, ses
 
 func (uds *UserDataService) uploadUserData(ud UserData, keyName string) (string, error) {
 	dataBytes, err := json.Marshal(ud)
+	if err != nil {
+		return "", err
+	}
+	sess, err := session.NewSession(&aws.Config{
+		Region:      aws.String(uds.settings.AWSDefaultRegion),
+		Credentials: credentials.NewStaticCredentials(uds.settings.AWSAccessKeyID, uds.settings.AWSSecretAccessKey, ""),
+	})
+	if err != nil {
+		return "", err
+	}
 
-	creds := credentials.NewStaticCredentials(uds.settings.AWSAccessKeyID, uds.settings.AWSSecretAccessKey, "")
-	cfg := aws.NewConfig().WithRegion(uds.settings.AWSDefaultRegion).WithCredentials(creds)
-	sess, err := session.NewSession(cfg)
 	svc := s3.New(sess)
-
 	err = uds.putObjectS3(uds.settings.AWSBucketName, keyName, dataBytes, svc)
 	if err != nil {
 		return "", err
 	}
 	return uds.generatePreSignedURL(uds.settings.AWSBucketName, keyName, svc, presignDurationHours)
 }
+
+var emailTemplate string = `
+<html>
+	<h1>hello brother</h1>
+	<p><a href="%s">Click To Download</a></p>
+</html>
+`
