@@ -49,33 +49,3 @@ func (d *DataDownloadController) JSONDownloadHandler(c *fiber.Ctx) error {
 	}
 	return c.JSON(map[string]string{"success": "data can be downloaded via links sent to user email on file"})
 }
-
-// GeoJSONDownloadHandler godoc
-// @Description  returns user data as geojson feature collection of points
-// @Tags         device-data
-// @Produce      geojson
-// @Success      200  {object}
-// @Router       /user/device-data/:userDeviceID/export/geojson/email [get]
-func (d *DataDownloadController) GeoJSONDownloadHandler(c *fiber.Ctx) error {
-	userID := getUserID(c)
-	userDeviceID := c.Params("userDeviceID")
-	exists, err := d.deviceAPI.UserDeviceBelongsToUserID(c.Context(), userID, userDeviceID)
-	if err != nil {
-		return err
-	}
-	if !exists {
-		return fiber.NewError(fiber.StatusNotFound, fmt.Sprintf("No device %s found for user %s", userDeviceID, userID))
-	}
-
-	var params QueryValues
-	err = ValidateQueryParams(&params, c)
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
-	}
-	err = d.querySvc.UserDataGeoJSONS3(userDeviceID, params.EncryptionKey, params.RangeStart, params.RangeEnd, d.ipfsAddress, params.IPFS)
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
-	}
-
-	return c.JSON(map[string]string{"success": "data can be downloaded via links sent to user email on file"})
-}

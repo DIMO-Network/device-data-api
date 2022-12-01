@@ -2,15 +2,10 @@ package services
 
 import (
 	"bytes"
-	"crypto/aes"
-	"crypto/cipher"
 	"crypto/md5"
-	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
 	"mime/multipart"
 	"mime/quotedprintable"
 	"net/smtp"
@@ -21,8 +16,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-	shell "github.com/ipfs/go-ipfs-api"
-	geojson "github.com/paulmach/go.geojson"
 	"github.com/tidwall/gjson"
 )
 
@@ -75,69 +68,6 @@ func (uds *UserDataService) UserDataJSONS3(user, key, start, end, ipfsAddress st
 	return nil
 }
 
-func (uds *UserDataService) UserDataGeoJSONS3(user, key, start, end, ipfsAddress string, ipfs bool) error {
-	query := uds.formatUserDataRequest(user, start, end)
-	requested := time.Now().Format("2006-01-02 15:04:05")
-	respSize := query.Size
-	var dataDownloadLinks []string
-
-	for respSize == query.Size {
-		var ud UserData
-		ud.User = user
-		ud.RequestTimestamp = requested
-
-		response, err := uds.executeESQuery(query)
-		if err != nil {
-			uds.log.Err(err).Msg("user data download: unable to query elasticsearch")
-			return err
-		}
-
-		respSize = int(gjson.Get(response, "hits.hits.#").Int())
-
-		ud.RangeStart = gjson.Get(response, "hits.hits.0._source.data.timestamp").String()
-		ud.RangeEnd = gjson.Get(response, fmt.Sprintf("hits.hits.%d._source.data.timestamp", respSize-1)).String()
-		ud.DeviceID = gjson.Get(response, "hits.hits.0._source.data.device.device_id").String()
-		ud.Data = uds.formatGeoJSON(response)
-
-		keyName := "userDownloads/" + user + "/" + time.Now().Format(time.RFC3339) + ".json"
-		s3link, err := uds.uploadUserData(ud, keyName)
-		if err != nil {
-			return err
-		}
-		dataDownloadLinks = append(dataDownloadLinks, s3link)
-
-		sA := gjson.Get(response, fmt.Sprintf("hits.hits.%d.sort.0", respSize-1))
-		query.SearchAfter = []string{sA.String()}
-	}
-
-	err := uds.sendEmail(user, dataDownloadLinks)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (uds *UserDataService) formatGeoJSON(data string) geojson.FeatureCollection {
-	allData := geojson.NewFeatureCollection()
-	gjson.Get(data, "hits.hits").ForEach(func(key, value gjson.Result) bool {
-		lat := value.Get("_source.data.latitude").Float()
-		lon := value.Get("_source.data.longitude").Float()
-		feature := geojson.NewPointFeature([]float64{lon, lat})
-		feature.Geometry.Type = geojson.GeometryPoint
-		properties := make(map[string]interface{})
-		err := json.Unmarshal([]byte(value.Raw), &properties)
-		if err != nil {
-			uds.log.Error().Msg("incomplete user data returned, error unmarshalling")
-			return false
-		}
-		feature.Properties = properties
-		allData.AddFeature(feature)
-		return true
-	})
-
-	return *allData
-}
-
 func (uds *UserDataService) formatUserDataRequest(user, rangestart, rangeend string) eSQuery {
 	query := eSQuery{}
 	query.Size = 10000
@@ -146,28 +76,6 @@ func (uds *UserDataService) formatUserDataRequest(user, rangestart, rangeend str
 	query.formatESQueryFilterRange("data.timestamp", map[string]string{"gte": rangestart, "lte": rangeend})
 	query.excludeFields([]string{"data.makeSlug", "data.modelSlug"})
 	return query
-}
-
-func uploadIPFS(encryptedData, ipfsAddress string) (string, error) {
-	if encryptedData == "" {
-		invalidUploadError := errors.New("failed to upload to ipfs: data must be encrypted")
-		return "", invalidUploadError
-	}
-
-	sh := shell.NewShell(ipfsAddress)
-	var buf bytes.Buffer
-	err := json.NewEncoder(&buf).Encode(encryptedData)
-	if err != nil {
-		return "", err
-	}
-	cid, err := sh.Add(&buf)
-	if err != nil {
-		return "", err
-	}
-	// data available at link
-	url := fmt.Sprintf("https://ipfs.io/ipfs/%s", cid)
-
-	return url, nil
 }
 
 type SearchUserData struct {
@@ -198,41 +106,6 @@ func createHash(key string) string {
 	hasher.Write([]byte(key))
 	return hex.EncodeToString(hasher.Sum(nil))
 }
-
-func encrypt(data []byte, passphrase string) (string, error) {
-	block, _ := aes.NewCipher([]byte(createHash(passphrase)))
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
-		return "", err
-	}
-	nonce := make([]byte, gcm.NonceSize())
-	if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
-		return "", err
-	}
-	ciphertext := gcm.Seal(nonce, nonce, data, nil)
-	return hex.EncodeToString(ciphertext), nil
-}
-
-// func decrypt(data string, passphrase string) ([]byte, error) {
-
-// 	dataBytes, err := hex.DecodeString(data)
-// 	key := []byte(createHash(passphrase))
-// 	block, err := aes.NewCipher(key)
-// 	if err != nil {
-// 		return []byte{}, err
-// 	}
-// 	gcm, err := cipher.NewGCM(block)
-// 	if err != nil {
-// 		return []byte{}, err
-// 	}
-// 	nonceSize := gcm.NonceSize()
-// 	nonce, ciphertext := dataBytes[:nonceSize], dataBytes[nonceSize:]
-// 	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
-// 	if err != nil {
-// 		return []byte{}, err
-// 	}
-// 	return plaintext, nil
-// }
 
 func (uds *UserDataService) sendEmail(user string, links []string) error {
 
