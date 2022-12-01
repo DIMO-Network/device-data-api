@@ -22,6 +22,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	shell "github.com/ipfs/go-ipfs-api"
+	geojson "github.com/paulmach/go.geojson"
 	"github.com/tidwall/gjson"
 )
 
@@ -96,6 +97,27 @@ func (uds *UserDataService) DownloadUserData(user, key, start, end, ipfsAddress 
 	// 	return ud, nil
 	// }
 	return "check user email address for download links", nil
+}
+
+func (uds *UserDataService) formatGeoJSON(data string) geojson.FeatureCollection {
+	allData := geojson.NewFeatureCollection()
+	gjson.Get(data, "hits.hits").ForEach(func(key, value gjson.Result) bool {
+		lat := value.Get("_source.data.latitude").Float()
+		lon := value.Get("_source.data.longitude").Float()
+		feature := geojson.NewPointFeature([]float64{lon, lat})
+		feature.Geometry.Type = geojson.GeometryPoint
+		properties := make(map[string]interface{})
+		err := json.Unmarshal([]byte(value.Raw), &properties)
+		if err != nil {
+			uds.log.Error().Msg("incomplete user data returned, error unmarshalling")
+			return false
+		}
+		feature.Properties = properties
+		allData.AddFeature(feature)
+		return true
+	})
+
+	return *allData
 }
 
 func (uds *UserDataService) formatUserDataRequest(user, rangestart, rangeend string) eSQuery {
