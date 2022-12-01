@@ -29,7 +29,7 @@ func ValidateQueryParams(p *QueryValues, c *fiber.Ctx) error {
 func validateDateParams(start, end string) (string, string, error) {
 	// defaults to past 24 horus if no time range is specified
 	if start == "" || end == "" {
-		return "now/d-1d", "now", nil
+		return "2022-01-01", "now", nil
 	}
 	sd, err := time.Parse("20060102", start)
 	if err != nil {
