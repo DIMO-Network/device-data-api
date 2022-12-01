@@ -48,6 +48,7 @@ func (uds *UserDataService) UserDataJSONS3(user, key, start, end, ipfsAddress st
 		respSize = int(gjson.Get(response, "hits.hits.#").Int())
 		ud.RangeStart = gjson.Get(response, fmt.Sprintf("hits.hits.%d._source.data.timestamp", respSize-1)).String()
 		ud.RangeEnd = gjson.Get(response, "hits.hits.0._source.data.timestamp").String()
+		ud.DeviceID = gjson.Get(response, "hits.hits.0._source.data.device.device_id").String()
 
 		ud.Data = make([]map[string]interface{}, respSize)
 		err = json.Unmarshal([]byte(gjson.Get(response, "hits.hits").Raw), &ud.Data)
@@ -91,6 +92,7 @@ func (uds *UserDataService) UserDataGeoJSONS3(user, key, start, end, ipfsAddress
 
 		ud.RangeStart = gjson.Get(response, "hits.hits.0._source.data.timestamp").String()
 		ud.RangeEnd = gjson.Get(response, fmt.Sprintf("hits.hits.%d._source.data.timestamp", respSize-1)).String()
+		ud.DeviceID = gjson.Get(response, "hits.hits.0._source.data.device.device_id").String()
 		ud.Data = uds.formatGeoJSON(response)
 
 		keyName := "userDownloads/" + user + "/" + time.Now().Format(time.RFC3339) + ".json"
@@ -176,14 +178,14 @@ type sortBy struct {
 }
 
 type UserData struct {
-	User             string                   `json:"user"`
-	RangeStart       string                   `json:"start"`
-	RangeEnd         string                   `json:"end"`
-	RequestTimestamp string                   `json:"requestTimestamp"`
-	Data             interface{}              `json:"data,omitempty"`
-	EncryptedData    string                   `json:"encryptedData,omitempty"`
-	DecryptedData    []map[string]interface{} `json:"decryptedData,omitempty"`
-	IPFS             string                   `json:"ipfsAddress,omitempty"`
+	User             string      `json:"user"`
+	RangeStart       string      `json:"start"`
+	RangeEnd         string      `json:"end"`
+	RequestTimestamp string      `json:"requestTimestamp"`
+	DeviceID         string      `json:"deviceID"`
+	Data             interface{} `json:"data,omitempty"`
+	EncryptedData    string      `json:"encryptedData,omitempty"`
+	IPFS             string      `json:"ipfsAddress,omitempty"`
 }
 
 func createHash(key string) string {
