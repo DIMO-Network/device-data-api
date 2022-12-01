@@ -1,41 +1,9 @@
 version: "3.9"
 
 services:
-  postgresql:
-    image: postgres:13.4-alpine  # Latest version supported by RDS
-    container_name: pg-users-api
-    ports:
-      - "5432:5432"
-    environment:
-      - POSTGRES_USER=dimo
-      - POSTGRES_PASSWORD=dimo
-      - POSTGRES_DB=users_api
-    volumes:
-      - ./resources/data:/var/log/postgresql/data:delegated
   mailhog:
     image: mailhog/mailhog:v1.0.1
     container_name: mail-users-api
     ports:
       - "1025:1025"
       - "8025:8025"
-  zookeeper:
-    image: confluentinc/cp-zookeeper:6.2.7  # Match Kafka 2.8.x.
-    platform: linux/amd64  # No ARM image for this version.
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-  kafka:
-    image: confluentinc/cp-kafka:6.2.7  # Match Kafka 2.8.x.
-    platform: linux/amd64  # No ARM image for this version.
-    ports:
-    - '9092:9092'
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-    depends_on:
-    - zookeeper

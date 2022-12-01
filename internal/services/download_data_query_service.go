@@ -2,8 +2,6 @@ package services
 
 import (
 	"bytes"
-	"crypto/md5"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"mime/multipart"
@@ -100,14 +98,7 @@ type UserData struct {
 	IPFS             string      `json:"ipfsAddress,omitempty"`
 }
 
-func createHash(key string) string {
-	// use a more secure encryption method here?
-	hasher := md5.New()
-	hasher.Write([]byte(key))
-	return hex.EncodeToString(hasher.Sum(nil))
-}
-
-func (uds *UserDataService) sendEmail(user string, links []string) error {
+func (uds *UserDataService) sendEmail(user string, block []string) error {
 
 	userEmail, err := getVerifiedEmailAddress(user)
 	if err != nil {
@@ -127,9 +118,9 @@ func (uds *UserDataService) sendEmail(user string, links []string) error {
 	}
 
 	pw := quotedprintable.NewWriter(p)
-	message := "Hi,\r\n\r\nUse the following link(s) to download your requested data. These links will expire in 24 hours: "
-	for _, link := range links {
-		message += link + "\r\n"
+	message := "Hi,\r\n\r\nUse the following link(s) to download your requested data. These links will expire in 24 hours:\n "
+	for _, link := range block {
+		message += "\t" + link + "\r\n"
 	}
 	message += "\n\n"
 	if _, err := pw.Write([]byte(message)); err != nil {
@@ -142,7 +133,7 @@ func (uds *UserDataService) sendEmail(user string, links []string) error {
 	}
 
 	hw := quotedprintable.NewWriter(h)
-	if err := uds.emailTemplate.Execute(hw, struct{ Links []string }{links}); err != nil {
+	if err := uds.emailTemplate.Execute(hw, block); err != nil {
 		return err
 	}
 	hw.Close()
@@ -150,7 +141,7 @@ func (uds *UserDataService) sendEmail(user string, links []string) error {
 	buffer.WriteString("From: DIMO <" + uds.settings.EmailUsername + ">\r\n" +
 		"To: " + userEmail + "\r\n" +
 		"Subject: [DIMO] User Data Download\r\n" +
-		"Content-Type: text/plain charset=utf-8; boundary=\"" + w.Boundary() + "\"\r\n" +
+		"Content-Type: multipart/alternative; boundary=\"" + w.Boundary() + "\"\r\n" +
 		"\r\n")
 	if _, err := partsBuffer.WriteTo(&buffer); err != nil {
 		return err
@@ -173,7 +164,7 @@ func getVerifiedEmailAddress(user string) (string, error) {
 	// 		return nil, err
 	// 	}
 	// }
-	return "", nil
+	return "user.email@email.com", nil
 }
 
 func (uds *UserDataService) putObjectS3(bucketname, keyname string, data []byte, svc *s3.S3) error {
