@@ -23,7 +23,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-const presignDurationHours = 24 * time.Hour
+const presignDuration = 24
 
 func (uds *UserDataService) UserDataJSONS3(user, key, start, end, ipfsAddress string, ipfs bool) error {
 	query := uds.formatUserDataRequest(user, start, end)
@@ -213,5 +213,5 @@ func (uds *UserDataService) uploadUserData(ud UserData, keyName string) (string,
 	if err != nil {
 		return "", err
 	}
-	return uds.generatePreSignedURL(uds.settings.AWSBucketName, keyName, svc, presignDurationHours)
+	return uds.generatePreSignedURL(uds.settings.AWSBucketName, keyName, svc, presignDuration*time.Hour)
 }
