@@ -144,10 +144,6 @@ func (q *eSQuery) formatESQueryFilterRange(rangefield string, rangeMap map[strin
 
 }
 
-func (q *eSQuery) includeFields(terms []string) {
-	q.ResponseFields.Include = terms
-}
-
 func (q *eSQuery) excludeFields(terms []string) {
 	q.ResponseFields.Exclude = terms
 }

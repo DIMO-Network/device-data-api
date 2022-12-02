@@ -23,7 +23,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-const presignDurationHours time.Duration = 24 * time.Hour
+const presignDurationHours = 24 * time.Hour
 
 func (uds *UserDataService) UserDataJSONS3(user, key, start, end, ipfsAddress string, ipfs bool) error {
 	query := uds.formatUserDataRequest(user, start, end)
