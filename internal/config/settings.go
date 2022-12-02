@@ -23,8 +23,6 @@ type Settings struct {
 	AWSBucketName                  string `yaml:"AWS_BUCKET_NAME"`
 	AWSAccessKeyID                 string `yaml:"AWS_ACCESS_KEY_ID"`
 	AWSSecretAccessKey             string `yaml:"AWS_SECRET_ACCESS_KEY"`
-	AWSDefaultRegion               string `yaml:"AWS_DEFAULT_REGION"`
-	CIOSiteID                      string `yaml:"TO_DO_ONE"`
-	CIOApiKey                      string `yaml:"TO_DO_TWO"`
-	UsersAPIGRPCAddr               string `yaml:"TO_DO_THREE"`
+	AWSRegion                      string `yaml:"AWS_REGION"`
+	UsersAPIGRPCAddr               string `yaml:"USERS_API_GRPC_ADDR"`
 }

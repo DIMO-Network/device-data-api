@@ -201,7 +201,7 @@ func (uds *UserDataService) uploadUserData(ud UserData, keyName string) (string,
 		return "", err
 	}
 	sess, err := session.NewSession(&aws.Config{
-		Region:      aws.String(uds.settings.AWSDefaultRegion),
+		Region:      aws.String(uds.settings.AWSRegion),
 		Credentials: credentials.NewStaticCredentials(uds.settings.AWSAccessKeyID, uds.settings.AWSSecretAccessKey, ""),
 	})
 	if err != nil {

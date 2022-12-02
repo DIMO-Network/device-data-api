@@ -30,13 +30,6 @@ type UserDataService struct {
 func NewAggregateQueryService(es *elasticsearch.Client, log *zerolog.Logger, settings *config.Settings) *UserDataService {
 	t := template.Must(template.New("data_download_email_template").Parse(rawDataDownloadEmail))
 	var cioClient *customerio.CustomerIO
-	if settings.CIOSiteID != "" && settings.CIOApiKey != "" {
-		cioClient = customerio.NewTrackClient(
-			settings.CIOSiteID,
-			settings.CIOApiKey,
-			customerio.WithRegion(customerio.RegionUS),
-		)
-	}
 	return &UserDataService{es: es, log: log, settings: settings, emailTemplate: t, cioClient: cioClient}
 }
 
