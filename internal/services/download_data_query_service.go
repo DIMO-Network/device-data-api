@@ -2,7 +2,9 @@ package services
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html/template"
 	"mime/multipart"
@@ -11,11 +13,14 @@ import (
 	"net/textproto"
 	"time"
 
+	pb "github.com/DIMO-Network/shared/api/users"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/tidwall/gjson"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 const presignDurationHours time.Duration = 24 * time.Hour
@@ -61,7 +66,7 @@ func (uds *UserDataService) UserDataJSONS3(user, key, start, end, ipfsAddress st
 
 	err = uds.sendEmail(user, s3link)
 	if err != nil {
-		return nil
+		return err
 	}
 	return nil
 }
@@ -100,7 +105,7 @@ type UserData struct {
 
 func (uds *UserDataService) sendEmail(user, downloadLink string) error {
 
-	userEmail, err := getVerifiedEmailAddress(user)
+	userEmail, err := uds.getVerifiedEmailAddress(user)
 	if err != nil {
 		return err
 	}
@@ -147,21 +152,28 @@ func (uds *UserDataService) sendEmail(user, downloadLink string) error {
 	return smtp.SendMail(addr, auth, uds.settings.EmailFrom, []string{userEmail}, buffer.Bytes())
 }
 
-func getVerifiedEmailAddress(user string) (string, error) {
+func (uds *UserDataService) getVerifiedEmailAddress(userID string) (string, error) {
 
-	// is there a grpc endpoint that can return the user email?
-	// otherwise grab user email from db
+	conn, err := grpc.Dial(uds.settings.UsersAPIGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		uds.log.Err(err).Msg("failed to create users API client.")
+		return "", nil
+	}
+	defer conn.Close()
 
-	// user, err := models.Users(
-	// 	models.UserWhere.ID.EQ(userID),
-	// 	qm.Load(models.UserRels.Referrals),
-	// ).One(c.Context(), tx)
-	// if err != nil {
-	// 	if !errors.Is(err, sql.ErrNoRows) {
-	// 		return nil, err
-	// 	}
-	// }
-	return "user.email@email.com", nil
+	usersClient := pb.NewUserServiceClient(conn)
+	user, err := usersClient.GetUser(context.Background(), &pb.GetUserRequest{Id: userID})
+	if err != nil {
+		return "", err
+	}
+
+	if user.EmailAddress == nil {
+		uds.log.Error().Str("userId", user.Id).Msg("verified email address for user not found")
+		emailNotFoundError := errors.New("verified email address for user not found")
+		return "", emailNotFoundError
+	}
+
+	return *user.EmailAddress, nil
 }
 
 func (uds *UserDataService) putObjectS3(bucketname, keyname string, data []byte, svc *s3.S3) error {

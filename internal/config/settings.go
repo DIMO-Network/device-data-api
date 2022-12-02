@@ -26,4 +26,5 @@ type Settings struct {
 	AWSDefaultRegion               string `yaml:"AWS_DEFAULT_REGION"`
 	CIOSiteID                      string `yaml:"TO_DO_ONE"`
 	CIOApiKey                      string `yaml:"TO_DO_TWO"`
+	UsersAPIGRPCAddr               string `yaml:"TO_DO_THREE"`
 }

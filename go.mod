@@ -3,7 +3,7 @@ module github.com/DIMO-Network/device-data-api
 go 1.18
 
 require (
-	github.com/DIMO-Network/shared v0.5.2
+	github.com/DIMO-Network/shared v0.5.6
 	github.com/ansrivas/fiberprometheus/v2 v2.2.0
 	github.com/aquasecurity/esquery v0.2.0
 	github.com/arsmn/fiber-swagger/v2 v2.31.1
@@ -26,34 +26,9 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/kms v1.17.3 // indirect
 	github.com/aws/smithy-go v1.11.3 // indirect
-	github.com/btcsuite/btcd v0.20.1-beta // indirect
-	github.com/crackcomm/go-gitignore v0.0.0-20170627025303-887ab5e44cc3 // indirect
-	github.com/gogo/protobuf v1.3.1 // indirect
-	github.com/gorilla/schema v1.1.0 // indirect
-	github.com/ipfs/go-cid v0.0.7 // indirect
-	github.com/ipfs/go-ipfs-files v0.0.9 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
-	github.com/libp2p/go-buffer-pool v0.0.2 // indirect
-	github.com/libp2p/go-flow-metrics v0.0.3 // indirect
-	github.com/libp2p/go-libp2p-core v0.6.1 // indirect
-	github.com/libp2p/go-openssl v0.0.7 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
-	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1 // indirect
-	github.com/minio/sha256-simd v0.1.1 // indirect
-	github.com/mitchellh/go-homedir v1.1.0 // indirect
-	github.com/mr-tron/base58 v1.2.0 // indirect
-	github.com/multiformats/go-base32 v0.0.3 // indirect
-	github.com/multiformats/go-base36 v0.1.0 // indirect
-	github.com/multiformats/go-multiaddr v0.3.0 // indirect
-	github.com/multiformats/go-multibase v0.0.3 // indirect
-	github.com/multiformats/go-multihash v0.0.14 // indirect
-	github.com/multiformats/go-varint v0.0.6 // indirect
-	github.com/spacemonkeygo/spacelog v0.0.0-20180420211403-2296661a0572 // indirect
-	github.com/spaolacci/murmur3 v1.1.0 // indirect
-	github.com/whyrusleeping/tar-utils v0.0.0-20180509141711-8c6c8ba81d5c // indirect
-	go.opencensus.io v0.22.4 // indirect
-	golang.org/x/crypto v0.0.0-20220214200702-86341886e292 // indirect
 )
 
 require (
@@ -70,16 +45,12 @@ require (
 	github.com/go-openapi/spec v0.20.5 // indirect
 	github.com/go-openapi/swag v0.21.1 // indirect
 	github.com/gofiber/adaptor/v2 v2.1.19 // indirect
-	github.com/gofiber/fiber v1.14.6
 	github.com/gofiber/utils v0.1.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/ipfs/go-ipfs-api v0.3.0
-	github.com/jeremywohl/flatten v1.0.1
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/klauspost/compress v1.15.1 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
-	github.com/paulmach/go.geojson v1.4.0
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.32.1 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
