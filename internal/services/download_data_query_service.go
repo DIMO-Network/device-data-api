@@ -129,7 +129,7 @@ func (uds *UserDataService) sendEmail(user, downloadLink string) error {
 	}
 
 	hw := quotedprintable.NewWriter(h)
-	htmlMessage := fmt.Sprintf(`<a href="%s">Click For Download</a>`, downloadLink)
+	htmlMessage := fmt.Sprintf(`<a href="%s">Click to download</a>`, downloadLink)
 	if err := uds.emailTemplate.Execute(hw, template.HTML(htmlMessage)); err != nil {
 		return err
 	}
