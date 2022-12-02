@@ -11,14 +11,13 @@ import (
 
 // DataDownloadController provides endpoints for user to download their data or save it (encrypted) to IPFS
 type DataDownloadController struct {
-	log         *zerolog.Logger
-	querySvc    *services.UserDataService
-	ipfsAddress string
-	deviceAPI   services.DeviceAPIService
+	log       *zerolog.Logger
+	querySvc  *services.UserDataService
+	deviceAPI services.DeviceAPIService
 }
 
 func NewDataDownloadController(settings *config.Settings, log *zerolog.Logger, querySvc *services.UserDataService, deviceAPIService services.DeviceAPIService) *DataDownloadController {
-	return &DataDownloadController{ipfsAddress: settings.IPFSAddress, log: log, querySvc: querySvc, deviceAPI: deviceAPIService}
+	return &DataDownloadController{log: log, querySvc: querySvc, deviceAPI: deviceAPIService}
 }
 
 // JSONDownloadHandler godoc
@@ -43,7 +42,7 @@ func (d *DataDownloadController) JSONDownloadHandler(c *fiber.Ctx) error {
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
-	err = d.querySvc.UserDataJSONS3(userDeviceID, params.EncryptionKey, params.RangeStart, params.RangeEnd, d.ipfsAddress, params.IPFS)
+	err = d.querySvc.UserDataJSONS3(userDeviceID, params.RangeStart, params.RangeEnd)
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}

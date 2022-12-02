@@ -25,7 +25,7 @@ import (
 
 const presignDuration = 24
 
-func (uds *UserDataService) UserDataJSONS3(user, key, start, end, ipfsAddress string, ipfs bool) error {
+func (uds *UserDataService) UserDataJSONS3(user, start, end string) error {
 	query := uds.formatUserDataRequest(user, start, end)
 	requested := time.Now().Format("2006-01-02 15:04:05")
 	respSize := query.Size
