@@ -87,9 +87,11 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 	})
 
 	esClient, err := elasticsearch.NewClient(elasticsearch.Config{
-		Addresses: []string{settings.ElasticSearchAnalyticsHost},
-		Username:  settings.ElasticSearchAnalyticsUsername,
-		Password:  settings.ElasticSearchAnalyticsPassword,
+		Addresses:            []string{settings.ElasticSearchAnalyticsHost},
+		Username:             settings.ElasticSearchAnalyticsUsername,
+		Password:             settings.ElasticSearchAnalyticsPassword,
+		EnableRetryOnTimeout: true,
+		MaxRetries:           5,
 	})
 	if err != nil {
 		panic(err)
@@ -98,7 +100,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 	querySvc := services.NewAggregateQueryService(esClient, &logger, settings)
 	deviceAPIService := services.NewDeviceAPIService(settings.DevicesAPIGRPCAddr)
 
-	deviceDataController := controllers.NewDeviceDataController(settings, &logger, deviceAPIService)
+	deviceDataController := controllers.NewDeviceDataController(settings, &logger, deviceAPIService, esClient)
 	dataDownloadController := controllers.NewDataDownloadController(settings, &logger, querySvc, deviceAPIService)
 
 	v1Auth := app.Group("/v1", jwtAuth)
