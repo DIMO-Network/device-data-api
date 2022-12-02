@@ -123,7 +123,7 @@ func (uds *UserDataService) sendEmail(user string, links []string) error {
 	var htmlMessage string
 	for n, link := range links {
 		pwMessage += "\t" + link + "\r\n\n"
-		htmlMessage += fmt.Sprintf(`<div style="font-family:helvetica;font-size:32px;line-height:1;text-align:left;color:#f48d33;"><a href="%s">Link %d</a></div>`, link, n+1)
+		htmlMessage += fmt.Sprintf(`<li style="font-family:helvetica;font-size:24px;line-height:1;text-align:left;color:#f48d33;"><a href="%s">Link %d</a></li>`, link, n+1)
 	}
 	pwMessage += "\n\n"
 
