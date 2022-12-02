@@ -18,6 +18,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/core/search"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/tidwall/gjson"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -25,18 +27,17 @@ import (
 
 const presignDuration = 24
 
-func (uds *UserDataService) UserDataJSONS3(user, start, end string) error {
-	query := uds.formatUserDataRequest(user, start, end)
-	requested := time.Now().Format("2006-01-02 15:04:05")
-	respSize := query.Size
+func (uds *UserDataService) UserDataJSONS3(user string) error {
+	query := uds.formatUserDataRequest(user)
+	requested := time.Now().Format(time.RFC3339)
+	respSize := pageSize
 
-	var ud UserData
-	ud.User = user
-	ud.RequestTimestamp = requested
-	ud.RangeStart = start
-	ud.RangeEnd = requested
+	ud := UserData{
+		User:             user,
+		RequestTimestamp: requested,
+	}
 
-	for respSize == query.Size {
+	for respSize == pageSize {
 		response, err := uds.executeESQuery(query)
 		if err != nil {
 			uds.log.Err(err).Msg("user data download: unable to query elasticsearch")
@@ -55,7 +56,7 @@ func (uds *UserDataService) UserDataJSONS3(user, start, end string) error {
 
 		ud.Data = append(ud.Data, data...)
 		sA := gjson.Get(response, fmt.Sprintf("hits.hits.%d.sort.0", respSize-1))
-		query.SearchAfter = []string{sA.String()}
+		query.SearchAfter = []types.FieldValue{sA.String()}
 	}
 
 	keyName := "userDownloads/" + user + "/" + time.Now().Format(time.RFC3339) + ".json"
@@ -71,25 +72,22 @@ func (uds *UserDataService) UserDataJSONS3(user, start, end string) error {
 	return nil
 }
 
-func (uds *UserDataService) formatUserDataRequest(user, rangestart, rangeend string) eSQuery {
-	query := eSQuery{}
-	query.Size = 10000
-	query.formatESQuerySort(map[string]string{"data.timestamp": "desc"})
-	query.formatESQueryFilterMust(map[string]string{"subject": user})
-	query.formatESQueryFilterRange("data.timestamp", map[string]string{"gte": rangestart, "lte": rangeend})
-	query.excludeFields([]string{"data.makeSlug", "data.modelSlug"})
+// Elastic maximum.
+var pageSize = 10000
+
+func (uds *UserDataService) formatUserDataRequest(userDeviceID string) *search.Request {
+	query := &search.Request{
+		Query: &types.Query{
+			Bool: &types.BoolQuery{
+				Filter: []types.Query{
+					{Match: map[string]types.MatchQuery{"subject": {Query: userDeviceID}}},
+				},
+			},
+		},
+		Sort: []types.SortCombinations{"data.timestamp"},
+		Size: &pageSize,
+	}
 	return query
-}
-
-type SearchUserData struct {
-	Size        int     `json:"size"`
-	Sort        sortBy  `json:"sort"`
-	Filter      filter  `json:"query"`
-	SearchAfter []int64 `json:"search_after,omitempty"`
-}
-
-type sortBy struct {
-	DataTimestamp string `json:"data.timestamp"`
 }
 
 type UserData struct {
