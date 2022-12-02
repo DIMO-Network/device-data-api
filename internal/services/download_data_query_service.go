@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"mime/multipart"
 	"mime/quotedprintable"
 	"net/smtp"
@@ -98,7 +99,7 @@ type UserData struct {
 	IPFS             string      `json:"ipfsAddress,omitempty"`
 }
 
-func (uds *UserDataService) sendEmail(user string, block []string) error {
+func (uds *UserDataService) sendEmail(user string, links []string) error {
 
 	userEmail, err := getVerifiedEmailAddress(user)
 	if err != nil {
@@ -117,13 +118,17 @@ func (uds *UserDataService) sendEmail(user string, block []string) error {
 		return err
 	}
 
-	pw := quotedprintable.NewWriter(p)
-	message := "Hi,\r\n\r\nUse the following link(s) to download your requested data. These links will expire in 24 hours:\n "
-	for _, link := range block {
-		message += "\t" + link + "\r\n"
+	// format plaintext and html messages
+	pwMessage := "Hi,\r\n\r\nUse the following link(s) to download your requested data. These links will expire in 24 hours:\n "
+	var htmlMessage string
+	for n, link := range links {
+		pwMessage += "\t" + link + "\r\n\n"
+		htmlMessage += fmt.Sprintf(`<div style="font-family:helvetica;font-size:32px;line-height:1;text-align:left;color:#f48d33;"><a href="%s">Link %d</a></div>`, link, n+1)
 	}
-	message += "\n\n"
-	if _, err := pw.Write([]byte(message)); err != nil {
+	pwMessage += "\n\n"
+
+	pw := quotedprintable.NewWriter(p)
+	if _, err := pw.Write([]byte(pwMessage)); err != nil {
 		return err
 	}
 	pw.Close()
@@ -133,7 +138,8 @@ func (uds *UserDataService) sendEmail(user string, block []string) error {
 	}
 
 	hw := quotedprintable.NewWriter(h)
-	if err := uds.emailTemplate.Execute(hw, block); err != nil {
+
+	if err := uds.emailTemplate.Execute(hw, template.HTML(htmlMessage)); err != nil {
 		return err
 	}
 	hw.Close()
