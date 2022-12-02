@@ -7,7 +7,8 @@ require (
 	github.com/ansrivas/fiberprometheus/v2 v2.2.0
 	github.com/aquasecurity/esquery v0.2.0
 	github.com/arsmn/fiber-swagger/v2 v2.31.1
-	github.com/elastic/go-elasticsearch/v7 v7.17.1
+	github.com/elastic/go-elasticsearch/v7 v7.17.0
+	github.com/elastic/go-elasticsearch/v8 v8.5.0
 	github.com/gofiber/fiber/v2 v2.32.0
 	github.com/gofiber/jwt/v3 v3.2.7
 	github.com/golang-jwt/jwt/v4 v4.3.0
@@ -39,7 +40,6 @@ require (
 	github.com/aws/aws-sdk-go v1.44.149
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
-	github.com/elastic/go-elasticsearch/v8 v8.5.0
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.20.0 // indirect
