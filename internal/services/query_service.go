@@ -11,7 +11,6 @@ import (
 	"reflect"
 
 	"github.com/DIMO-Network/device-data-api/internal/config"
-	"github.com/customerio/go-customerio/v3"
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/rs/zerolog"
 )
@@ -24,13 +23,11 @@ type UserDataService struct {
 	es            *elasticsearch.Client
 	log           *zerolog.Logger
 	emailTemplate *template.Template
-	cioClient     *customerio.CustomerIO
 }
 
 func NewAggregateQueryService(es *elasticsearch.Client, log *zerolog.Logger, settings *config.Settings) *UserDataService {
 	t := template.Must(template.New("data_download_email_template").Parse(rawDataDownloadEmail))
-	var cioClient *customerio.CustomerIO
-	return &UserDataService{es: es, log: log, settings: settings, emailTemplate: t, cioClient: cioClient}
+	return &UserDataService{es: es, log: log, settings: settings, emailTemplate: t}
 }
 
 func (uds *UserDataService) executeESQuery(q interface{}) (string, error) {
