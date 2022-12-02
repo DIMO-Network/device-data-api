@@ -24,45 +24,44 @@ func (uds *UserDataService) UserDataJSONS3(user, key, start, end, ipfsAddress st
 	query := uds.formatUserDataRequest(user, start, end)
 	requested := time.Now().Format("2006-01-02 15:04:05")
 	respSize := query.Size
-	var dataDownloadLinks []string
+
+	var ud UserData
+	ud.User = user
+	ud.RequestTimestamp = requested
+	ud.RangeStart = start
+	ud.RangeEnd = requested
 
 	for respSize == query.Size {
-		var ud UserData
-		ud.User = user
-		ud.RequestTimestamp = requested
-
 		response, err := uds.executeESQuery(query)
 		if err != nil {
 			uds.log.Err(err).Msg("user data download: unable to query elasticsearch")
-			return err
+			return nil
 		}
 
 		respSize = int(gjson.Get(response, "hits.hits.#").Int())
-		ud.RangeStart = gjson.Get(response, fmt.Sprintf("hits.hits.%d._source.data.timestamp", respSize-1)).String()
-		ud.RangeEnd = gjson.Get(response, "hits.hits.0._source.data.timestamp").String()
 		ud.DeviceID = gjson.Get(response, "hits.hits.0._source.data.device.device_id").String()
 
-		ud.Data = make([]map[string]interface{}, respSize)
-		err = json.Unmarshal([]byte(gjson.Get(response, "hits.hits").Raw), &ud.Data)
+		data := make([]map[string]interface{}, respSize)
+		err = json.Unmarshal([]byte(gjson.Get(response, "hits.hits").Raw), &data)
 		if err != nil {
 			uds.log.Err(err).Msg("user data download: unable to unmarshal data")
-			return err
+			return nil
 		}
 
-		keyName := "userDownloads/" + user + "/" + time.Now().Format(time.RFC3339) + ".json"
-		s3link, err := uds.uploadUserData(ud, keyName)
-		if err != nil {
-			return err
-		}
-		dataDownloadLinks = append(dataDownloadLinks, s3link)
-
+		ud.Data = append(ud.Data, data...)
 		sA := gjson.Get(response, fmt.Sprintf("hits.hits.%d.sort.0", respSize-1))
 		query.SearchAfter = []string{sA.String()}
 	}
 
-	err := uds.sendEmail(user, dataDownloadLinks)
+	keyName := "userDownloads/" + user + "/" + time.Now().Format(time.RFC3339) + ".json"
+	s3link, err := uds.uploadUserData(ud, keyName)
 	if err != nil {
-		return err
+		return nil
+	}
+
+	err = uds.sendEmail(user, s3link)
+	if err != nil {
+		return nil
 	}
 	return nil
 }
@@ -89,17 +88,17 @@ type sortBy struct {
 }
 
 type UserData struct {
-	User             string      `json:"user"`
-	RangeStart       string      `json:"start"`
-	RangeEnd         string      `json:"end"`
-	RequestTimestamp string      `json:"requestTimestamp"`
-	DeviceID         string      `json:"deviceID"`
-	Data             interface{} `json:"data,omitempty"`
-	EncryptedData    string      `json:"encryptedData,omitempty"`
-	IPFS             string      `json:"ipfsAddress,omitempty"`
+	User             string                   `json:"user"`
+	RangeStart       string                   `json:"start"`
+	RangeEnd         string                   `json:"end"`
+	RequestTimestamp string                   `json:"requestTimestamp"`
+	DeviceID         string                   `json:"deviceID"`
+	Data             []map[string]interface{} `json:"data,omitempty"`
+	EncryptedData    string                   `json:"encryptedData,omitempty"`
+	IPFS             string                   `json:"ipfsAddress,omitempty"`
 }
 
-func (uds *UserDataService) sendEmail(user string, links []string) error {
+func (uds *UserDataService) sendEmail(user, downloadLink string) error {
 
 	userEmail, err := getVerifiedEmailAddress(user)
 	if err != nil {
@@ -118,17 +117,9 @@ func (uds *UserDataService) sendEmail(user string, links []string) error {
 		return err
 	}
 
-	// format plaintext and html messages
-	pwMessage := "Hi,\r\n\r\nUse the following link(s) to download your requested data. These links will expire in 24 hours:\n "
-	var htmlMessage string
-	for n, link := range links {
-		pwMessage += "\t" + link + "\r\n\n"
-		htmlMessage += fmt.Sprintf(`<li style="font-family:helvetica;font-size:24px;line-height:1;text-align:left;color:#f48d33;"><a href="%s">Link %d</a></li>`, link, n+1)
-	}
-	pwMessage += "\n\n"
-
+	ptMessage := fmt.Sprintf("Hi,\r\n\r\nUse the following link(s) to download your requested data. These links will expire in 24 hours:\n\t%s\r\n\n", downloadLink)
 	pw := quotedprintable.NewWriter(p)
-	if _, err := pw.Write([]byte(pwMessage)); err != nil {
+	if _, err := pw.Write([]byte(ptMessage)); err != nil {
 		return err
 	}
 	pw.Close()
@@ -138,7 +129,7 @@ func (uds *UserDataService) sendEmail(user string, links []string) error {
 	}
 
 	hw := quotedprintable.NewWriter(h)
-
+	htmlMessage := fmt.Sprintf(`<a href="%s">Click For Download</a>`, downloadLink)
 	if err := uds.emailTemplate.Execute(hw, template.HTML(htmlMessage)); err != nil {
 		return err
 	}
