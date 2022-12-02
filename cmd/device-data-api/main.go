@@ -14,7 +14,8 @@ import (
 	"github.com/DIMO-Network/shared"
 	"github.com/ansrivas/fiberprometheus/v2"
 	swagger "github.com/arsmn/fiber-swagger/v2"
-	"github.com/elastic/go-elasticsearch/v7"
+	es7 "github.com/elastic/go-elasticsearch/v7"
+	es8 "github.com/elastic/go-elasticsearch/v8"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/recover"
@@ -86,7 +87,8 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 		KeyRefreshUnknownKID: &keyRefreshUnknownKID,
 	})
 
-	esClient, err := elasticsearch.NewClient(elasticsearch.Config{
+	// Minor hazard of migration.
+	esClient7, err := es7.NewClient(es7.Config{
 		Addresses:            []string{settings.ElasticSearchAnalyticsHost},
 		Username:             settings.ElasticSearchAnalyticsUsername,
 		Password:             settings.ElasticSearchAnalyticsPassword,
@@ -97,10 +99,20 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 		panic(err)
 	}
 
-	querySvc := services.NewAggregateQueryService(esClient, &logger, settings)
+	esClient8, err := es8.NewTypedClient(es8.Config{
+		Addresses:  []string{settings.ElasticSearchAnalyticsHost},
+		Username:   settings.ElasticSearchAnalyticsUsername,
+		Password:   settings.ElasticSearchAnalyticsPassword,
+		MaxRetries: 5,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	querySvc := services.NewAggregateQueryService(esClient8, &logger, settings)
 	deviceAPIService := services.NewDeviceAPIService(settings.DevicesAPIGRPCAddr)
 
-	deviceDataController := controllers.NewDeviceDataController(settings, &logger, deviceAPIService, esClient)
+	deviceDataController := controllers.NewDeviceDataController(settings, &logger, deviceAPIService, esClient7)
 	dataDownloadController := controllers.NewDataDownloadController(settings, &logger, querySvc, deviceAPIService)
 
 	v1Auth := app.Group("/v1", jwtAuth)
