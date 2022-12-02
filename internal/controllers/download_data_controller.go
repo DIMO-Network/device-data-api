@@ -2,22 +2,29 @@ package controllers
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/DIMO-Network/device-data-api/internal/config"
 	"github.com/DIMO-Network/device-data-api/internal/services"
+	es8 "github.com/elastic/go-elasticsearch/v8"
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog"
 )
 
 // DataDownloadController provides endpoints for user to download their data or save it (encrypted) to IPFS
 type DataDownloadController struct {
-	log       *zerolog.Logger
-	querySvc  *services.UserDataService
-	deviceAPI services.DeviceAPIService
+	log        *zerolog.Logger
+	querySvc   *services.UserDataService
+	storageSvc *services.StorageService
+	emailSvc   *services.EmailService
+	deviceAPI  services.DeviceAPIService
 }
 
-func NewDataDownloadController(settings *config.Settings, log *zerolog.Logger, querySvc *services.UserDataService, deviceAPIService services.DeviceAPIService) *DataDownloadController {
-	return &DataDownloadController{log: log, querySvc: querySvc, deviceAPI: deviceAPIService}
+func NewDataDownloadController(settings *config.Settings, log *zerolog.Logger, esClient8 *es8.TypedClient, deviceAPIService services.DeviceAPIService) *DataDownloadController {
+	querySvc := services.NewAggregateQueryService(esClient8, settings, log)
+	storageSvc := services.NewStorageService(settings, log)
+	emailSvc := services.NewEmailService(settings, log)
+	return &DataDownloadController{log: log, querySvc: querySvc, storageSvc: storageSvc, emailSvc: emailSvc, deviceAPI: deviceAPIService}
 }
 
 // JSONDownloadHandler godoc
@@ -42,9 +49,21 @@ func (d *DataDownloadController) JSONDownloadHandler(c *fiber.Ctx) error {
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
-	err = d.querySvc.UserDataJSONS3(userDeviceID)
+	data, err := d.querySvc.UserDataJSONS3(userDeviceID)
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
+
+	keyName := "userDownloads/" + userDeviceID + "/" + time.Now().Format(time.RFC3339) + ".json"
+	s3link, err := d.storageSvc.UploadUserData(data, keyName)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+
+	err = d.emailSvc.SendEmail(userDeviceID, s3link)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+
 	return c.JSON(map[string]string{"success": "data can be downloaded via links sent to user email on file"})
 }
