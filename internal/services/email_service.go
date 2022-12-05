@@ -2,7 +2,9 @@ package services
 
 import (
 	"bytes"
+	"context"
 	_ "embed"
+	"errors"
 	"fmt"
 	"html/template"
 	"mime/multipart"
@@ -11,7 +13,12 @@ import (
 	"net/textproto"
 
 	"github.com/DIMO-Network/device-data-api/internal/config"
+	pb "github.com/DIMO-Network/shared/api/users"
 	"github.com/rs/zerolog"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 )
 
 //go:embed data_download_email_template.html
@@ -91,25 +98,28 @@ func (es *EmailService) SendEmail(user, downloadLink string) error {
 
 func (es *EmailService) getVerifiedEmailAddress(userID string) (string, error) {
 
-	// conn, err := grpc.Dial(es.usersGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	// if err != nil {
-	// 	es.log.Err(err).Msg("failed to create users API client.")
-	// 	return "", nil
-	// }
-	// defer conn.Close()
+	conn, err := grpc.Dial(es.usersGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		es.log.Err(err).Msg("failed to create users API client.")
+		return "", nil
+	}
+	defer conn.Close()
 
-	// usersClient := pb.NewUserServiceClient(conn)
-	// user, err := usersClient.GetUser(context.Background(), &pb.GetUserRequest{Id: userID})
-	// if err != nil {
-	// 	return "", err
-	// }
+	usersClient := pb.NewUserServiceClient(conn)
+	user, err := usersClient.GetUser(context.Background(), &pb.GetUserRequest{Id: userID})
+	if err != nil {
+		if s, ok := status.FromError(err); ok && s.Code() == codes.NotFound {
+			es.log.Debug().Str("userId", userID).Msg("user not found.")
+			return "", err
+		}
+		return "", err
+	}
 
-	// if user.EmailAddress == nil {
-	// 	es.log.Error().Str("userId", user.Id).Msg("verified email address for user not found")
-	// 	emailNotFoundError := errors.New("verified email address for user not found")
-	// 	return "", emailNotFoundError
-	// }
+	addr := user.GetEmailAddress()
+	if addr == "" {
+		es.log.Debug().Str("userID", userID).Msg("user does not have confirmed email address")
+		return "", errors.New("user does not have confirmed email address")
+	}
 
-	// return *user.EmailAddress, nil
-	return "tester@gmail.com", nil
+	return addr, nil
 }
