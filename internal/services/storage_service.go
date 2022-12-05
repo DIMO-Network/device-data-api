@@ -30,7 +30,7 @@ func NewStorageService(settings *config.Settings, log *zerolog.Logger) *StorageS
 	}
 	s3Client := s3.NewFromConfig(awsconf)
 
-	return &StorageService{storageSvcClient: s3Client, log: log, settings: settings}
+	return &StorageService{storageSvcClient: s3Client, log: log, settings: settings, context: ctx}
 }
 
 func (ss *StorageService) generatePreSignedURL(keyName string, expiration time.Duration) (string, error) {
