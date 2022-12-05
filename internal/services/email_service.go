@@ -26,6 +26,7 @@ var rawDataDownloadEmail string
 
 type EmailService struct {
 	emailTemplate *template.Template
+	ClientConn    *grpc.ClientConn
 	username      string
 	pw            string
 	host          string
@@ -37,7 +38,13 @@ type EmailService struct {
 
 func NewEmailService(settings *config.Settings, log *zerolog.Logger) *EmailService {
 	t := template.Must(template.New("data_download_email_template").Parse(rawDataDownloadEmail))
+	conn, err := grpc.Dial(settings.UsersAPIGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		panic(err)
+	}
+
 	return &EmailService{emailTemplate: t,
+		ClientConn:    conn,
 		username:      settings.EmailUsername,
 		pw:            settings.EmailPassword,
 		host:          settings.EmailHost,
@@ -98,14 +105,7 @@ func (es *EmailService) SendEmail(user, downloadLink string) error {
 
 func (es *EmailService) getVerifiedEmailAddress(userID string) (string, error) {
 
-	conn, err := grpc.Dial(es.usersGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		es.log.Err(err).Msg("failed to create users API client.")
-		return "", nil
-	}
-	defer conn.Close()
-
-	usersClient := pb.NewUserServiceClient(conn)
+	usersClient := pb.NewUserServiceClient(es.ClientConn)
 	user, err := usersClient.GetUser(context.Background(), &pb.GetUserRequest{Id: userID})
 	if err != nil {
 		if s, ok := status.FromError(err); ok && s.Code() == codes.NotFound {

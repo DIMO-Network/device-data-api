@@ -130,6 +130,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM) // When an interrupt or termination signal is sent, notify the channel
 	<-c                                             // This blocks the main thread until an interrupt is received
 	logger.Info().Msg("Gracefully shutting down and running cleanup tasks...")
+	dataDownloadController.EmailSvc.ClientConn.Close()
 	_ = app.Shutdown()
 	// shutdown anything else
 }
