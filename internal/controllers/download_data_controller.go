@@ -49,7 +49,7 @@ func (d *DataDownloadController) JSONDownloadHandler(c *fiber.Ctx) error {
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
-	data, err := d.querySvc.UserDataJSONS3(userDeviceID)
+	data, err := d.querySvc.FetchUserData(userDeviceID)
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}

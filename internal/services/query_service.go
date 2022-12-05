@@ -27,7 +27,6 @@ type UserDataService struct {
 type UserData struct {
 	User             string                   `json:"user"`
 	RequestTimestamp string                   `json:"requestTimestamp"`
-	DeviceID         string                   `json:"deviceID"`
 	Data             []map[string]interface{} `json:"data,omitempty"`
 }
 
@@ -63,7 +62,7 @@ func (uds *UserDataService) executeESQuery(q *search.Request) (string, error) {
 	return response, nil
 }
 
-func (uds *UserDataService) UserDataJSONS3(userDeviceID string) (UserData, error) {
+func (uds *UserDataService) FetchUserData(userDeviceID string) (UserData, error) {
 	query := uds.formatUserDataRequest(userDeviceID)
 	requested := time.Now().Format(time.RFC3339)
 	respSize := pageSize
@@ -81,8 +80,6 @@ func (uds *UserDataService) UserDataJSONS3(userDeviceID string) (UserData, error
 		}
 
 		respSize = int(gjson.Get(response, "hits.hits.#").Int())
-		ud.DeviceID = gjson.Get(response, "hits.hits.0._source.data.device.device_id").String()
-
 		data := make([]map[string]interface{}, respSize)
 		err = json.Unmarshal([]byte(gjson.Get(response, "hits.hits").Raw), &data)
 		if err != nil {
