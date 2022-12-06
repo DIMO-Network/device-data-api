@@ -14,7 +14,7 @@ import (
 // DataDownloadController provides endpoints for user to download their data or save it (encrypted) to IPFS
 type DataDownloadController struct {
 	log        *zerolog.Logger
-	QuerySvc   *services.UserDataService
+	QuerySvc   *services.DataQueryService
 	StorageSvc *services.StorageService
 	EmailSvc   *services.EmailService
 	deviceAPI  services.DeviceAPIService

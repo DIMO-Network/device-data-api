@@ -18,10 +18,10 @@ import (
 
 const presignDuration = 24
 
-type UserDataService struct {
-	es        *elasticsearch.TypedClient
-	indexName string
-	log       *zerolog.Logger
+type DataQueryService struct {
+	es       *elasticsearch.TypedClient
+	Settings *config.Settings
+	log      *zerolog.Logger
 }
 
 type UserData struct {
@@ -30,15 +30,16 @@ type UserData struct {
 	Data             []map[string]interface{} `json:"data,omitempty"`
 }
 
-func NewAggregateQueryService(es *elasticsearch.TypedClient, settings *config.Settings, log *zerolog.Logger) *UserDataService {
-	return &UserDataService{es: es, indexName: settings.DeviceDataIndexName, log: log}
+func NewAggregateQueryService(es *elasticsearch.TypedClient, settings *config.Settings, log *zerolog.Logger) *DataQueryService {
+	return &DataQueryService{es: es, Settings: settings, log: log}
 }
 
-func (uds *UserDataService) executeESQuery(q *search.Request) (string, error) {
+func (uds *DataQueryService) executeESQuery(q *search.Request) (string, error) {
+
 	res, err := uds.es.Search().
-		Index(uds.indexName).
+		Index(uds.Settings.ElasticIndex).
 		Request(q).
-		Do(context.TODO())
+		Do(context.Background())
 	if err != nil {
 		uds.log.Err(err).Msg("Could not query Elasticsearch")
 		return "", err
@@ -62,7 +63,7 @@ func (uds *UserDataService) executeESQuery(q *search.Request) (string, error) {
 	return response, nil
 }
 
-func (uds *UserDataService) FetchUserData(userDeviceID string) (UserData, error) {
+func (uds *DataQueryService) FetchUserData(userDeviceID string) (UserData, error) {
 	query := uds.formatUserDataRequest(userDeviceID)
 	requested := time.Now().Format(time.RFC3339)
 	respSize := pageSize
@@ -98,7 +99,7 @@ func (uds *UserDataService) FetchUserData(userDeviceID string) (UserData, error)
 // Elastic maximum.
 var pageSize = 10000
 
-func (uds *UserDataService) formatUserDataRequest(userDeviceID string) *search.Request {
+func (uds *DataQueryService) formatUserDataRequest(userDeviceID string) *search.Request {
 	query := &search.Request{
 		Query: &types.Query{
 			Bool: &types.BoolQuery{
