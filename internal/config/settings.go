@@ -13,4 +13,15 @@ type Settings struct {
 	ElasticSearchAnalyticsPassword string `yaml:"ELASTIC_SEARCH_ANALYTICS_PASSWORD"`
 	DeviceDataIndexName            string `yaml:"DEVICE_DATA_INDEX_NAME"`
 	DevicesAPIGRPCAddr             string `yaml:"DEVICES_APIGRPC_ADDR"`
+	ElasticIndex                   string `yaml:"ELASTIC_INDEX"`
+	EmailHost                      string `yaml:"EMAIL_HOST"`
+	EmailPort                      string `yaml:"EMAIL_PORT"`
+	EmailUsername                  string `yaml:"EMAIL_USERNAME"`
+	EmailPassword                  string `yaml:"EMAIL_PASSWORD"`
+	EmailFrom                      string `yaml:"EMAIL_FROM"`
+	AWSBucketName                  string `yaml:"AWS_BUCKET_NAME"`
+	AWSAccessKeyID                 string `yaml:"AWS_ACCESS_KEY_ID"`
+	AWSSecretAccessKey             string `yaml:"AWS_SECRET_ACCESS_KEY"`
+	AWSRegion                      string `yaml:"AWS_REGION"`
+	UsersAPIGRPCAddr               string `yaml:"USERS_API_GRPC_ADDR"`
 }

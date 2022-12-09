@@ -24,16 +24,12 @@ type DeviceDataController struct {
 }
 
 // NewDeviceDataController constructor
-func NewDeviceDataController(settings *config.Settings, logger *zerolog.Logger) DeviceDataController {
-	es, err := connect(settings)
-	if err != nil {
-		logger.Fatal().Err(err).Msg("could not connect to elastic search")
-	}
+func NewDeviceDataController(settings *config.Settings, logger *zerolog.Logger, deviceAPIService services.DeviceAPIService, es *elasticsearch.Client) DeviceDataController {
 	return DeviceDataController{
 		Settings:  settings,
 		log:       logger,
 		es:        es,
-		deviceAPI: services.NewDeviceAPIService(settings.DevicesAPIGRPCAddr),
+		deviceAPI: deviceAPIService,
 	}
 }
 
@@ -174,22 +170,4 @@ func (d *DeviceDataController) queryOdometer(ctx context.Context, order esquery.
 		return result.Float(), nil
 	}
 	return 0, nil
-}
-
-// connect helper to connect to ES. Move this to seperate file or under services etc.
-func connect(settings *config.Settings) (*elasticsearch.Client, error) {
-	// maybe refactor some of this into elasticsearchservice
-
-	if settings.ElasticSearchAnalyticsUsername == "" {
-		// we're connecting to local instance at localhost:9200
-		return elasticsearch.NewDefaultClient()
-	}
-
-	return elasticsearch.NewClient(elasticsearch.Config{
-		Addresses:            []string{settings.ElasticSearchAnalyticsHost},
-		Username:             settings.ElasticSearchAnalyticsUsername,
-		Password:             settings.ElasticSearchAnalyticsPassword,
-		EnableRetryOnTimeout: true,
-		MaxRetries:           5,
-	})
 }

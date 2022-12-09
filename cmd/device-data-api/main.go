@@ -10,9 +10,12 @@ import (
 	_ "github.com/DIMO-Network/device-data-api/docs"
 	"github.com/DIMO-Network/device-data-api/internal/config"
 	"github.com/DIMO-Network/device-data-api/internal/controllers"
+	"github.com/DIMO-Network/device-data-api/internal/services"
 	"github.com/DIMO-Network/shared"
 	"github.com/ansrivas/fiberprometheus/v2"
 	swagger "github.com/arsmn/fiber-swagger/v2"
+	es7 "github.com/elastic/go-elasticsearch/v7"
+	es8 "github.com/elastic/go-elasticsearch/v8"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/recover"
@@ -84,11 +87,37 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 		KeyRefreshUnknownKID: &keyRefreshUnknownKID,
 	})
 
-	deviceDataController := controllers.NewDeviceDataController(settings, &logger)
+	// Minor hazard of migration.
+	esClient7, err := es7.NewClient(es7.Config{
+		Addresses:            []string{settings.ElasticSearchAnalyticsHost},
+		Username:             settings.ElasticSearchAnalyticsUsername,
+		Password:             settings.ElasticSearchAnalyticsPassword,
+		EnableRetryOnTimeout: true,
+		MaxRetries:           5,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	esClient8, err := es8.NewTypedClient(es8.Config{
+		Addresses:  []string{settings.ElasticSearchAnalyticsHost},
+		Username:   settings.ElasticSearchAnalyticsUsername,
+		Password:   settings.ElasticSearchAnalyticsPassword,
+		MaxRetries: 5,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	deviceAPIService := services.NewDeviceAPIService(settings.DevicesAPIGRPCAddr)
+
+	deviceDataController := controllers.NewDeviceDataController(settings, &logger, deviceAPIService, esClient7)
+	dataDownloadController := controllers.NewDataDownloadController(settings, &logger, esClient8, deviceAPIService)
 
 	v1Auth := app.Group("/v1", jwtAuth)
 	v1Auth.Get("/user/device-data/:userDeviceID/historical", deviceDataController.GetHistoricalRaw)
 	v1Auth.Get("/user/device-data/:userDeviceID/distance-driven", deviceDataController.GetDistanceDriven)
+	app.Get("/user/device-data/:userDeviceID/export/json/email", dataDownloadController.JSONDownloadHandler)
 
 	logger.Info().Msg("Server started on port " + settings.Port)
 	// Start Server from a different go routine
@@ -101,6 +130,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM) // When an interrupt or termination signal is sent, notify the channel
 	<-c                                             // This blocks the main thread until an interrupt is received
 	logger.Info().Msg("Gracefully shutting down and running cleanup tasks...")
+	dataDownloadController.EmailSvc.ClientConn.Close()
 	_ = app.Shutdown()
 	// shutdown anything else
 }
