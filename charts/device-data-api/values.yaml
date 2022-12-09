@@ -34,6 +34,7 @@ env:
   AWS_BUCKET_NAME: dimo-network-device-data-export-dev
   AWS_REGION: us-east-2
   EMAIL_FROM: hello@dimo.zone
+  USERS_API_GRPC_ADDR: users-api-dev:8086
 service:
   type: ClusterIP
   ports:
