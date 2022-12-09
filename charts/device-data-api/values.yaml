@@ -33,6 +33,7 @@ env:
   EMAIL_PORT: '587'
   AWS_BUCKET_NAME: dimo-network-device-data-export-dev
   AWS_REGION: us-east-2
+  EMAIL_FROM: hello@dimo.zone
 service:
   type: ClusterIP
   ports:
