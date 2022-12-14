@@ -91,7 +91,7 @@ func (es *EmailService) SendEmail(user, downloadLink string) error {
 	}
 	hw.Close()
 	var buffer bytes.Buffer
-	buffer.WriteString("From: DIMO <" + es.username + ">\r\n" +
+	buffer.WriteString("From: DIMO <" + es.emailFrom + ">\r\n" +
 		"To: " + userEmail + "\r\n" +
 		"Subject: [DIMO] User Data Download\r\n" +
 		"Content-Type: multipart/alternative; boundary=\"" + w.Boundary() + "\"\r\n" +
