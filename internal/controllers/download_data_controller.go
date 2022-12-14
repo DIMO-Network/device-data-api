@@ -60,7 +60,7 @@ func (d *DataDownloadController) JSONDownloadHandler(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	err = d.EmailSvc.SendEmail(userDeviceID, s3link)
+	err = d.EmailSvc.SendEmail(userID, s3link)
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
