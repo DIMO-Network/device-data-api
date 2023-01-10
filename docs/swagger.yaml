@@ -4,6 +4,41 @@ info:
   title: DIMO Device Data API
   version: "1.0"
 paths:
+  /user/device-data/:userDeviceID/export/json/email:
+    get:
+      description: returns user data as json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      tags:
+      - device-data
+  /user/device-data/{userDeviceID}/daily-distance:
+    get:
+      description: Get kilometers driven for a userDeviceID each day.
+      parameters:
+      - description: user device id
+        in: path
+        name: userDeviceID
+        required: true
+        type: string
+      - description: IANAS time zone id, e.g., America/Los_Angeles
+        in: query
+        name: time_zone
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "404":
+          description: no device found for user with provided parameters
+      security:
+      - BearerAuth: []
+      tags:
+      - device-data
   /user/device-data/{userDeviceID}/distance-driven:
     get:
       description: |-
@@ -19,7 +54,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
         "404":
           description: no device found for user with provided parameters
       security:
@@ -48,7 +83,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - BearerAuth: []
       tags:

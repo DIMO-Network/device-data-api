@@ -111,12 +111,13 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 
 	deviceAPIService := services.NewDeviceAPIService(settings.DevicesAPIGRPCAddr)
 
-	deviceDataController := controllers.NewDeviceDataController(settings, &logger, deviceAPIService, esClient7)
+	deviceDataController := controllers.NewDeviceDataController(settings, &logger, deviceAPIService, esClient7, esClient8)
 	dataDownloadController := controllers.NewDataDownloadController(settings, &logger, esClient8, deviceAPIService)
 
 	v1Auth := app.Group("/v1", jwtAuth)
 	v1Auth.Get("/user/device-data/:userDeviceID/historical", deviceDataController.GetHistoricalRaw)
 	v1Auth.Get("/user/device-data/:userDeviceID/distance-driven", deviceDataController.GetDistanceDriven)
+	v1Auth.Get("/user/device-data/:userDeviceID/daily-distance", deviceDataController.GetDailyDistance)
 
 	if settings.Environment != "prod" {
 		v1Auth.Get("/user/device-data/:userDeviceID/export/json/email", dataDownloadController.JSONDownloadHandler)

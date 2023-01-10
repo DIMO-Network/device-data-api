@@ -7,6 +7,62 @@
     },
     "basePath": "/v1",
     "paths": {
+        "/user/device-data/:userDeviceID/export/json/email": {
+            "get": {
+                "description": "returns user data as json",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "device-data"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/user/device-data/{userDeviceID}/daily-distance": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get kilometers driven for a userDeviceID each day.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "device-data"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "user device id",
+                        "name": "userDeviceID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANAS time zone id, e.g., America/Los_Angeles",
+                        "name": "time_zone",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "404": {
+                        "description": "no device found for user with provided parameters"
+                    }
+                }
+            }
+        },
         "/user/device-data/{userDeviceID}/distance-driven": {
             "get": {
                 "security": [
@@ -32,7 +88,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     },
                     "404": {
                         "description": "no device found for user with provided parameters"
@@ -77,7 +133,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
