@@ -3,7 +3,6 @@ package services
 import (
 	"bytes"
 	"context"
-	_ "embed"
 	"encoding/json"
 	"time"
 

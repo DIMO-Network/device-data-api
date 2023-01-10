@@ -31,7 +31,7 @@ func NewDataDownloadController(settings *config.Settings, log *zerolog.Logger, e
 // @Description  returns user data as json
 // @Tags         device-data
 // @Produce      json
-// @Success      200  {object}
+// @Success      200
 // @Router       /user/device-data/:userDeviceID/export/json/email [get]
 func (d *DataDownloadController) JSONDownloadHandler(c *fiber.Ctx) error {
 	userID := getUserID(c)

@@ -10,6 +10,11 @@ import (
 	"github.com/DIMO-Network/device-data-api/internal/services"
 	"github.com/aquasecurity/esquery"
 	"github.com/elastic/go-elasticsearch/v7"
+	es8 "github.com/elastic/go-elasticsearch/v8"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/core/search"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/some"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/calendarinterval"
 	"github.com/gofiber/fiber/v2"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
@@ -21,15 +26,23 @@ type DeviceDataController struct {
 	log       *zerolog.Logger
 	es        *elasticsearch.Client
 	deviceAPI services.DeviceAPIService
+	es8Client *es8.TypedClient
 }
 
 // NewDeviceDataController constructor
-func NewDeviceDataController(settings *config.Settings, logger *zerolog.Logger, deviceAPIService services.DeviceAPIService, es *elasticsearch.Client) DeviceDataController {
+func NewDeviceDataController(
+	settings *config.Settings,
+	logger *zerolog.Logger,
+	deviceAPIService services.DeviceAPIService,
+	es *elasticsearch.Client,
+	es8Client *es8.TypedClient,
+) DeviceDataController {
 	return DeviceDataController{
 		Settings:  settings,
 		log:       logger,
 		es:        es,
 		deviceAPI: deviceAPIService,
+		es8Client: es8Client,
 	}
 }
 
@@ -148,6 +161,73 @@ func (d *DeviceDataController) GetDistanceDriven(c *fiber.Ctx) error {
 		"distanceDriven": odoEnd - odoStart,
 		"units":          "kilometers",
 	})
+}
+
+// GetDailyDistance godoc
+// @Description  Get kilometers driven for a userDeviceID each day.
+// @Tags         device-data
+// @Produce      json
+// @Success      200
+// @Failure      404 "no device found for user with provided parameters"
+// @Param        userDeviceID  path   string  true   "user device id"
+// @Param	     time_zone query string true "IANAS time zone id, e.g., America/Los_Angeles"
+// @Security     BearerAuth
+// @Router       /user/device-data/{userDeviceID}/daily-distance [get]
+func (d *DeviceDataController) GetDailyDistance(c *fiber.Ctx) error {
+	userID := getUserID(c)
+	userDeviceID := c.Params("userDeviceID")
+
+	tz := c.Query("time_zone")
+
+	exists, err := d.deviceAPI.UserDeviceBelongsToUserID(c.Context(), userID, userDeviceID)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return fiber.NewError(fiber.StatusNotFound, fmt.Sprintf("No device %s found for user %s.", userDeviceID, userID))
+	}
+
+	query := &search.Request{
+		Query: &types.Query{
+			Bool: &types.BoolQuery{
+				Filter: []types.Query{
+					{Match: map[string]types.MatchQuery{"subject": {Query: userDeviceID}}},
+					{Range: map[string]types.RangeQuery{"data.timestamp": types.DateRangeQuery{Gte: some.String("now-14d/d"), TimeZone: &tz}}},
+				},
+			},
+		},
+		Aggregations: map[string]types.Aggregations{
+			"days": {
+				DateHistogram: &types.DateHistogramAggregation{
+					CalendarInterval: &calendarinterval.Day,
+					TimeZone:         &tz,
+				},
+				Aggregations: map[string]types.Aggregations{
+					"min_odom": {
+						Min: &types.MinAggregation{
+							Field: some.String("data.odometer"),
+						},
+					},
+					"max_odom": {
+						Max: &types.MaxAggregation{
+							Field: some.String("data.odometer"),
+						},
+					},
+					// Code generation for buckets_path is broken as of 8.5.0
+					// See https://github.com/elastic/go-elasticsearch/issues/570
+				},
+			},
+		},
+	}
+
+	resp, err := d.es8Client.Search().Index(d.Settings.ElasticIndex).Request(query).Do(c.Context())
+	if err != nil {
+		return err
+	}
+
+	defer resp.Body.Close()
+
+	return c.SendStream(resp.Body)
 }
 
 // queryOdometer gets the first or last odometer reading depending on order - asc = first, desc = last
