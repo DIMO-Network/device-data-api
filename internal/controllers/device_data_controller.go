@@ -199,6 +199,7 @@ func (d *DeviceDataController) GetDailyDistance(c *fiber.Ctx) error {
 		Aggregations: map[string]types.Aggregations{
 			"days": {
 				DateHistogram: &types.DateHistogramAggregation{
+					Field:            some.String("data.timestamp"),
 					CalendarInterval: &calendarinterval.Day,
 					TimeZone:         &tz,
 				},
