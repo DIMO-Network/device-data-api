@@ -255,6 +255,12 @@ func (d *DeviceDataController) GetDailyDistance(c *fiber.Ctx) error {
 
 	defer resp.Body.Close()
 
+	if c := resp.StatusCode; c != 200 {
+		d.log.Error().Int("statusCode", c).Msg("Failed to get daily distance from Elastic.")
+		// TODO(elffjs): Be more discerning here.
+		return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
+	}
+
 	var ddr dailyDistanceElasticResult
 
 	err = json.NewDecoder(resp.Body).Decode(&ddr)
