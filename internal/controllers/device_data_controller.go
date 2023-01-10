@@ -196,6 +196,7 @@ func (d *DeviceDataController) GetDailyDistance(c *fiber.Ctx) error {
 				},
 			},
 		},
+		Size: some.Int(0),
 		Aggregations: map[string]types.Aggregations{
 			"days": {
 				DateHistogram: &types.DateHistogramAggregation{
@@ -227,6 +228,8 @@ func (d *DeviceDataController) GetDailyDistance(c *fiber.Ctx) error {
 	}
 
 	defer resp.Body.Close()
+
+	c.Set("Content-Type", "application/json")
 
 	return c.SendStream(resp.Body)
 }
