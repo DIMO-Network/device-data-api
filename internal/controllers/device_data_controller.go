@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"time"
@@ -163,6 +164,31 @@ func (d *DeviceDataController) GetDistanceDriven(c *fiber.Ctx) error {
 	})
 }
 
+type odomValue struct {
+	Value *float64 `json:"value"`
+}
+
+type dailyDistanceElasticResult struct {
+	Aggregations struct {
+		Days struct {
+			Buckets []struct {
+				KeyAsString string    `json:"key_as_string"`
+				MinOdom     odomValue `json:"min_odom"`
+				MaxOdom     odomValue `json:"max_odom"`
+			} `json:"buckets"`
+		} `json:"days"`
+	} `json:"aggregations"`
+}
+
+type DailyDistanceDay struct {
+	Date     string   `json:"date"`
+	Distance *float64 `json:"distance"`
+}
+
+type DailyDistanceResp struct {
+	Dates []DailyDistanceDay `json:"dates"`
+}
+
 // GetDailyDistance godoc
 // @Description  Get kilometers driven for a userDeviceID each day.
 // @Tags         device-data
@@ -229,9 +255,34 @@ func (d *DeviceDataController) GetDailyDistance(c *fiber.Ctx) error {
 
 	defer resp.Body.Close()
 
-	c.Set("Content-Type", "application/json")
+	var ddr dailyDistanceElasticResult
 
-	return c.SendStream(resp.Body)
+	err = json.NewDecoder(resp.Body).Decode(&ddr)
+	if err != nil {
+		return err
+	}
+
+	buckets := ddr.Aggregations.Days.Buckets
+
+	var days []DailyDistanceDay
+
+	for i, b := range buckets {
+		var dp *float64
+
+		if b.MaxOdom.Value != nil {
+			d := *b.MaxOdom.Value - *b.MinOdom.Value
+			dp = &d
+		}
+
+		day := DailyDistanceDay{
+			Date:     buckets[i].KeyAsString[:10],
+			Distance: dp,
+		}
+
+		days = append(days, day)
+	}
+
+	return c.JSON(DailyDistanceResp{Dates: days})
 }
 
 // queryOdometer gets the first or last odometer reading depending on order - asc = first, desc = last
