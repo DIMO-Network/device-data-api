@@ -112,7 +112,6 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 	deviceAPIService := services.NewDeviceAPIService(settings.DevicesAPIGRPCAddr)
 
 	deviceDataController := controllers.NewDeviceDataController(settings, &logger, deviceAPIService, esClient7, esClient8)
-	dataDownloadController := controllers.NewDataDownloadController(settings, &logger, esClient8, deviceAPIService)
 
 	v1Auth := app.Group("/v1", jwtAuth)
 	v1Auth.Get("/user/device-data/:userDeviceID/historical", deviceDataController.GetHistoricalRaw)
@@ -120,6 +119,8 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 	v1Auth.Get("/user/device-data/:userDeviceID/daily-distance", deviceDataController.GetDailyDistance)
 
 	if settings.Environment != "prod" {
+		dataDownloadController := controllers.NewDataDownloadController(settings, &logger, esClient8, deviceAPIService)
+
 		v1Auth.Get("/user/device-data/:userDeviceID/export/json/email", dataDownloadController.JSONDownloadHandler)
 	}
 
@@ -134,7 +135,6 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM) // When an interrupt or termination signal is sent, notify the channel
 	<-c                                             // This blocks the main thread until an interrupt is received
 	logger.Info().Msg("Gracefully shutting down and running cleanup tasks...")
-	dataDownloadController.EmailSvc.ClientConn.Close()
 	_ = app.Shutdown()
 	// shutdown anything else
 }
