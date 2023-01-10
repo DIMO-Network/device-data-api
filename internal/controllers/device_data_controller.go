@@ -248,7 +248,7 @@ func (d *DeviceDataController) GetDailyDistance(c *fiber.Ctx) error {
 		},
 	}
 
-	resp, err := d.es8Client.Search().Index(d.Settings.ElasticIndex).Request(query).Do(c.Context())
+	resp, err := d.es8Client.Search().Index(d.Settings.DeviceDataIndexName).Request(query).Do(c.Context())
 	if err != nil {
 		return err
 	}
