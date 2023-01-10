@@ -282,7 +282,7 @@ func (d *DeviceDataController) GetDailyDistance(c *fiber.Ctx) error {
 		days = append(days, day)
 	}
 
-	return c.JSON(DailyDistanceResp{DailyDistance: days})
+	return c.JSON(DailyDistanceResp{Days: days})
 }
 
 // queryOdometer gets the first or last odometer reading depending on order - asc = first, desc = last
