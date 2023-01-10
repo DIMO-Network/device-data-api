@@ -186,14 +186,14 @@ type DailyDistanceDay struct {
 }
 
 type DailyDistanceResp struct {
-	Dates []DailyDistanceDay `json:"dates"`
+	Days []DailyDistanceDay `json:"days"`
 }
 
 // GetDailyDistance godoc
 // @Description  Get kilometers driven for a userDeviceID each day.
 // @Tags         device-data
 // @Produce      json
-// @Success      200
+// @Success      200 {object} controllers.DailyDistanceResp
 // @Failure      404 "no device found for user with provided parameters"
 // @Param        userDeviceID  path   string  true   "user device id"
 // @Param	     time_zone query string true "IANAS time zone id, e.g., America/Los_Angeles"
@@ -218,7 +218,7 @@ func (d *DeviceDataController) GetDailyDistance(c *fiber.Ctx) error {
 			Bool: &types.BoolQuery{
 				Filter: []types.Query{
 					{Match: map[string]types.MatchQuery{"subject": {Query: userDeviceID}}},
-					{Range: map[string]types.RangeQuery{"data.timestamp": types.DateRangeQuery{Gte: some.String("now-14d/d"), TimeZone: &tz}}},
+					{Range: map[string]types.RangeQuery{"data.timestamp": types.DateRangeQuery{Gte: some.String("now-13d/d"), TimeZone: &tz}}},
 				},
 			},
 		},
@@ -282,7 +282,7 @@ func (d *DeviceDataController) GetDailyDistance(c *fiber.Ctx) error {
 		days = append(days, day)
 	}
 
-	return c.JSON(DailyDistanceResp{Dates: days})
+	return c.JSON(DailyDistanceResp{DailyDistance: days})
 }
 
 // queryOdometer gets the first or last odometer reading depending on order - asc = first, desc = last

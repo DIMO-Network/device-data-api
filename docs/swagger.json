@@ -55,7 +55,10 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controllers.DailyDistanceResp"
+                        }
                     },
                     "404": {
                         "description": "no device found for user with provided parameters"
@@ -134,6 +137,52 @@
                 "responses": {
                     "200": {
                         "description": "OK"
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "github_com_DIMO-Network_device-data-api_internal_controllers.DailyDistanceDay": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string"
+                },
+                "distance": {
+                    "type": "number"
+                }
+            }
+        },
+        "github_com_DIMO-Network_device-data-api_internal_controllers.DailyDistanceResp": {
+            "type": "object",
+            "properties": {
+                "days": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_DIMO-Network_device-data-api_internal_controllers.DailyDistanceDay"
+                    }
+                }
+            }
+        },
+        "internal_controllers.DailyDistanceDay": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string"
+                },
+                "distance": {
+                    "type": "number"
+                }
+            }
+        },
+        "internal_controllers.DailyDistanceResp": {
+            "type": "object",
+            "properties": {
+                "days": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_controllers.DailyDistanceDay"
                     }
                 }
             }

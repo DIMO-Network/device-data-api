@@ -1,4 +1,33 @@
 basePath: /v1
+definitions:
+  github_com_DIMO-Network_device-data-api_internal_controllers.DailyDistanceDay:
+    properties:
+      date:
+        type: string
+      distance:
+        type: number
+    type: object
+  github_com_DIMO-Network_device-data-api_internal_controllers.DailyDistanceResp:
+    properties:
+      days:
+        items:
+          $ref: '#/definitions/github_com_DIMO-Network_device-data-api_internal_controllers.DailyDistanceDay'
+        type: array
+    type: object
+  internal_controllers.DailyDistanceDay:
+    properties:
+      date:
+        type: string
+      distance:
+        type: number
+    type: object
+  internal_controllers.DailyDistanceResp:
+    properties:
+      days:
+        items:
+          $ref: '#/definitions/internal_controllers.DailyDistanceDay'
+        type: array
+    type: object
 info:
   contact: {}
   title: DIMO Device Data API
@@ -33,6 +62,8 @@ paths:
       responses:
         "200":
           description: OK
+          schema:
+            $ref: '#/definitions/internal_controllers.DailyDistanceResp'
         "404":
           description: no device found for user with provided parameters
       security:
