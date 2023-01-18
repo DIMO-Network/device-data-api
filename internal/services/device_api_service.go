@@ -13,6 +13,7 @@ type DeviceAPIService interface {
 	ListUserDevicesForUser(ctx context.Context, userID string) (*pb.ListUserDevicesForUserResponse, error)
 	GetUserDevice(ctx context.Context, userDeviceID string) (*pb.UserDevice, error)
 	UserDeviceBelongsToUserID(ctx context.Context, userID, userDeviceID string) (bool, error)
+	GetUserDeviceByTokenID(ctx context.Context, tokenID int64) (*pb.UserDevice, error)
 }
 
 // NewDeviceAPIService API wrapper to call device-data-api to get the userDevices associated with a userId over grpc
@@ -60,6 +61,24 @@ func (das *deviceAPIService) GetUserDevice(ctx context.Context, userDeviceID str
 
 	userDevice, err := deviceClient.GetUserDevice(ctx, &pb.GetUserDeviceRequest{
 		Id: userDeviceID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return userDevice, nil
+}
+
+func (das *deviceAPIService) GetUserDeviceByTokenID(ctx context.Context, tokenID int64) (*pb.UserDevice, error) {
+	conn, err := grpc.Dial(das.devicesAPIGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+	deviceClient := pb.NewUserDeviceServiceClient(conn)
+
+	userDevice, err := deviceClient.GetUserDeviceByTokenId(ctx, &pb.GetUserDeviceByTokenIdRequest{
+		TokenId: tokenID,
 	})
 	if err != nil {
 		return nil, err

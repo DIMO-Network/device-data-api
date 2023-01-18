@@ -118,6 +118,9 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 	v1Auth.Get("/user/device-data/:userDeviceID/distance-driven", deviceDataController.GetDistanceDriven)
 	v1Auth.Get("/user/device-data/:userDeviceID/daily-distance", deviceDataController.GetDailyDistance)
 
+	// permissioned access
+	v1Auth.Get("/vehicle/:tokenID/history", deviceDataController.GetHistoricalRawPermissioned)
+
 	if settings.Environment != "prod" {
 		dataDownloadController := controllers.NewDataDownloadController(settings, &logger, esClient8, deviceAPIService)
 
