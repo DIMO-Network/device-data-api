@@ -162,7 +162,7 @@ func (d *DeviceDataController) GetHistoricalRawPermissioned(c *fiber.Ctx) error 
 
 	i, err := strconv.ParseInt(tokenID, 10, 64)
 	if err != nil {
-		fiber.NewError(fiber.StatusBadRequest, err.Error())
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
 	userDevice, err := d.deviceAPI.GetUserDeviceByTokenID(c.Context(), i)
