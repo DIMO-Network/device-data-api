@@ -140,6 +140,48 @@
                     }
                 }
             }
+        },
+        "/vehicle/{tokenID}/history": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get all historical data for a tokenID, within start and end range",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "device-data"
+                ],
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "token id",
+                        "name": "toeknID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "startDate eg 2022-01-02. if empty two weeks back",
+                        "name": "startDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "endDate eg 2022-03-01. if empty today",
+                        "name": "endDate",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
         }
     },
     "definitions": {
