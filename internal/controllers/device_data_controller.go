@@ -10,6 +10,7 @@ import (
 
 	"github.com/DIMO-Network/device-data-api/internal/config"
 	"github.com/DIMO-Network/device-data-api/internal/services"
+	pr "github.com/DIMO-Network/shared/middleware/privilegetoken"
 	"github.com/aquasecurity/esquery"
 	"github.com/elastic/go-elasticsearch/v7"
 	es8 "github.com/elastic/go-elasticsearch/v8"
@@ -21,6 +22,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/tidwall/gjson"
+	"golang.org/x/exp/slices"
 )
 
 type DeviceDataController struct {
@@ -30,6 +32,13 @@ type DeviceDataController struct {
 	deviceAPI services.DeviceAPIService
 	es8Client *es8.TypedClient
 }
+
+const (
+	NonLocationData int64 = 1
+	Commands        int64 = 2
+	CurrentLocation int64 = 3
+	AllTimeLocation int64 = 4
+)
 
 // NewDeviceDataController constructor
 func NewDeviceDataController(
@@ -168,6 +177,25 @@ func (d *DeviceDataController) GetHistoricalRawPermissioned(c *fiber.Ctx) error 
 	userDevice, err := d.deviceAPI.GetUserDeviceByTokenID(c.Context(), i)
 	if err != nil {
 		return err
+	}
+
+	claims := c.Locals("tokenClaims").(pr.CustomClaims)
+	privileges := claims.PrivilegeIDs
+
+	if !(slices.Contains(privileges, AllTimeLocation) && slices.Contains(privileges, NonLocationData)) {
+		return fiber.NewError(fiber.StatusBadRequest, "incompatible privilege for data request")
+	}
+
+	query := esquery.Search()
+
+	if slices.Contains(privileges, AllTimeLocation) {
+		query = query.SourceIncludes("data.latitude", "data.longitude", "location")
+	} else {
+		query = query.SourceExcludes("data.latitude", "data.longitude", "location", "location.lat", "location.lon")
+	}
+
+	if slices.Contains(privileges, NonLocationData) {
+		query = query.SourceIncludes("*")
 	}
 
 	res, err := esquery.Search().

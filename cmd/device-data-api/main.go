@@ -135,7 +135,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 		vehicleAddr := common.HexToAddress(settings.VehicleNFTAddress)
 
 		// Probably want constants for 1 and 4 here.
-		vToken.Get("/history", tk.OneOf(vehicleAddr, []int64{1, 4}), deviceDataController.GetHistoricalRawPermissioned)
+		vToken.Get("/history", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.AllTimeLocation}), deviceDataController.GetHistoricalRawPermissioned)
 	}
 
 	if settings.Environment != "prod" {
