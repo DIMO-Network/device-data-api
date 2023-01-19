@@ -24,7 +24,8 @@ type Settings struct {
 	AWSSecretAccessKey             string `yaml:"AWS_SECRET_ACCESS_KEY"`
 	AWSRegion                      string `yaml:"AWS_REGION"`
 	UsersAPIGRPCAddr               string `yaml:"USERS_API_GRPC_ADDR"`
-	EnablePrivileges               bool   `yaml:"ENABLE_PRIVILEGES"`
-	TokenExchangeJWTKeySetURL      string `yaml:"TOKEN_EXCHANGE_JWK_KEY_SET_URL"`
-	VehicleNFTAddress              string `yaml:"VEHICLE_NFT_ADDRESS"`
+
+	EnablePrivileges          bool   `yaml:"ENABLE_PRIVILEGES"`
+	TokenExchangeJWTKeySetURL string `yaml:"TOKEN_EXCHANGE_JWK_KEY_SET_URL"`
+	VehicleNFTAddress         string `yaml:"VEHICLE_NFT_ADDRESS"`
 }

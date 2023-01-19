@@ -121,21 +121,21 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 	v1Auth.Get("/user/device-data/:userDeviceID/daily-distance", deviceDataController.GetDailyDistance)
 
 	if settings.EnablePrivileges {
-		veh := v1Auth.Group("/vehicles/:tokenID")
 		privilegeAuth := jwtware.New(jwtware.Config{
 			KeySetURL:            settings.TokenExchangeJWTKeySetURL,
 			KeyRefreshInterval:   &keyRefreshInterval,
 			KeyRefreshUnknownKID: &keyRefreshUnknownKID,
 		})
-		veh.Use(privilegeAuth)
+
+		vToken := app.Group("/v1/vehicle/:tokenID", privilegeAuth)
 
 		tk := pr.New(pr.Config{
 			Log: &logger,
 		})
 		vehicleAddr := common.HexToAddress(settings.VehicleNFTAddress)
 
-		// permissioned access
-		v1Auth.Get("/history", tk.OneOf(vehicleAddr, []int64{1}), deviceDataController.GetHistoricalRawPermissioned)
+		// Probably want constants for 1 and 4 here.
+		vToken.Get("/history", tk.OneOf(vehicleAddr, []int64{1, 4}), deviceDataController.GetHistoricalRawPermissioned)
 	}
 
 	if settings.Environment != "prod" {
