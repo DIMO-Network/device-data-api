@@ -198,26 +198,25 @@ func (d *DeviceDataController) GetHistoricalRawPermissioned(c *fiber.Ctx) error 
 		query = query.SourceIncludes("*")
 	}
 
-	res, err := esquery.Search().
-		Query(
-			esquery.CustomQuery(
-				map[string]any{
-					"function_score": map[string]any{
-						"query": esquery.Bool().
-							Filter(
-								esquery.Term("subject", userDevice.Id),
-								esquery.Range("data.timestamp").Gte(startDate).Lte(endDate),
-							).
-							Should(
-								esquery.Exists("data.odometer"),
-								esquery.Exists("data.latitude"),
-							).
-							MinimumShouldMatch(1).Map(),
-						"random_score": map[string]any{},
-					},
+	res, err := query.Query(
+		esquery.CustomQuery(
+			map[string]any{
+				"function_score": map[string]any{
+					"query": esquery.Bool().
+						Filter(
+							esquery.Term("subject", userDevice.Id),
+							esquery.Range("data.timestamp").Gte(startDate).Lte(endDate),
+						).
+						Should(
+							esquery.Exists("data.odometer"),
+							esquery.Exists("data.latitude"),
+						).
+						MinimumShouldMatch(1).Map(),
+					"random_score": map[string]any{},
 				},
-			),
-		).
+			},
+		),
+	).
 		Size(1000).
 		Run(d.es, d.es.Search.WithContext(c.Context()), d.es.Search.WithIndex(d.Settings.DeviceDataIndexName))
 	if err != nil {
