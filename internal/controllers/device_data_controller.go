@@ -352,7 +352,7 @@ func (d *DeviceDataController) GetDailyDistance(c *fiber.Ctx) error {
 
 	buckets := ddr.Aggregations.Days.Buckets
 
-	var days []DailyDistanceDay
+	days := make([]DailyDistanceDay, len(buckets))
 
 	for i, b := range buckets {
 		var dp *float64
@@ -367,7 +367,7 @@ func (d *DeviceDataController) GetDailyDistance(c *fiber.Ctx) error {
 			Distance: dp,
 		}
 
-		days = append(days, day)
+		days[i] = day
 	}
 
 	return c.JSON(DailyDistanceResp{Days: days})
