@@ -12,6 +12,7 @@ env:
   DEPLOYMENT_BASE_URL: https://device-data-api.dimo.zone
   DEVICE_DATA_INDEX_NAME: device-status-prod*
   DEVICES_APIGRPC_ADDR: devices-api-prod:8086
+  ENABLE_PRIVILEGES: false
 ingress:
   enabled: true
   className: nginx

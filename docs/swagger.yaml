@@ -119,6 +119,32 @@ paths:
       - BearerAuth: []
       tags:
       - device-data
+  /vehicle/{tokenID}/history:
+    get:
+      description: Get all historical data for a tokenID, within start and end range
+      parameters:
+      - description: token id
+        in: path
+        name: toeknID
+        required: true
+        type: integer
+      - description: startDate eg 2022-01-02. if empty two weeks back
+        in: query
+        name: startDate
+        type: string
+      - description: endDate eg 2022-03-01. if empty today
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerAuth: []
+      tags:
+      - device-data
 securityDefinitions:
   BearerAuth:
     in: header

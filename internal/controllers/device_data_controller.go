@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strconv"
 	"time"
 
 	"github.com/DIMO-Network/device-data-api/internal/config"
@@ -121,6 +122,87 @@ func (d *DeviceDataController) GetHistoricalRaw(c *fiber.Ctx) error {
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		d.log.Err(err).Str("userDeviceId", userDeviceID).Msg("Failed to read Elastic response body.")
+		return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
+	}
+	c.Set("Content-Type", fiber.MIMEApplicationJSON)
+	return c.Status(fiber.StatusOK).Send(body)
+}
+
+// GetHistoricalRawPermissioned godoc
+// @Description  Get all historical data for a tokenID, within start and end range
+// @Tags         device-data
+// @Produce      json
+// @Success      200
+// @Param        toeknID  path   int64  true   "token id"
+// @Param        startDate     query  string  false  "startDate eg 2022-01-02. if empty two weeks back"
+// @Param        endDate       query  string  false  "endDate eg 2022-03-01. if empty today"
+// @Security     BearerAuth
+// @Router       /vehicle/{tokenID}/history [get]
+func (d *DeviceDataController) GetHistoricalRawPermissioned(c *fiber.Ctx) error {
+	const dateLayout = "2006-01-02" // date layout support by elastic
+	tokenID := c.Params("tokenID")
+	startDate := c.Query("startDate")
+	if startDate == "" {
+		startDate = time.Now().Add(-1 * (time.Hour * 24 * 14)).Format(dateLayout)
+	} else {
+		_, err := time.Parse(dateLayout, startDate)
+		if err != nil {
+			return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		}
+	}
+	endDate := c.Query("endDate")
+	if endDate == "" {
+		endDate = time.Now().Format(dateLayout)
+	} else {
+		_, err := time.Parse(dateLayout, endDate)
+		if err != nil {
+			return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		}
+	}
+
+	i, err := strconv.ParseInt(tokenID, 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+
+	userDevice, err := d.deviceAPI.GetUserDeviceByTokenID(c.Context(), i)
+	if err != nil {
+		return err
+	}
+
+	res, err := esquery.Search().
+		Query(
+			esquery.CustomQuery(
+				map[string]any{
+					"function_score": map[string]any{
+						"query": esquery.Bool().
+							Filter(
+								esquery.Term("subject", userDevice.Id),
+								esquery.Range("data.timestamp").Gte(startDate).Lte(endDate),
+							).
+							Should(
+								esquery.Exists("data.odometer"),
+								esquery.Exists("data.latitude"),
+							).
+							MinimumShouldMatch(1).Map(),
+						"random_score": map[string]any{},
+					},
+				},
+			),
+		).
+		Size(1000).
+		Run(d.es, d.es.Search.WithContext(c.Context()), d.es.Search.WithIndex(d.Settings.DeviceDataIndexName))
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	if res.StatusCode >= fiber.StatusBadRequest {
+		d.log.Error().Str("userDeviceId", userDevice.Id).Interface("response", res).Msgf("Got status code %d from Elastic.", res.StatusCode)
+		return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
+	}
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		d.log.Err(err).Str("userDeviceId", userDevice.Id).Msg("Failed to read Elastic response body.")
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
 	}
 	c.Set("Content-Type", fiber.MIMEApplicationJSON)
@@ -270,7 +352,7 @@ func (d *DeviceDataController) GetDailyDistance(c *fiber.Ctx) error {
 
 	buckets := ddr.Aggregations.Days.Buckets
 
-	var days []DailyDistanceDay
+	days := make([]DailyDistanceDay, len(buckets))
 
 	for i, b := range buckets {
 		var dp *float64
@@ -285,7 +367,7 @@ func (d *DeviceDataController) GetDailyDistance(c *fiber.Ctx) error {
 			Distance: dp,
 		}
 
-		days = append(days, day)
+		days[i] = day
 	}
 
 	return c.JSON(DailyDistanceResp{Days: days})

@@ -12,10 +12,12 @@ import (
 	"github.com/DIMO-Network/device-data-api/internal/controllers"
 	"github.com/DIMO-Network/device-data-api/internal/services"
 	"github.com/DIMO-Network/shared"
+	pr "github.com/DIMO-Network/shared/middleware/privilegetoken"
 	"github.com/ansrivas/fiberprometheus/v2"
 	swagger "github.com/arsmn/fiber-swagger/v2"
 	es7 "github.com/elastic/go-elasticsearch/v7"
 	es8 "github.com/elastic/go-elasticsearch/v8"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/recover"
@@ -117,6 +119,24 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 	v1Auth.Get("/user/device-data/:userDeviceID/historical", deviceDataController.GetHistoricalRaw)
 	v1Auth.Get("/user/device-data/:userDeviceID/distance-driven", deviceDataController.GetDistanceDriven)
 	v1Auth.Get("/user/device-data/:userDeviceID/daily-distance", deviceDataController.GetDailyDistance)
+
+	if settings.EnablePrivileges {
+		privilegeAuth := jwtware.New(jwtware.Config{
+			KeySetURL:            settings.TokenExchangeJWTKeySetURL,
+			KeyRefreshInterval:   &keyRefreshInterval,
+			KeyRefreshUnknownKID: &keyRefreshUnknownKID,
+		})
+
+		vToken := app.Group("/v1/vehicle/:tokenID", privilegeAuth)
+
+		tk := pr.New(pr.Config{
+			Log: &logger,
+		})
+		vehicleAddr := common.HexToAddress(settings.VehicleNFTAddress)
+
+		// Probably want constants for 1 and 4 here.
+		vToken.Get("/history", tk.OneOf(vehicleAddr, []int64{1, 4}), deviceDataController.GetHistoricalRawPermissioned)
+	}
 
 	if settings.Environment != "prod" {
 		dataDownloadController := controllers.NewDataDownloadController(settings, &logger, esClient8, deviceAPIService)
