@@ -181,17 +181,12 @@ func (d *DeviceDataController) GetHistoricalRawPermissioned(c *fiber.Ctx) error 
 
 	claims := c.Locals("tokenClaims").(pr.CustomClaims)
 	privileges := claims.PrivilegeIDs
-
-	if !(slices.Contains(privileges, AllTimeLocation) && slices.Contains(privileges, NonLocationData)) {
-		return fiber.NewError(fiber.StatusBadRequest, "incompatible privilege for data request")
-	}
-
 	query := esquery.Search()
 
 	if slices.Contains(privileges, AllTimeLocation) {
 		query = query.SourceIncludes("data.latitude", "data.longitude", "location")
 	} else {
-		query = query.SourceExcludes("data.latitude", "data.longitude", "location", "location.lat", "location.lon")
+		query = query.SourceExcludes("data.latitude", "data.longitude", "location", "location.*")
 	}
 
 	if slices.Contains(privileges, NonLocationData) {
