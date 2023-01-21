@@ -10,6 +10,7 @@ import (
 
 	"github.com/DIMO-Network/device-data-api/internal/config"
 	"github.com/DIMO-Network/device-data-api/internal/services"
+	pr "github.com/DIMO-Network/shared/middleware/privilegetoken"
 	"github.com/aquasecurity/esquery"
 	"github.com/elastic/go-elasticsearch/v7"
 	es8 "github.com/elastic/go-elasticsearch/v8"
@@ -21,6 +22,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/tidwall/gjson"
+	"golang.org/x/exp/slices"
 )
 
 type DeviceDataController struct {
@@ -30,6 +32,13 @@ type DeviceDataController struct {
 	deviceAPI services.DeviceAPIService
 	es8Client *es8.TypedClient
 }
+
+const (
+	NonLocationData int64 = 1
+	Commands        int64 = 2
+	CurrentLocation int64 = 3
+	AllTimeLocation int64 = 4
+)
 
 // NewDeviceDataController constructor
 func NewDeviceDataController(
@@ -170,26 +179,39 @@ func (d *DeviceDataController) GetHistoricalRawPermissioned(c *fiber.Ctx) error 
 		return err
 	}
 
-	res, err := esquery.Search().
-		Query(
-			esquery.CustomQuery(
-				map[string]any{
-					"function_score": map[string]any{
-						"query": esquery.Bool().
-							Filter(
-								esquery.Term("subject", userDevice.Id),
-								esquery.Range("data.timestamp").Gte(startDate).Lte(endDate),
-							).
-							Should(
-								esquery.Exists("data.odometer"),
-								esquery.Exists("data.latitude"),
-							).
-							MinimumShouldMatch(1).Map(),
-						"random_score": map[string]any{},
-					},
+	claims := c.Locals("tokenClaims").(pr.CustomClaims)
+	privileges := claims.PrivilegeIDs
+	query := esquery.Search()
+
+	if slices.Contains(privileges, AllTimeLocation) {
+		query = query.SourceIncludes("data.latitude", "data.longitude", "location")
+	} else {
+		query = query.SourceExcludes("data.latitude", "data.longitude", "location", "location.*")
+	}
+
+	if slices.Contains(privileges, NonLocationData) {
+		query = query.SourceIncludes("*")
+	}
+
+	res, err := query.Query(
+		esquery.CustomQuery(
+			map[string]any{
+				"function_score": map[string]any{
+					"query": esquery.Bool().
+						Filter(
+							esquery.Term("subject", userDevice.Id),
+							esquery.Range("data.timestamp").Gte(startDate).Lte(endDate),
+						).
+						Should(
+							esquery.Exists("data.odometer"),
+							esquery.Exists("data.latitude"),
+						).
+						MinimumShouldMatch(1).Map(),
+					"random_score": map[string]any{},
 				},
-			),
-		).
+			},
+		),
+	).
 		Size(1000).
 		Run(d.es, d.es.Search.WithContext(c.Context()), d.es.Search.WithIndex(d.Settings.DeviceDataIndexName))
 	if err != nil {
