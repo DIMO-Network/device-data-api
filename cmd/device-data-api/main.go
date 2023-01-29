@@ -115,11 +115,6 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 
 	deviceDataController := controllers.NewDeviceDataController(settings, &logger, deviceAPIService, esClient7, esClient8)
 
-	v1Auth := app.Group("/v1", jwtAuth)
-	v1Auth.Get("/user/device-data/:userDeviceID/historical", deviceDataController.GetHistoricalRaw)
-	v1Auth.Get("/user/device-data/:userDeviceID/distance-driven", deviceDataController.GetDistanceDriven)
-	v1Auth.Get("/user/device-data/:userDeviceID/daily-distance", deviceDataController.GetDailyDistance)
-
 	if settings.EnablePrivileges {
 		logger.Info().Str("jwkUrl", settings.TokenExchangeJWTKeySetURL).Str("vehicleAddr", settings.VehicleNFTAddress).Msg("Privileges enabled.")
 		privilegeAuth := jwtware.New(jwtware.Config{
@@ -139,6 +134,11 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 		// Probably want constants for 1 and 4 here.
 		vToken.Get("/history", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.AllTimeLocation}), deviceDataController.GetHistoricalRawPermissioned)
 	}
+
+	v1Auth := app.Group("/v1", jwtAuth)
+	v1Auth.Get("/user/device-data/:userDeviceID/historical", deviceDataController.GetHistoricalRaw)
+	v1Auth.Get("/user/device-data/:userDeviceID/distance-driven", deviceDataController.GetDistanceDriven)
+	v1Auth.Get("/user/device-data/:userDeviceID/daily-distance", deviceDataController.GetDailyDistance)
 
 	if settings.Environment != "prod" {
 		dataDownloadController := controllers.NewDataDownloadController(settings, &logger, esClient8, deviceAPIService)
