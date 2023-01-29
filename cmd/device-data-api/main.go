@@ -121,6 +121,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 	v1Auth.Get("/user/device-data/:userDeviceID/daily-distance", deviceDataController.GetDailyDistance)
 
 	if settings.EnablePrivileges {
+		logger.Info().Str("jwkUrl", settings.TokenExchangeJWTKeySetURL).Str("vehicleAddr", settings.VehicleNFTAddress).Msg("Privileges enabled.")
 		privilegeAuth := jwtware.New(jwtware.Config{
 			KeySetURL:            settings.TokenExchangeJWTKeySetURL,
 			KeyRefreshInterval:   &keyRefreshInterval,
