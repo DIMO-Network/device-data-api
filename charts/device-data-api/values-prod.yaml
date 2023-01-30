@@ -12,7 +12,9 @@ env:
   DEPLOYMENT_BASE_URL: https://device-data-api.dimo.zone
   DEVICE_DATA_INDEX_NAME: device-status-prod*
   DEVICES_APIGRPC_ADDR: devices-api-prod:8086
-  ENABLE_PRIVILEGES: false
+  ENABLE_PRIVILEGES: true
+  TOKEN_EXCHANGE_JWK_KEY_SET_URL: 'https://auth-roles-rights.dimo.zone/keys'
+  VEHICLE_NFT_ADDRESS: '0xba5738a18d83d41847dffbdc6101d37c69c9b0cf'
 ingress:
   enabled: true
   className: nginx
