@@ -13,7 +13,7 @@ env:
   DEVICE_DATA_INDEX_NAME: device-status-prod*
   DEVICES_APIGRPC_ADDR: devices-api-prod:8086
   ENABLE_PRIVILEGES: true
-  TOKEN_EXCHANGE_JWK_KEY_SET_URL: http://dex-roles-rights-prod.svc.cluster.local:5556/keys
+  TOKEN_EXCHANGE_JWK_KEY_SET_URL: http://dex-roles-rights-prod.prod.svc.cluster.local:5556/keys
   VEHICLE_NFT_ADDRESS: '0xba5738a18d83d41847dffbdc6101d37c69c9b0cf'
 ingress:
   enabled: true
