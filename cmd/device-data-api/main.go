@@ -121,7 +121,10 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 			KeySetURL:            settings.TokenExchangeJWTKeySetURL,
 			KeyRefreshInterval:   &keyRefreshInterval,
 			KeyRefreshUnknownKID: &keyRefreshUnknownKID,
-			ErrorHandler:         func (c *fiber.Ctx, err error) error { logger.Err(err).Msg("Privilege token error."); return fiber.DefaultErrorHandler(c, err) },
+			ErrorHandler: func(c *fiber.Ctx, err error) error {
+				logger.Err(err).Msg("Privilege token error.")
+				return fiber.DefaultErrorHandler(c, err)
+			},
 		})
 
 		vToken := app.Group("/v1/vehicle/:tokenID", privilegeAuth)

@@ -184,9 +184,9 @@ func (d *DeviceDataController) GetHistoricalRawPermissioned(c *fiber.Ctx) error 
 	query := esquery.Search()
 
 	if slices.Contains(privileges, AllTimeLocation) {
-		query = query.SourceIncludes("data.latitude", "data.longitude", "location")
+		query = query.SourceIncludes("data.latitude", "data.longitude", "location", "data.cell", "cell")
 	} else {
-		query = query.SourceExcludes("data.latitude", "data.longitude", "location", "location.*")
+		query = query.SourceExcludes("data.latitude", "data.longitude", "location", "data.cell", "cell")
 	}
 
 	if slices.Contains(privileges, NonLocationData) {
