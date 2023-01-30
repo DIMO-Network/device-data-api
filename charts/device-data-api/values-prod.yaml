@@ -2,7 +2,7 @@ replicaCount: 2
 image:
   repository: dimozone/device-data-api
   pullPolicy: IfNotPresent
-  tag: 0.1.8
+  tag: 0.2.0
 env:
   ENVIRONMENT: prod
   PORT: '8080'
@@ -13,7 +13,7 @@ env:
   DEVICE_DATA_INDEX_NAME: device-status-prod*
   DEVICES_APIGRPC_ADDR: devices-api-prod:8086
   ENABLE_PRIVILEGES: true
-  TOKEN_EXCHANGE_JWK_KEY_SET_URL: 'https://auth-roles-rights.dimo.zone/keys'
+  TOKEN_EXCHANGE_JWK_KEY_SET_URL: https://auth-roles-rights.dimo.zone/keys
   VEHICLE_NFT_ADDRESS: '0xba5738a18d83d41847dffbdc6101d37c69c9b0cf'
 ingress:
   enabled: true
