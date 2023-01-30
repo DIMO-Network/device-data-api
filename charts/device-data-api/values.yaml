@@ -36,7 +36,7 @@ env:
   EMAIL_FROM: hello@dimo.zone
   USERS_API_GRPC_ADDR: users-api-dev:8086
   ENABLE_PRIVILEGES: true
-  TOKEN_EXCHANGE_JWK_KEY_SET_URL: dex-roles-rights:5556/keys
+  TOKEN_EXCHANGE_JWK_KEY_SET_URL: https://dex-roles-rights.svc.cluster.local:5556/keys
   VEHICLE_NFT_ADDRESS: '0x90C4D6113Ec88dd4BDf12f26DB2b3998fd13A144'
 service:
   type: ClusterIP
