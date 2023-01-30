@@ -29,6 +29,7 @@ jobs:
           context: .
           file: ./resources/docker/Dockerfile
           push: true
+          platforms: linux/amd64
           tags: dimozone/device-data-api:${{ steps.slug.outputs.sha7 }}, dimozone/devices-data-api:latest
 
       - name: Update Image Version in the related HelmChart values.yaml

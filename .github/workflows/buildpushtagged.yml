@@ -31,6 +31,7 @@ jobs:
           context: .
           file: ./resources/docker/Dockerfile
           push: true
+          platforms: linux/amd64
           tags: dimozone/device-data-api:${{steps.tag.outputs.tag}}
 
       - name: Update Image Version in the related HelmChart values.yaml
