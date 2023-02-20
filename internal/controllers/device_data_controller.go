@@ -410,9 +410,13 @@ func (d *DeviceDataController) queryOdometer(ctx context.Context, order esquery.
 	}
 	defer res.Body.Close() // nolint
 	body, _ := io.ReadAll(res.Body)
-	result := gjson.GetBytes(body, "hits.hits.0._source.data.odometer")
-	if result.Exists() {
-		return result.Float(), nil
+	// todo: grpc call needs to return available integrationIds
+	// then pass the integrationId in as a parameter here and filter by it.
+	// if user has more than one integration, query for both, and prefer data from autopi for same date ranges.
+	// that last part is important b/c if they connected smartcar first, then we do want smartcar data.
+	odometer := gjson.GetBytes(body, "hits.hits.0._source.data.odometer")
+	if odometer.Exists() {
+		return odometer.Float(), nil
 	}
 	return 0, nil
 }
