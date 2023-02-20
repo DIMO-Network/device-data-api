@@ -22,6 +22,7 @@ require (
 	github.com/rs/zerolog v1.28.0
 	github.com/swaggo/swag v1.8.6
 	github.com/tidwall/gjson v1.14.3
+	golang.org/x/exp v0.0.0-20230105000112-eab7a2c85304
 	google.golang.org/grpc v1.49.0
 )
 
@@ -76,7 +77,6 @@ require (
 	github.com/valyala/fasthttp v1.43.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
 	golang.org/x/crypto v0.0.0-20220214200702-86341886e292 // indirect
-	golang.org/x/exp v0.0.0-20230105000112-eab7a2c85304 // indirect
 	golang.org/x/net v0.1.0 // indirect
 	golang.org/x/sys v0.4.0 // indirect
 	golang.org/x/text v0.4.0 // indirect

@@ -395,7 +395,7 @@ func (d *DeviceDataController) GetDailyDistance(c *fiber.Ctx) error {
 	return c.JSON(DailyDistanceResp{Days: days})
 }
 
-// queryOdometer gets the first or last odometer reading depending on order - asc = first, desc = last
+// queryOdometer gets the lowest or highest odometer reading depending on order - asc = lowest, desc = highest
 func (d *DeviceDataController) queryOdometer(ctx context.Context, order esquery.Order, userDeviceID string) (float64, error) {
 	res, err := esquery.Search().SourceIncludes("data.odometer").
 		Query(esquery.Bool().Must(
@@ -403,16 +403,17 @@ func (d *DeviceDataController) queryOdometer(ctx context.Context, order esquery.
 			esquery.Exists("data.odometer"),
 		)).
 		Size(1).
-		Sort("data.timestamp", order).
+		Sort("data.odometer", order). // sort by data.odometer to be sure we're getting the highest or lowest number
 		Run(d.es, d.es.Search.WithContext(ctx), d.es.Search.WithIndex(d.Settings.DeviceDataIndexName))
 	if err != nil {
 		return 0, err
 	}
 	defer res.Body.Close() // nolint
 	body, _ := io.ReadAll(res.Body)
-	result := gjson.GetBytes(body, "hits.hits.0._source.data.odometer")
-	if result.Exists() {
-		return result.Float(), nil
+
+	odometer := gjson.GetBytes(body, "hits.hits.0._source.data.odometer")
+	if odometer.Exists() {
+		return odometer.Float(), nil
 	}
 	return 0, nil
 }
