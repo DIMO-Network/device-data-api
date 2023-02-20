@@ -403,7 +403,7 @@ func (d *DeviceDataController) queryOdometer(ctx context.Context, order esquery.
 			esquery.Exists("data.odometer"),
 		)).
 		Size(1).
-		Sort("data.timestamp", order).
+		Sort("data.timestamp", order). // or instead of all the complexity just sort by data.odometer
 		Run(d.es, d.es.Search.WithContext(ctx), d.es.Search.WithIndex(d.Settings.DeviceDataIndexName))
 	if err != nil {
 		return 0, err
