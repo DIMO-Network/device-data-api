@@ -8,8 +8,11 @@ import (
 type QueryValues struct {
 	RangeStart    string `query:"rangestart"`
 	RangeEnd      string `query:"rangeend"`
+	Timezone      string `query:"timezone"`
 	EncryptionKey string `json:"encryptionkey"`
 	IPFS          bool   `json:"ipfs"`
+	UserID        string
+	UserDeviceID  string
 }
 
 func ValidateQueryParams(p *QueryValues, c *fiber.Ctx) error {
@@ -17,11 +20,7 @@ func ValidateQueryParams(p *QueryValues, c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	p.RangeStart = "2022-01-01"
-	p.RangeEnd = "now"
-	if err != nil {
-		return err
-	}
+
 	return nil
 }
 

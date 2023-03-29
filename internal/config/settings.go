@@ -19,11 +19,15 @@ type Settings struct {
 	EmailUsername                  string `yaml:"EMAIL_USERNAME"`
 	EmailPassword                  string `yaml:"EMAIL_PASSWORD"`
 	EmailFrom                      string `yaml:"EMAIL_FROM"`
+	AWSEndpoint                    string `yaml:"AWS_ENDPOINT"`
 	AWSBucketName                  string `yaml:"AWS_BUCKET_NAME"`
 	AWSAccessKeyID                 string `yaml:"AWS_ACCESS_KEY_ID"`
 	AWSSecretAccessKey             string `yaml:"AWS_SECRET_ACCESS_KEY"`
 	AWSRegion                      string `yaml:"AWS_REGION"`
 	UsersAPIGRPCAddr               string `yaml:"USERS_API_GRPC_ADDR"`
+	NATSURL                        string `yaml:"NATS_URL"`
+	NATSStreamName                 string `yaml:"NATS_STREAM_NAME"`
+	NATSDataDownloadSubject        string `yaml:"NATS_DATA_DOWNLOAD_SUBJECT"`
 
 	EnablePrivileges          bool   `yaml:"ENABLE_PRIVILEGES"`
 	TokenExchangeJWTKeySetURL string `yaml:"TOKEN_EXCHANGE_JWK_KEY_SET_URL"`

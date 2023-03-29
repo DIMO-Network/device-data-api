@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"os"
 	"os/signal"
@@ -50,6 +51,34 @@ func main() {
 		logger.Fatal().Err(err).Msgf("could not parse LOG_LEVEL: %s", settings.LogLevel)
 	}
 	zerolog.SetGlobalLevel(level)
+
+	if len(os.Args) > 1 {
+		switch subCommand := os.Args[1]; subCommand {
+		case "data-download-consumer":
+
+			esClient8, err := es8.NewTypedClient(es8.Config{
+				Addresses:  []string{settings.ElasticSearchAnalyticsHost},
+				Username:   settings.ElasticSearchAnalyticsUsername,
+				Password:   settings.ElasticSearchAnalyticsPassword,
+				MaxRetries: 5,
+			})
+			if err != nil {
+				panic(err)
+			}
+
+			deviceAPIService := services.NewDeviceAPIService(settings.DevicesAPIGRPCAddr)
+
+			dataDownloadController, err := controllers.NewDataDownloadController(&settings, &logger, esClient8, deviceAPIService)
+			if err != nil {
+				panic(err)
+			}
+
+			err = dataDownloadController.DataDownloadConsumer(context.Background())
+			if err != nil {
+				logger.Info().Err(err).Msg("data download consuemr error")
+			}
+		}
+	}
 
 	// start the actual stuff
 	startPrometheus(logger)
@@ -144,9 +173,19 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 	v1Auth.Get("/user/device-data/:userDeviceID/daily-distance", deviceDataController.GetDailyDistance)
 
 	if settings.Environment != "prod" {
-		dataDownloadController := controllers.NewDataDownloadController(settings, &logger, esClient8, deviceAPIService)
 
-		v1Auth.Get("/user/device-data/:userDeviceID/export/json/email", dataDownloadController.JSONDownloadHandler)
+		dataDownloadController, err := controllers.NewDataDownloadController(settings, &logger, esClient8, deviceAPIService)
+		if err != nil {
+			panic(err)
+		}
+
+		v1Auth.Get("/user/device-data/:userDeviceID/export/json/email", dataDownloadController.DataDownloadHandler)
+		go func() {
+			err = dataDownloadController.DataDownloadConsumer(context.Background())
+			if err != nil {
+				logger.Info().Err(err).Msg("data download consumer error")
+			}
+		}()
 	}
 
 	logger.Info().Msg("Server started on port " + settings.Port)
