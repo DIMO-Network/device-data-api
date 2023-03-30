@@ -85,7 +85,6 @@ func (d *DataDownloadController) DataDownloadHandler(c *fiber.Ctx) error {
 }
 
 func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error {
-
 	sub, err := d.NATSSvc.Jetstream.PullSubscribe(d.NATSSvc.JetStreamSubject, d.NATSSvc.JetStreamName, nats.AckWait(2*time.Minute))
 	if err != nil {
 		return err
@@ -101,7 +100,6 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 		}
 
 		for _, msg := range msgs {
-
 			mtd, err := msg.Metadata()
 			if err != nil {
 				d.log.Info().Err(err).Msg("unable to parse metadata for message")
@@ -109,12 +107,10 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 
 			select {
 			case <-ctx.Done():
-
 				if err := msg.Nak(); err != nil {
 					d.log.Info().Err(err).Msgf("data download msg.Nak failure")
 				}
 				return nil
-
 			default:
 				var params QueryValues
 				err = json.Unmarshal(msg.Data, &params)
