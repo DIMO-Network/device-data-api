@@ -78,9 +78,11 @@ func (d *DataDownloadController) DataDownloadHandler(c *fiber.Ctx) error {
 	_, err = d.NATSSvc.Jetstream.Publish(d.QuerySvc.Settings.NATSDataDownloadSubject, b)
 
 	return c.JSON(dataDownloadRequestStatus{
-		Status:  "success",
-		User:    userDeviceID,
-		Message: "your request has been received; data will be sent to the email associated with your account",
+		Status:     "success",
+		User:       userDeviceID,
+		RangeStart: params.RangeStart,
+		RangeEnd:   params.RangeEnd,
+		Message:    "your request has been received; data will be sent to the email associated with your account",
 	})
 }
 
@@ -142,9 +144,7 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 
 				msg.InProgress()
 
-				// should we overwrite this file by having the date only, not full timestamp, in name?
-				// otherwise, someone could spam us and run up our AWS storage/ costs
-				keyName := "userDownloads/" + params.UserDeviceID + "/" + time.Now().Format(time.RFC3339) + ".json"
+				keyName := fmt.Sprintf("userDownloads/%+s_%+s/%+s.json", params.RangeStart, params.RangeEnd, params.UserDeviceID)
 				s3link, err := d.StorageSvc.UploadUserData(ctx, data, keyName)
 				if err != nil {
 					if err := msg.Nak(); err != nil {
