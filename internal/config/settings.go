@@ -24,6 +24,7 @@ type Settings struct {
 	AWSAccessKeyID                 string `yaml:"AWS_ACCESS_KEY_ID"`
 	AWSSecretAccessKey             string `yaml:"AWS_SECRET_ACCESS_KEY"`
 	AWSRegion                      string `yaml:"AWS_REGION"`
+	AWSFileSize                    int    `yaml:"AWS_FILE_SIZE"`
 	UsersAPIGRPCAddr               string `yaml:"USERS_API_GRPC_ADDR"`
 	NATSURL                        string `yaml:"NATS_URL"`
 	NATSStreamName                 string `yaml:"NATS_STREAM_NAME"`

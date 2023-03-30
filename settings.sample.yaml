@@ -19,6 +19,7 @@ AWS_SECRET_ACCESS_KEY: secret-access-key
 AWS_REGION: us-east-2
 AWS_BUCKET_NAME: test-bucket
 AWS_ENDPOINT: http://localhost.localstack.cloud:4566
+AWS_FILE_SIZE: 500000
 
 SERVICE_NAME: users-api
 EMAIL_HOST: localhost

@@ -61,8 +61,8 @@ func (d *DataDownloadController) DataDownloadHandler(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusNotFound, fmt.Sprintf("No device %s found for user %s", userDeviceID, userID))
 	}
 
-	var params QueryValues
-	err = ValidateQueryParams(&params, c)
+	var params services.QueryValues
+	err = services.ValidateQueryParams(&params, c)
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
@@ -82,7 +82,7 @@ func (d *DataDownloadController) DataDownloadHandler(c *fiber.Ctx) error {
 		User:       userDeviceID,
 		RangeStart: params.RangeStart,
 		RangeEnd:   params.RangeEnd,
-		Message:    "your request has been received; data will be sent to the email associated with your account",
+		Message:    "your request has been received; data will be sent to the email address associated with the account",
 	})
 }
 
@@ -118,7 +118,7 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 				return nil
 
 			default:
-				var params QueryValues
+				var params services.QueryValues
 				err = json.Unmarshal(msg.Data, &params)
 				if err != nil {
 					if err := msg.Nak(); err != nil {
@@ -144,8 +144,7 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 
 				msg.InProgress()
 
-				keyName := fmt.Sprintf("userDownloads/%+s_%+s/%+s.json", params.RangeStart, params.RangeEnd, params.UserDeviceID)
-				s3link, err := d.StorageSvc.UploadUserData(ctx, data, keyName)
+				s3link, err := d.StorageSvc.UploadUserData(ctx, params, data)
 				if err != nil {
 					if err := msg.Nak(); err != nil {
 						d.log.Error().Msgf("message nak failed: %+v", err)

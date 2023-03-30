@@ -54,7 +54,7 @@ func NewEmailService(settings *config.Settings, log *zerolog.Logger) *EmailServi
 		usersGRPCAddr: settings.UsersAPIGRPCAddr}
 }
 
-func (es *EmailService) SendEmail(user, downloadLink string) error {
+func (es *EmailService) SendEmail(user string, downloadLink []string) error {
 
 	userEmail, err := es.getVerifiedEmailAddress(user)
 	if err != nil {
@@ -73,7 +73,12 @@ func (es *EmailService) SendEmail(user, downloadLink string) error {
 		return err
 	}
 
-	ptMessage := fmt.Sprintf("Hi,\r\n\r\nUse the following link(s) to download your requested data. These links will expire in 24 hours:\n\t%s\r\n\n", downloadLink)
+	ptMessage := "Hi,\r\n\r\nUse the following link(s) to download your requested data. These links will expire in 24 hours:"
+
+	for n, url := range downloadLink {
+		ptMessage += fmt.Sprintf("\n\tPart %d of %d: %s\r\n\n", n+1, len(downloadLink), url)
+	}
+
 	pw := quotedprintable.NewWriter(p)
 	if _, err := pw.Write([]byte(ptMessage)); err != nil {
 		return err
@@ -85,7 +90,12 @@ func (es *EmailService) SendEmail(user, downloadLink string) error {
 	}
 
 	hw := quotedprintable.NewWriter(h)
-	htmlMessage := fmt.Sprintf(`<a href="%s">Click to download</a>`, downloadLink)
+	var htmlMessage string
+
+	for n, url := range downloadLink {
+		htmlMessage += fmt.Sprintf(`<div style="font-family:helvetica;font-size:20px;line-height:1;text-align:left;color:#f48d33;"><a href="%s">Click to download (%d of %d)</a></div>`, url, n+1, len(downloadLink))
+	}
+
 	if err := es.emailTemplate.Execute(hw, template.HTML(htmlMessage)); err != nil {
 		return err
 	}

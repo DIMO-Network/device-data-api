@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
+	"math"
 	"time"
 
 	"github.com/DIMO-Network/device-data-api/internal/config"
@@ -17,6 +19,7 @@ type StorageService struct {
 	storageSvcClient *s3.Client
 	log              *zerolog.Logger
 	AWSBucket        string
+	awsFileSize      int
 }
 
 func NewStorageService(settings *config.Settings, log *zerolog.Logger) (*StorageService, error) {
@@ -41,7 +44,8 @@ func NewStorageService(settings *config.Settings, log *zerolog.Logger) (*Storage
 	return &StorageService{
 		storageSvcClient: s3Client,
 		log:              log,
-		AWSBucket:        settings.AWSBucketName}, nil
+		AWSBucket:        settings.AWSBucketName,
+		awsFileSize:      settings.AWSFileSize}, nil
 }
 
 func (ss *StorageService) generatePreSignedURL(ctx context.Context, keyName string, expiration time.Duration) (string, error) {
@@ -68,15 +72,39 @@ func (ss *StorageService) putObjectS3(ctx context.Context, keyName string, data 
 
 }
 
-func (ss *StorageService) UploadUserData(ctx context.Context, ud UserData, keyName string) (string, error) {
-	dataBytes, err := json.Marshal(ud)
-	if err != nil {
-		return "", err
-	}
+func (ss *StorageService) UploadUserData(ctx context.Context, params QueryValues, ud UserData) ([]string, error) {
 
-	err = ss.putObjectS3(ctx, keyName, dataBytes)
-	if err != nil {
-		return "", err
+	batchNum := math.Ceil(float64(len(ud.Data)) / float64(ss.awsFileSize))
+	count := 1
+
+	generatedURLs := make([]string, 0)
+
+	for startIndex := 0; startIndex < len(ud.Data); startIndex += ss.awsFileSize {
+		endIndex := startIndex + ss.awsFileSize
+		if endIndex > len(ud.Data) {
+			endIndex = len(ud.Data)
+		}
+
+		keyName := fmt.Sprintf("userDownloads/%+s/%+s_%+s_%vof%v.json", params.UserDeviceID, params.RangeStart, params.RangeEnd, count, batchNum)
+
+		dataBytes, err := json.Marshal(UserData{
+			User:             ud.User,
+			RequestTimestamp: ud.RequestTimestamp,
+			Data:             ud.Data[startIndex:endIndex],
+		})
+		if err != nil {
+			return []string{}, err
+		}
+
+		err = ss.putObjectS3(ctx, keyName, dataBytes)
+		if err != nil {
+			return []string{}, err
+		}
+
+		url, err := ss.generatePreSignedURL(ctx, keyName, presignDuration*time.Hour)
+
+		generatedURLs = append(generatedURLs, url)
+
 	}
-	return ss.generatePreSignedURL(ctx, keyName, presignDuration*time.Hour)
+	return generatedURLs, nil
 }
