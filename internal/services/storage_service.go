@@ -20,7 +20,6 @@ type StorageService struct {
 }
 
 func NewStorageService(settings *config.Settings, log *zerolog.Logger) (*StorageService, error) {
-
 	ctx := log.WithContext(context.Background())
 	awsconf, err := awsconfig.LoadDefaultConfig(
 		ctx,
@@ -32,7 +31,6 @@ func NewStorageService(settings *config.Settings, log *zerolog.Logger) (*Storage
 			),
 		),
 	)
-
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +56,6 @@ func (ss *StorageService) generatePreSignedURL(ctx context.Context, keyName stri
 }
 
 func (ss *StorageService) putObjectS3(ctx context.Context, keyName string, data []byte) error {
-
 	_, err := ss.storageSvcClient.PutObject(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(ss.AWSBucket),
 		Key:    aws.String(keyName),

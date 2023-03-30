@@ -14,7 +14,6 @@ type NATSService struct {
 }
 
 func NewNATSService(settings *config.Settings, log *zerolog.Logger) (*NATSService, error) {
-
 	n, err := nats.Connect(settings.NATSURL)
 	if err != nil {
 		return nil, err
