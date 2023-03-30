@@ -77,7 +77,11 @@ func (d *DataDownloadController) DataDownloadHandler(c *fiber.Ctx) error {
 
 	_, err = d.NATSSvc.Jetstream.Publish(d.QuerySvc.Settings.NATSDataDownloadSubject, b)
 
-	return c.JSON(map[string]string{"success": "data can be downloaded via links sent to user email on file"})
+	return c.JSON(dataDownloadRequestStatus{
+		Status:  "success",
+		User:    userDeviceID,
+		Message: "your request has been received; data will be sent to the email associated with your account",
+	})
 }
 
 func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error {
@@ -169,4 +173,12 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 		}
 
 	}
+}
+
+type dataDownloadRequestStatus struct {
+	Status     string `json:"status"`
+	User       string `json:"userID"`
+	RangeStart string `json:"rangeStart"`
+	RangeEnd   string `json:"rangeEnd"`
+	Message    string `json:"messasge"`
 }
