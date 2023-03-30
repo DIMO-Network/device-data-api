@@ -85,7 +85,7 @@ func (d *DataDownloadController) DataDownloadHandler(c *fiber.Ctx) error {
 }
 
 func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error {
-	sub, err := d.NATSSvc.Jetstream.PullSubscribe(d.NATSSvc.JetStreamSubject, d.NATSSvc.JetStreamName, nats.AckWait(2*time.Minute))
+	sub, err := d.NATSSvc.Jetstream.PullSubscribe(d.NATSSvc.JetStreamSubject, d.NATSSvc.JetStreamName, nats.AckWait(d.NATSSvc.AckTimeoutMinutes))
 	if err != nil {
 		return err
 	}

@@ -42,7 +42,7 @@ func NewStorageService(settings *config.Settings, log *zerolog.Logger) (*Storage
 		AWSBucket:        settings.AWSBucketName}, nil
 }
 
-func (ss *StorageService) generatePreSignedURL(ctx context.Context, keyName string, expiration time.Duration) (string, error) {
+func (ss *StorageService) generatePreSignedURL(ctx context.Context, keyName string) (string, error) {
 	presignClient := s3.NewPresignClient(ss.storageSvcClient)
 	presignParams := &s3.GetObjectInput{
 		Bucket: aws.String(ss.AWSBucket),
@@ -75,5 +75,5 @@ func (ss *StorageService) UploadUserData(ctx context.Context, ud UserData, keyNa
 	if err != nil {
 		return "", err
 	}
-	return ss.generatePreSignedURL(ctx, keyName, presignDuration*time.Hour)
+	return ss.generatePreSignedURL(ctx, keyName)
 }
