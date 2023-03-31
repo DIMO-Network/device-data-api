@@ -1,18 +1,20 @@
 package services
 
 import (
+	"time"
+
 	"github.com/DIMO-Network/device-data-api/internal/config"
 	"github.com/nats-io/nats.go"
 	"github.com/rs/zerolog"
 )
 
 type NATSService struct {
-	log               *zerolog.Logger
-	JetStream         nats.JetStreamContext
-	JetStreamName     string
-	JetStreamSubject  string
-	AckTimeoutMinutes int
-	DurableConsumer   string
+	log              *zerolog.Logger
+	JetStream        nats.JetStreamContext
+	JetStreamName    string
+	JetStreamSubject string
+	AckTimeout       time.Duration
+	DurableConsumer  string
 }
 
 func NewNATSService(settings *config.Settings, log *zerolog.Logger) (*NATSService, error) {
@@ -35,11 +37,16 @@ func NewNATSService(settings *config.Settings, log *zerolog.Logger) (*NATSServic
 		return nil, err
 	}
 
+	to, err := time.ParseDuration(settings.NATSAckTimeout)
+	if err != nil {
+		return nil, err
+	}
+
 	return &NATSService{
-		log:               log,
-		JetStream:         js,
-		JetStreamName:     settings.NATSStreamName,
-		JetStreamSubject:  settings.NATSDataDownloadSubject,
-		AckTimeoutMinutes: settings.NATSAckTimeoutMinutes,
-		DurableConsumer:   settings.NATSDurableConsumer}, nil
+		log:              log,
+		JetStream:        js,
+		JetStreamName:    settings.NATSStreamName,
+		JetStreamSubject: settings.NATSDataDownloadSubject,
+		AckTimeout:       to,
+		DurableConsumer:  settings.NATSDurableConsumer}, nil
 }

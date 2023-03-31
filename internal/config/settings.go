@@ -28,7 +28,7 @@ type Settings struct {
 	NATSURL                        string `yaml:"NATS_URL"`
 	NATSStreamName                 string `yaml:"NATS_STREAM_NAME"`
 	NATSDataDownloadSubject        string `yaml:"NATS_DATA_DOWNLOAD_SUBJECT"`
-	NATSAckTimeoutMinutes          int    `yaml:"NATS_ACK_TIMEOUT_MINUTES"`
+	NATSAckTimeout                 string `yaml:"NATS_ACK_TIMEOUT"`
 	NATSDurableConsumer            string `yaml:"NATS_DURABLE_CONSUMER"`
 
 	EnablePrivileges          bool   `yaml:"ENABLE_PRIVILEGES"`
