@@ -22,7 +22,7 @@ type DataQueryService struct {
 }
 
 type UserData struct {
-	User             string                   `json:"user"`
+	UserDeviceID     string                   `json:"userDeviceId"`
 	RequestTimestamp string                   `json:"requestTimestamp"`
 	Data             []map[string]interface{} `json:"data,omitempty"`
 }
@@ -65,7 +65,7 @@ func (uds *DataQueryService) FetchUserData(userDeviceID string) (UserData, error
 	respSize := pageSize
 
 	ud := UserData{
-		User:             userDeviceID,
+		UserDeviceID:     userDeviceID,
 		RequestTimestamp: requested,
 	}
 
