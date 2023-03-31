@@ -176,5 +176,5 @@ type dataDownloadRequestStatus struct {
 	User       string `json:"userID"`
 	RangeStart string `json:"rangeStart"`
 	RangeEnd   string `json:"rangeEnd"`
-	Message    string `json:"messasge"`
+	Message    string `json:"message"`
 }
