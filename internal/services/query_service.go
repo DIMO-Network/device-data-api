@@ -32,7 +32,6 @@ func NewAggregateQueryService(es *elasticsearch.TypedClient, settings *config.Se
 }
 
 func (uds *DataQueryService) executeESQuery(q *search.Request) (string, error) {
-
 	res, err := uds.es.Search().
 		Index(uds.Settings.ElasticIndex).
 		Request(q).
@@ -78,8 +77,12 @@ func (uds *DataQueryService) FetchUserData(userDeviceID string) (UserData, error
 		}
 
 		respSize = int(gjson.Get(response, "hits.hits.#").Int())
+		if respSize == 0 {
+			break
+		}
+
 		data := make([]map[string]interface{}, respSize)
-		err = json.Unmarshal([]byte(gjson.Get(response, "hits.hits").Raw), &data)
+		err = json.Unmarshal([]byte(gjson.Get(response, "hits.hits.#._source").Raw), &data)
 		if err != nil {
 			uds.log.Err(err).Msg("user data download: unable to unmarshal data")
 			return UserData{}, err
