@@ -8,7 +8,7 @@ import (
 
 type NATSService struct {
 	log               *zerolog.Logger
-	Jetstream         nats.JetStreamContext
+	JetStream         nats.JetStreamContext
 	JetStreamName     string
 	JetStreamSubject  string
 	AckTimeoutMinutes int
@@ -37,7 +37,7 @@ func NewNATSService(settings *config.Settings, log *zerolog.Logger) (*NATSServic
 
 	return &NATSService{
 		log:               log,
-		Jetstream:         js,
+		JetStream:         js,
 		JetStreamName:     settings.NATSStreamName,
 		JetStreamSubject:  settings.NATSDataDownloadSubject,
 		AckTimeoutMinutes: settings.NATSAckTimeoutMinutes,

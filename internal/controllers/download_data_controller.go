@@ -75,7 +75,7 @@ func (d *DataDownloadController) DataDownloadHandler(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	_, err = d.NATSSvc.Jetstream.Publish(d.QuerySvc.Settings.NATSDataDownloadSubject, b)
+	_, err = d.NATSSvc.JetStream.Publish(d.QuerySvc.Settings.NATSDataDownloadSubject, b)
 
 	return c.JSON(dataDownloadRequestStatus{
 		Status:  "success",
@@ -85,7 +85,7 @@ func (d *DataDownloadController) DataDownloadHandler(c *fiber.Ctx) error {
 }
 
 func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error {
-	sub, err := d.NATSSvc.Jetstream.PullSubscribe(d.NATSSvc.JetStreamSubject, d.NATSSvc.DurableConsumer)
+	sub, err := d.NATSSvc.JetStream.PullSubscribe(d.NATSSvc.JetStreamSubject, d.NATSSvc.DurableConsumer)
 	if err != nil {
 		return err
 	}
