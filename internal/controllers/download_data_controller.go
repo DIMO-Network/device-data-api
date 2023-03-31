@@ -85,7 +85,7 @@ func (d *DataDownloadController) DataDownloadHandler(c *fiber.Ctx) error {
 }
 
 func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error {
-	sub, err := d.NATSSvc.Jetstream.PullSubscribe(d.NATSSvc.JetStreamSubject, d.NATSSvc.JetStreamName, nats.AckWait(d.NATSSvc.AckTimeoutMinutes))
+	sub, err := d.NATSSvc.Jetstream.PullSubscribe(d.NATSSvc.JetStreamSubject, d.NATSSvc.DurableConsumer)
 	if err != nil {
 		return err
 	}
@@ -123,10 +123,10 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 					continue
 				}
 
-				d.log.Info().Str("userID", params.UserID).Str("userDeviceID", params.UserDeviceID).Msg("data download initiated")
+				d.log.Info().Str("userId", params.UserID).Str("userDeviceID", params.UserDeviceID).Msg("data download initiated")
 
 				msg.InProgress()
-				data, err := d.QuerySvc.FetchUserData(params.UserDeviceID, params.RangeStart, params.RangeEnd, params.Timezone)
+				data, err := d.QuerySvc.FetchUserData(params.UserDeviceID)
 				if err != nil {
 					if err := msg.Nak(); err != nil {
 						d.log.Error().Msgf("message nak failed: %+v", err)
@@ -164,7 +164,7 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 				}
 
 				msg.Ack()
-				d.log.Info().Str("userID", params.UserID).Str("userDeviceID", params.UserDeviceID).Uint64("numDelivered", mtd.NumDelivered).Msg("data download completed")
+				d.log.Info().Str("userId", params.UserID).Str("userDeviceID", params.UserDeviceID).Uint64("numDelivered", mtd.NumDelivered).Msg("data download completed")
 			}
 		}
 
@@ -174,7 +174,7 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 type dataDownloadRequestStatus struct {
 	Status     string `json:"status"`
 	User       string `json:"userID"`
-	RangeStart string `json:"rangeStart"`
-	RangeEnd   string `json:"rangeEnd"`
+	RangeStart string `json:"rangeStart,omitempty"`
+	RangeEnd   string `json:"rangeEnd,omitempty"`
 	Message    string `json:"message"`
 }

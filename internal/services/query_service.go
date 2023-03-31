@@ -62,8 +62,8 @@ func (uds *DataQueryService) executeESQuery(q *search.Request) (string, error) {
 	return response, nil
 }
 
-func (uds *DataQueryService) FetchUserData(userDeviceID, startDate, endDate, tz string) (UserData, error) {
-	query := uds.formatUserDataRequest(userDeviceID, startDate, endDate, tz)
+func (uds *DataQueryService) FetchUserData(userDeviceID string) (UserData, error) {
+	query := uds.formatUserDataRequest(userDeviceID)
 	requested := time.Now().Format(time.RFC3339)
 	respSize := pageSize
 
@@ -98,7 +98,7 @@ func (uds *DataQueryService) FetchUserData(userDeviceID, startDate, endDate, tz 
 // Elastic maximum.
 var pageSize = 10000
 
-func (uds *DataQueryService) formatUserDataRequest(userDeviceID, startDate, endDate, tz string) *search.Request {
+func (uds *DataQueryService) formatUserDataRequest(userDeviceID string) *search.Request {
 	query := &search.Request{
 		Query: &types.Query{
 			Bool: &types.BoolQuery{
@@ -109,20 +109,6 @@ func (uds *DataQueryService) formatUserDataRequest(userDeviceID, startDate, endD
 		},
 		Sort: []types.SortCombinations{"data.timestamp"},
 		Size: &pageSize,
-	}
-
-	if endDate == "" {
-		endDate = "now/d"
-	}
-
-	if startDate != "" {
-		query.Query.Range = map[string]types.RangeQuery{
-			"data.timestamp": types.DateRangeQuery{
-				Gte:      &startDate,
-				Lte:      &endDate,
-				TimeZone: &tz,
-			},
-		}
 	}
 
 	return query

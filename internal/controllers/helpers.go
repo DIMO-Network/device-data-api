@@ -6,13 +6,11 @@ import (
 )
 
 type QueryValues struct {
-	RangeStart    string `query:"rangestart"`
-	RangeEnd      string `query:"rangeend"`
-	Timezone      string `query:"timezone"`
-	EncryptionKey string `json:"encryptionkey"`
-	IPFS          bool   `json:"ipfs"`
-	UserID        string
-	UserDeviceID  string
+	RangeStart   string `query:"rangestart"`
+	RangeEnd     string `query:"rangeend"`
+	Timezone     string `query:"timezone"`
+	UserID       string
+	UserDeviceID string
 }
 
 func ValidateQueryParams(p *QueryValues, c *fiber.Ctx) error {
