@@ -38,7 +38,7 @@ env:
   ENABLE_PRIVILEGES: true
   TOKEN_EXCHANGE_JWK_KEY_SET_URL: http://dex-roles-rights.dev.svc.cluster.local:5556/keys
   VEHICLE_NFT_ADDRESS: "0x90C4D6113Ec88dd4BDf12f26DB2b3998fd13A144"
-  NATS_URL: http://localhost:4222
+  NATS_URL: nats-dev:4222
   NATS_STREAM_NAME: DATA-DOWNLOAD
   NATS_DATA_DOWNLOAD_SUBJECT: data-download
   NATS_DURABLE_CONSUMER: data-download-durable
