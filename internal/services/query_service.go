@@ -108,7 +108,7 @@ func (uds *DataQueryService) formatUserDataRequest(userDeviceID string) *search.
 				},
 			},
 		},
-		Sort: []types.SortCombinations{"data.timestamp"},
+		Sort: []types.SortCombinations{"data.timestamp"}, // Default is ascending.
 		Size: &pageSize,
 	}
 
