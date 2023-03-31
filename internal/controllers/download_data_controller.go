@@ -205,7 +205,5 @@ type dataDownloadRequestStatus struct {
 	Status       string `json:"status"`
 	UserID       string `json:"userId"`
 	UserDeviceID string `json:"userDeviceId"`
-	RangeStart   string `json:"rangeStart,omitempty"`
-	RangeEnd     string `json:"rangeEnd,omitempty"`
 	Message      string `json:"message"`
 }
