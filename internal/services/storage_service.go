@@ -21,19 +21,21 @@ type StorageService struct {
 
 func NewStorageService(settings *config.Settings, log *zerolog.Logger) (*StorageService, error) {
 	ctx := log.WithContext(context.Background())
-	awsconf, err := awsconfig.LoadDefaultConfig(
-		ctx,
-		awsconfig.WithEndpointResolverWithOptions(
-			aws.EndpointResolverWithOptionsFunc(
-				func(service, region string, options ...any) (aws.Endpoint, error) {
-					return aws.Endpoint{URL: settings.AWSEndpoint}, nil
-				},
-			),
-		),
+
+	resolver := aws.EndpointResolverWithOptionsFunc(
+		func(service, region string, options ...any) (aws.Endpoint, error) {
+			if settings.AWSEndpoint != "" {
+				return aws.Endpoint{URL: settings.AWSEndpoint}, nil
+			}
+			return aws.Endpoint{}, &aws.EndpointNotFoundError{}
+		},
 	)
+
+	awsconf, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithEndpointResolverWithOptions(resolver))
 	if err != nil {
 		return nil, err
 	}
+
 	s3Client := s3.NewFromConfig(awsconf)
 
 	return &StorageService{
