@@ -76,11 +76,15 @@ func (d *DataDownloadController) DataDownloadHandler(c *fiber.Ctx) error {
 	}
 
 	_, err = d.NATSSvc.JetStream.Publish(d.QuerySvc.Settings.NATSDataDownloadSubject, b)
+	if err != nil {
+		return err
+	}
 
 	return c.JSON(dataDownloadRequestStatus{
-		Status:  "success",
-		User:    userDeviceID,
-		Message: "your request has been received; data will be sent to the email associated with your account",
+		Status:       "success",
+		UserID:       userID,
+		UserDeviceID: userDeviceID,
+		Message:      "your request has been received; data will be sent to the email associated with your account",
 	})
 }
 
@@ -167,14 +171,14 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 				d.log.Info().Str("userId", params.UserID).Str("userDeviceID", params.UserDeviceID).Uint64("numDelivered", mtd.NumDelivered).Msg("data download completed")
 			}
 		}
-
 	}
 }
 
 type dataDownloadRequestStatus struct {
-	Status     string `json:"status"`
-	User       string `json:"userID"`
-	RangeStart string `json:"rangeStart,omitempty"`
-	RangeEnd   string `json:"rangeEnd,omitempty"`
-	Message    string `json:"message"`
+	Status       string `json:"status"`
+	UserID       string `json:"userId"`
+	UserDeviceID string `json:"userDeviceId"`
+	RangeStart   string `json:"rangeStart,omitempty"`
+	RangeEnd     string `json:"rangeEnd,omitempty"`
+	Message      string `json:"message"`
 }
