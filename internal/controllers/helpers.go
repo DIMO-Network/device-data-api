@@ -6,23 +6,15 @@ import (
 )
 
 type QueryValues struct {
-	RangeStart    string `query:"rangestart"`
-	RangeEnd      string `query:"rangeend"`
-	EncryptionKey string `json:"encryptionkey"`
-	IPFS          bool   `json:"ipfs"`
+	RangeStart   string `query:"range_start" json:"rangeStart"`
+	RangeEnd     string `query:"range_end" json:"rangeEnd"`
+	Timezone     string `query:"time_zone" json:"timeZone"`
+	UserID       string `query:"-" json:"userId"`
+	UserDeviceID string `query:"-" json:"userDeviceId"`
 }
 
 func ValidateQueryParams(p *QueryValues, c *fiber.Ctx) error {
-	err := c.QueryParser(p)
-	if err != nil {
-		return err
-	}
-	p.RangeStart = "2022-01-01"
-	p.RangeEnd = "now"
-	if err != nil {
-		return err
-	}
-	return nil
+	return c.QueryParser(p)
 }
 
 func getUserID(c *fiber.Ctx) string {

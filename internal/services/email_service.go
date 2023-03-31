@@ -117,7 +117,7 @@ func (es *EmailService) getVerifiedEmailAddress(userID string) (string, error) {
 
 	addr := user.GetEmailAddress()
 	if addr == "" {
-		es.log.Debug().Str("userID", userID).Msg("user does not have confirmed email address")
+		es.log.Debug().Str("userId", userID).Msg("user does not have confirmed email address")
 		return "", errors.New("user does not have confirmed email address")
 	}
 

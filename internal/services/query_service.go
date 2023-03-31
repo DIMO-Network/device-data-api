@@ -15,8 +15,6 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-const presignDuration = 24
-
 type DataQueryService struct {
 	es       *elasticsearch.TypedClient
 	Settings *config.Settings
@@ -110,5 +108,6 @@ func (uds *DataQueryService) formatUserDataRequest(userDeviceID string) *search.
 		Sort: []types.SortCombinations{"data.timestamp"},
 		Size: &pageSize,
 	}
+
 	return query
 }

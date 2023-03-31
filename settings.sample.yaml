@@ -11,3 +11,24 @@ ELASTIC_SEARCH_ANALYTICS_HOST: https://dimo.es.us-east-2.aws.elastic-cloud.com
 ELASTIC_SEARCH_ANALYTICS_USERNAME: device-analytics
 ELASTIC_SEARCH_ANALYTICS_PASSWORD:
 DEVICE_DATA_INDEX_NAME: device-status-dev*
+
+IPFS_ADDRESS: localhost:5001
+
+AWS_ACCESS_KEY_ID: access-key
+AWS_SECRET_ACCESS_KEY: secret-access-key
+AWS_REGION: us-east-2
+AWS_BUCKET_NAME: test-bucket
+AWS_ENDPOINT: http://localhost.localstack.cloud:4566
+
+SERVICE_NAME: users-api
+EMAIL_HOST: localhost
+EMAIL_PORT: 1025
+EMAIL_USERNAME: dimo
+EMAIL_PASSWORD: dimo
+EMAIL_FROM: mailer@dimo.zone
+
+NATS_URL: http://localhost:4222
+NATS_STREAM_NAME: DATA-DOWNLOAD
+NATS_DATA_DOWNLOAD_SUBJECT: data-download
+NATS_DURABLE_CONSUMER: data-download-durable
+NATS_ACK_TIMEOUT_MINUTES: 2

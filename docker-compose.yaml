@@ -5,5 +5,21 @@ services:
     image: mailhog/mailhog:v1.0.1
     container_name: mail-users-api
     ports:
-      - "1025:1025"
-      - "8025:8025"
+      - 1025:1025
+      - 8025:8025
+  localstack:
+    image: localstack/localstack:latest
+    environment:
+      SERVICES: s3
+      DEFAULT_REGION: us-east-2
+    # ports:
+    #   - 4566:4566
+    ports:
+      - '4566-4583:4566-4583'
+  nats-service:
+    image: 'bitnami/nats:latest'
+    ports:
+      - 4222:4222
+      - 6222:6222
+      - 8222:8222
+    command: nats-server -js # this turns on jetstream
