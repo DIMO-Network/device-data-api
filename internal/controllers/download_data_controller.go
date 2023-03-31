@@ -128,15 +128,42 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 				}
 
 				d.log.Info().Str("userId", params.UserID).Str("userDeviceID", params.UserDeviceID).Msg("data download initiated")
-
 				msg.InProgress()
-				data, err := d.QuerySvc.FetchUserData(params.UserDeviceID)
-				if err != nil {
-					if err := msg.Nak(); err != nil {
-						d.log.Error().Msgf("message nak failed: %+v", err)
-						return err
+
+				// fetch user data in a channel so that we can continue to call msg.InProgress()
+				c := make(chan services.UserData, 1)
+				eC := make(chan error, 1)
+				var data services.UserData
+				var fetchDataError error
+				go func() {
+					d, err := d.QuerySvc.FetchUserData(params.UserDeviceID)
+					c <- d
+					eC <- err
+				}()
+
+				tick := time.NewTicker(1 * time.Second)
+			Loop:
+				for {
+					select {
+					case d := <-c:
+						data = d
+						break Loop
+					case fetchDataError := <-eC:
+						if fetchDataError != nil {
+							if err := msg.Nak(); err != nil {
+								d.log.Error().Msgf("message nak failed: %+v", err)
+								return err
+							}
+							d.log.Err(err).Msg("unable to fetch user data")
+							break Loop
+						}
+					case <-tick.C:
+						msg.InProgress()
 					}
-					d.log.Err(err).Msg("unable to fetch user data")
+					break
+				}
+				tick.Stop()
+				if fetchDataError != nil {
 					continue
 				}
 
