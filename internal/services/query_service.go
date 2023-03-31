@@ -15,8 +15,6 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-const presignDuration = 24
-
 type DataQueryService struct {
 	es       *elasticsearch.TypedClient
 	Settings *config.Settings
