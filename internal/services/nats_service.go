@@ -41,5 +41,5 @@ func NewNATSService(settings *config.Settings, log *zerolog.Logger) (*NATSServic
 		Jetstream:         js,
 		JetStreamName:     settings.NATSStreamName,
 		JetStreamSubject:  settings.NATSDataDownloadSubject,
-		AckTimeoutMinutes: settings.NATSAckTimeoutMinutes * time.Minute}, nil
+		AckTimeoutMinutes: time.Duration(settings.NATSAckTimeoutMinutes) * time.Minute}, nil
 }
