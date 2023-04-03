@@ -106,8 +106,9 @@ func (uds *DataQueryService) formatUserDataRequest(userDeviceID, startDate, endD
 				Filter: []types.Query{
 					{Match: map[string]types.MatchQuery{"subject": {Query: userDeviceID}}},
 					{Range: map[string]types.RangeQuery{"data.timestamp": types.DateRangeQuery{
-						Gte: &startDate,
-						Lte: &endDate,
+						Gte:      &startDate,
+						Lte:      &endDate,
+						TimeZone: &tz,
 					}}},
 				},
 			},
