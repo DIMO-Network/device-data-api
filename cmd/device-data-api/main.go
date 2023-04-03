@@ -55,7 +55,6 @@ func main() {
 	if len(os.Args) > 1 {
 		switch subCommand := os.Args[1]; subCommand {
 		case "data-download-consumer":
-
 			esClient8, err := es8.NewTypedClient(es8.Config{
 				Addresses:  []string{settings.ElasticSearchAnalyticsHost},
 				Username:   settings.ElasticSearchAnalyticsUsername,
@@ -173,7 +172,6 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 	v1Auth.Get("/user/device-data/:userDeviceID/daily-distance", deviceDataController.GetDailyDistance)
 
 	if settings.Environment != "prod" {
-
 		dataDownloadController, err := controllers.NewDataDownloadController(settings, &logger, esClient8, deviceAPIService)
 		if err != nil {
 			panic(err)

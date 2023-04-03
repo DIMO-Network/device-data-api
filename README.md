@@ -26,3 +26,9 @@ go install github.com/swaggo/swag/cmd/swag@latest
 swag init -g cmd/device-data-api/main.go --parseDependency --parseInternal --generatedTime true
 # optionally add `--parseDepth 2` if have issues
 ```
+
+## NATS
+
+The `/user/device-data/:userDeviceID/export/json/email` endpoint users NATS to create a queue of requests so that the endpoint can prompty return before processing the user request.
+Suggested Stream Name and Subject can be found in `settings.sample.yaml`.
+If messages are not acknowledged within 5 minutes, they will be resent (this value is also set in settings and can be increased or decreased as needed)

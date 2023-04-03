@@ -75,20 +75,21 @@ func (d *DataDownloadController) DataDownloadHandler(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	_, err = d.NATSSvc.Jetstream.Publish(d.QuerySvc.Settings.NATSDataDownloadSubject, b)
+	_, err = d.NATSSvc.JetStream.Publish(d.QuerySvc.Settings.NATSDataDownloadSubject, b)
+	if err != nil {
+		return err
+	}
 
 	return c.JSON(dataDownloadRequestStatus{
-		Status:     "success",
-		User:       userDeviceID,
-		RangeStart: params.RangeStart,
-		RangeEnd:   params.RangeEnd,
-		Message:    "your request has been received; data will be sent to the email associated with your account",
+		Status:       "success",
+		UserID:       userID,
+		UserDeviceID: userDeviceID,
+		Message:      "your request has been received; data will be sent to the email associated with your account",
 	})
 }
 
 func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error {
-
-	sub, err := d.NATSSvc.Jetstream.PullSubscribe(d.NATSSvc.JetStreamSubject, d.NATSSvc.JetStreamName, nats.AckWait(2*time.Minute))
+	sub, err := d.NATSSvc.JetStream.PullSubscribe(d.NATSSvc.JetStreamSubject, d.NATSSvc.DurableConsumer, nats.AckWait(d.NATSSvc.AckTimeout))
 	if err != nil {
 		return err
 	}
@@ -103,7 +104,6 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 		}
 
 		for _, msg := range msgs {
-
 			mtd, err := msg.Metadata()
 			if err != nil {
 				d.log.Info().Err(err).Msg("unable to parse metadata for message")
@@ -111,12 +111,10 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 
 			select {
 			case <-ctx.Done():
-
 				if err := msg.Nak(); err != nil {
 					d.log.Info().Err(err).Msgf("data download msg.Nak failure")
 				}
 				return nil
-
 			default:
 				var params QueryValues
 				err = json.Unmarshal(msg.Data, &params)
@@ -129,22 +127,51 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 					continue
 				}
 
-				d.log.Info().Str("userID", params.UserID).Str("userDeviceID", params.UserDeviceID).Msg("data download initiated")
-
+				d.log.Info().Str("userId", params.UserID).Str("userDeviceID", params.UserDeviceID).Msg("data download initiated")
 				msg.InProgress()
-				data, err := d.QuerySvc.FetchUserData(params.UserDeviceID, params.RangeStart, params.RangeEnd, params.Timezone)
-				if err != nil {
-					if err := msg.Nak(); err != nil {
-						d.log.Error().Msgf("message nak failed: %+v", err)
-						return err
+
+				// fetch user data in a channel so that we can continue to call msg.InProgress()
+				c := make(chan services.UserData, 1)
+				eC := make(chan error, 1)
+				var data services.UserData
+				var fetchDataError error
+				go func() {
+					d, err := d.QuerySvc.FetchUserData(params.UserDeviceID, params.RangeStart, params.RangeEnd, "")
+					c <- d
+					eC <- err
+				}()
+
+				tick := time.NewTicker(1 * time.Second)
+			Loop:
+				for {
+					select {
+					case d := <-c:
+						data = d
+						break Loop
+					case fetchDataError := <-eC:
+						if fetchDataError != nil {
+							if err := msg.Nak(); err != nil {
+								d.log.Error().Msgf("message nak failed: %+v", err)
+								return err
+							}
+							d.log.Err(err).Msg("unable to fetch user data")
+							break Loop
+						}
+					case <-tick.C:
+						msg.InProgress()
 					}
-					d.log.Err(err).Msg("unable to fetch user data")
+					break
+				}
+				tick.Stop()
+				if fetchDataError != nil {
 					continue
 				}
 
 				msg.InProgress()
 
-				keyName := fmt.Sprintf("userDownloads/%+s_%+s/%+s.json", params.RangeStart, params.RangeEnd, params.UserDeviceID)
+				// should we overwrite this file by having the date only, not full timestamp, in name?
+				// otherwise, someone could spam us and run up our AWS storage/ costs
+				keyName := "userDownloads/" + params.UserDeviceID + "/" + time.Now().Format(time.RFC3339) + ".json"
 				s3link, err := d.StorageSvc.UploadUserData(ctx, data, keyName)
 				if err != nil {
 					if err := msg.Nak(); err != nil {
@@ -168,17 +195,17 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 				}
 
 				msg.Ack()
-				d.log.Info().Str("userID", params.UserID).Str("userDeviceID", params.UserDeviceID).Uint64("numDelivered", mtd.NumDelivered).Msg("data download completed")
+				d.log.Info().Str("userId", params.UserID).Str("userDeviceID", params.UserDeviceID).Uint64("numDelivered", mtd.NumDelivered).Msg("data download completed")
 			}
 		}
-
 	}
 }
 
 type dataDownloadRequestStatus struct {
-	Status     string `json:"status"`
-	User       string `json:"userID"`
-	RangeStart string `json:"rangeStart"`
-	RangeEnd   string `json:"rangeEnd"`
-	Message    string `json:"messasge"`
+	Status       string `json:"status"`
+	UserID       string `json:"userId"`
+	UserDeviceID string `json:"userDeviceId"`
+	Message      string `json:"message"`
+	RangeStart   string `json:"rangeStart"`
+	RangeEnd     string `json:"rangeEnd"`
 }

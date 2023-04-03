@@ -20,22 +20,22 @@ type StorageService struct {
 }
 
 func NewStorageService(settings *config.Settings, log *zerolog.Logger) (*StorageService, error) {
-
 	ctx := log.WithContext(context.Background())
-	awsconf, err := awsconfig.LoadDefaultConfig(
-		ctx,
-		awsconfig.WithEndpointResolverWithOptions(
-			aws.EndpointResolverWithOptionsFunc(
-				func(service, region string, options ...any) (aws.Endpoint, error) {
-					return aws.Endpoint{URL: settings.AWSEndpoint}, nil
-				},
-			),
-		),
+
+	resolver := aws.EndpointResolverWithOptionsFunc(
+		func(service, region string, options ...any) (aws.Endpoint, error) {
+			if settings.AWSEndpoint != "" {
+				return aws.Endpoint{URL: settings.AWSEndpoint}, nil
+			}
+			return aws.Endpoint{}, &aws.EndpointNotFoundError{}
+		},
 	)
 
+	awsconf, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithEndpointResolverWithOptions(resolver))
 	if err != nil {
 		return nil, err
 	}
+
 	s3Client := s3.NewFromConfig(awsconf)
 
 	return &StorageService{
@@ -44,7 +44,7 @@ func NewStorageService(settings *config.Settings, log *zerolog.Logger) (*Storage
 		AWSBucket:        settings.AWSBucketName}, nil
 }
 
-func (ss *StorageService) generatePreSignedURL(ctx context.Context, keyName string, expiration time.Duration) (string, error) {
+func (ss *StorageService) generatePreSignedURL(ctx context.Context, keyName string) (string, error) {
 	presignClient := s3.NewPresignClient(ss.storageSvcClient)
 	presignParams := &s3.GetObjectInput{
 		Bucket: aws.String(ss.AWSBucket),
@@ -58,7 +58,6 @@ func (ss *StorageService) generatePreSignedURL(ctx context.Context, keyName stri
 }
 
 func (ss *StorageService) putObjectS3(ctx context.Context, keyName string, data []byte) error {
-
 	_, err := ss.storageSvcClient.PutObject(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(ss.AWSBucket),
 		Key:    aws.String(keyName),
@@ -78,5 +77,5 @@ func (ss *StorageService) UploadUserData(ctx context.Context, ud UserData, keyNa
 	if err != nil {
 		return "", err
 	}
-	return ss.generatePreSignedURL(ctx, keyName, presignDuration*time.Hour)
+	return ss.generatePreSignedURL(ctx, keyName)
 }

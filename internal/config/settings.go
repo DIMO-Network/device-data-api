@@ -28,6 +28,8 @@ type Settings struct {
 	NATSURL                        string `yaml:"NATS_URL"`
 	NATSStreamName                 string `yaml:"NATS_STREAM_NAME"`
 	NATSDataDownloadSubject        string `yaml:"NATS_DATA_DOWNLOAD_SUBJECT"`
+	NATSAckTimeout                 string `yaml:"NATS_ACK_TIMEOUT"`
+	NATSDurableConsumer            string `yaml:"NATS_DURABLE_CONSUMER"`
 
 	EnablePrivileges          bool   `yaml:"ENABLE_PRIVILEGES"`
 	TokenExchangeJWTKeySetURL string `yaml:"TOKEN_EXCHANGE_JWK_KEY_SET_URL"`

@@ -15,8 +15,6 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-const presignDuration = 24
-
 type DataQueryService struct {
 	es       *elasticsearch.TypedClient
 	Settings *config.Settings
@@ -24,7 +22,7 @@ type DataQueryService struct {
 }
 
 type UserData struct {
-	User             string                   `json:"user"`
+	UserDeviceID     string                   `json:"userDeviceId"`
 	RequestTimestamp string                   `json:"requestTimestamp"`
 	Data             []map[string]interface{} `json:"data,omitempty"`
 }
@@ -34,7 +32,6 @@ func NewAggregateQueryService(es *elasticsearch.TypedClient, settings *config.Se
 }
 
 func (uds *DataQueryService) executeESQuery(q *search.Request) (string, error) {
-
 	res, err := uds.es.Search().
 		Index(uds.Settings.ElasticIndex).
 		Request(q).
@@ -68,7 +65,7 @@ func (uds *DataQueryService) FetchUserData(userDeviceID, startDate, endDate, tz 
 	respSize := pageSize
 
 	ud := UserData{
-		User:             userDeviceID,
+		UserDeviceID:     userDeviceID,
 		RequestTimestamp: requested,
 	}
 
@@ -80,8 +77,12 @@ func (uds *DataQueryService) FetchUserData(userDeviceID, startDate, endDate, tz 
 		}
 
 		respSize = int(gjson.Get(response, "hits.hits.#").Int())
+		if respSize == 0 {
+			break
+		}
+
 		data := make([]map[string]interface{}, respSize)
-		err = json.Unmarshal([]byte(gjson.Get(response, "hits.hits").Raw), &data)
+		err = json.Unmarshal([]byte(gjson.Get(response, "hits.hits.#._source").Raw), &data)
 		if err != nil {
 			uds.log.Err(err).Msg("user data download: unable to unmarshal data")
 			return UserData{}, err
@@ -111,7 +112,7 @@ func (uds *DataQueryService) formatUserDataRequest(userDeviceID, startDate, endD
 				},
 			},
 		},
-		Sort: []types.SortCombinations{"data.timestamp"},
+		Sort: []types.SortCombinations{"data.timestamp"}, // Default is ascending.
 		Size: &pageSize,
 	}
 
