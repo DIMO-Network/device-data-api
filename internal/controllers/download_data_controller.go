@@ -136,7 +136,7 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 				var data services.UserData
 				var fetchDataError error
 				go func() {
-					d, err := d.QuerySvc.FetchUserData(params.UserDeviceID, params.RangeStart, params.RangeEnd, "")
+					d, err := d.QuerySvc.FetchUserData(params.UserDeviceID, params.RangeStart, params.RangeEnd)
 					c <- d
 					eC <- err
 				}()
