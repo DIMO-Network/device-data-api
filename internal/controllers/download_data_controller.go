@@ -16,32 +16,26 @@ import (
 
 // DataDownloadController provides endpoints for user to download their data or save it (encrypted) to IPFS
 type DataDownloadController struct {
-	log        *zerolog.Logger
-	QuerySvc   *services.DataQueryService
-	StorageSvc *services.StorageService
-	EmailSvc   *services.EmailService
-	NATSSvc    *services.NATSService
-	deviceAPI  services.DeviceAPIService
+	log       *zerolog.Logger
+	QuerySvc  *services.QueryStorageService
+	EmailSvc  *services.EmailService
+	NATSSvc   *services.NATSService
+	deviceAPI services.DeviceAPIService
 }
 
 func NewDataDownloadController(settings *config.Settings, log *zerolog.Logger, esClient8 *es8.TypedClient, deviceAPIService services.DeviceAPIService) (*DataDownloadController, error) {
-	querySvc := services.NewAggregateQueryService(esClient8, settings, log)
-	storageSvc, err := services.NewStorageService(settings, log)
-	if err != nil {
-		return nil, err
-	}
+	querySvc, err := services.NewQueryStorageService(esClient8, settings, log)
 	emailSvc := services.NewEmailService(settings, log)
 	nats, err := services.NewNATSService(settings, log)
 	if err != nil {
 		return nil, err
 	}
 	return &DataDownloadController{
-		log:        log,
-		QuerySvc:   querySvc,
-		StorageSvc: storageSvc,
-		EmailSvc:   emailSvc,
-		deviceAPI:  deviceAPIService,
-		NATSSvc:    nats}, nil
+		log:       log,
+		QuerySvc:  querySvc,
+		EmailSvc:  emailSvc,
+		deviceAPI: deviceAPIService,
+		NATSSvc:   nats}, nil
 }
 
 // DataDownloadHandler godoc
@@ -75,7 +69,7 @@ func (d *DataDownloadController) DataDownloadHandler(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	_, err = d.NATSSvc.JetStream.Publish(d.QuerySvc.Settings.NATSDataDownloadSubject, b)
+	_, err = d.NATSSvc.JetStream.Publish(d.QuerySvc.NATSDataDownloadSubject, b)
 	if err != nil {
 		return err
 	}
@@ -146,7 +140,7 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 					}
 				}()
 
-				ud, err := d.QuerySvc.FetchUserData(params.UserDeviceID, params.RangeStart, params.RangeEnd)
+				s3link, err := d.QuerySvc.StreamDataToS3(ctx, params.UserDeviceID, params.RangeStart, params.RangeEnd)
 				if err != nil {
 					d.log.Err(err).Str("userId", params.UserID).Str("userDeviceID", params.UserDeviceID).Msg("error while fetching data from elasticsearch")
 					cancel()
@@ -161,34 +155,6 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 
 				nestedCtx, cancel = context.WithCancel(ctx)
 				defer cancel()
-
-				go func() {
-
-					tick := time.NewTicker(1 * time.Second)
-					defer tick.Stop()
-					for {
-						select {
-						case <-nestedCtx.Done():
-							return
-						case <-tick.C:
-							msg.InProgress()
-						}
-					}
-				}()
-
-				keyName := fmt.Sprintf("userDownloads/%+v/DIMODeviceData_%+v_%+v_%+v", params.UserDeviceID, params.UserDeviceID, params.RangeStart, params.RangeEnd)
-				s3link, err := d.StorageSvc.UploadUserData(ctx, ud, keyName)
-				if err != nil {
-					d.log.Err(err).Str("userId", params.UserID).Str("userDeviceID", params.UserDeviceID).Msg("error while uploading data to s3")
-					cancel()
-
-					if err := msg.Nak(); err != nil {
-						d.log.Err(err).Str("userId", params.UserID).Str("userDeviceID", params.UserDeviceID).Msg("error while calling Nak")
-					}
-
-					continue
-				}
-				cancel()
 
 				msg.InProgress()
 

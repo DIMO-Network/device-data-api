@@ -95,7 +95,7 @@ func (ss *StorageService) UploadUserData(ctx context.Context, ud UserData, keyNa
 		return "", err
 	}
 
-	final, err := ss.storageSvcClient.CompleteMultipartUpload(context.TODO(),
+	final, err := ss.storageSvcClient.CompleteMultipartUpload(ctx,
 		&s3.CompleteMultipartUploadInput{
 			Bucket:   aws.String(ss.AWSBucket),
 			Key:      aws.String(keyName),
