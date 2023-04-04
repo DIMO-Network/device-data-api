@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/DIMO-Network/device-data-api/internal/config"
@@ -97,7 +98,7 @@ func (uds *QueryStorageService) StreamDataToS3(ctx context.Context, userDeviceID
 	respSize := pageSize
 
 	expires := time.Now().Add(24 * time.Hour)
-	keyName := fmt.Sprintf("userDownloads/%+v/DIMODeviceData_%+v_%+v_%+v.json", userDeviceID, userDeviceID, startDate[:10], endDate[:10])
+	keyName := fmt.Sprintf("userDownloads/%+v/DIMODeviceData_%+v_%+v_%+v.json", userDeviceID, userDeviceID, startDate, endDate) //startDate[:10], endDate[:10])
 	upload, err := uds.storageSvcClient.CreateMultipartUpload(ctx, &s3.CreateMultipartUploadInput{
 		Bucket:  aws.String(uds.AWSBucket),
 		Key:     aws.String(keyName),
@@ -118,7 +119,6 @@ func (uds *QueryStorageService) StreamDataToS3(ctx context.Context, userDeviceID
 
 		respSize = int(gjson.Get(response, "hits.hits.#").Int())
 		if respSize == 0 {
-			fmt.Println("this one!!!")
 			break
 		}
 
@@ -137,7 +137,7 @@ func (uds *QueryStorageService) StreamDataToS3(ctx context.Context, userDeviceID
 		}
 
 		if partNum == 1 {
-			opening := fmt.Sprintf(`{"userDeviceId": "%s","requestTimestamp": "%s", "data":`, userDeviceID, time.Now().Format(time.RFC3339))
+			opening := fmt.Sprintf(`{"userDeviceId": "%s","requestTimestamp": "%s", "data": [`, userDeviceID, time.Now().Format(time.RFC3339))
 			dataString = opening + dataString
 		}
 
@@ -214,6 +214,9 @@ func (uds *QueryStorageService) trimJSON(data []map[string]interface{}) (string,
 	if err != nil {
 		return "", err
 	}
-	s := string(b)
-	return s[:len(s)-2], nil
+	s := strings.Trim(string(b), " ")
+	s = strings.TrimLeft(s, "[")
+	s = strings.TrimRight(s, "]")
+
+	return s, nil
 }
