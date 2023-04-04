@@ -23,7 +23,7 @@ func ValidateQueryParams(p *QueryValues, c *fiber.Ctx) error {
 	}
 
 	if p.RangeStart == "" {
-		p.RangeStart = "2021-01-01T00:00:00.000Z"
+		p.RangeStart = "2022-01-01T00:00:00.000Z"
 	}
 
 	if p.RangeEnd == "" {
