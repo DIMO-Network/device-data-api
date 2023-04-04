@@ -134,7 +134,6 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 				defer cancel()
 
 				go func() {
-
 					tick := time.NewTicker(1 * time.Second)
 					defer tick.Stop()
 					for {

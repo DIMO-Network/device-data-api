@@ -18,33 +18,19 @@ type QueryValues struct {
 func ValidateQueryParams(p *QueryValues, c *fiber.Ctx) error {
 
 	err := c.QueryParser(p)
-
-	if p.Timezone == "" {
-		p.Timezone = "America/New_York"
+	if err != nil {
+		return err
 	}
 
 	if p.RangeStart == "" {
-		p.RangeStart = "20220101"
+		p.RangeStart = "2021-01-01T00:00:00.000Z"
 	}
 
 	if p.RangeEnd == "" {
-		p.RangeEnd = time.Now().Format("20060102")
+		p.RangeEnd = time.Now().Format(time.RFC3339)
 	}
 
-	s, err := time.Parse("20060102", p.RangeStart)
-	if err != nil {
-		return err
-	}
-
-	e, err := time.Parse("20060102", p.RangeEnd)
-	if err != nil {
-		return err
-	}
-
-	p.RangeStart = s.Format("2006-01-02")
-	p.RangeEnd = e.Format("2006-01-02")
-
-	return nil
+	return c.QueryParser(p)
 }
 
 func getUserID(c *fiber.Ctx) string {
