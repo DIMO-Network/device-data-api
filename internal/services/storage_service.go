@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/rs/zerolog"
 )
 
@@ -73,9 +74,45 @@ func (ss *StorageService) UploadUserData(ctx context.Context, ud UserData, keyNa
 		return "", err
 	}
 
-	err = ss.putObjectS3(ctx, keyName, dataBytes)
+	expires := time.Now().Add(24 * time.Hour)
+
+	upload, err := ss.storageSvcClient.CreateMultipartUpload(ctx, &s3.CreateMultipartUploadInput{
+		Bucket:  aws.String(ss.AWSBucket),
+		Key:     aws.String(keyName),
+		Expires: &expires,
+	})
+
+	reader := bytes.NewReader(dataBytes)
+
+	part1, err := ss.storageSvcClient.UploadPart(ctx, &s3.UploadPartInput{
+		Bucket:     aws.String(ss.AWSBucket),
+		Key:        aws.String(keyName),
+		UploadId:   upload.UploadId,
+		PartNumber: int32(1),
+		Body:       reader,
+	})
 	if err != nil {
 		return "", err
 	}
-	return ss.generatePreSignedURL(ctx, keyName)
+
+	final, err := ss.storageSvcClient.CompleteMultipartUpload(context.TODO(),
+		&s3.CompleteMultipartUploadInput{
+			Bucket:   aws.String(ss.AWSBucket),
+			Key:      aws.String(keyName),
+			UploadId: upload.UploadId,
+			MultipartUpload: &types.CompletedMultipartUpload{
+				Parts: []types.CompletedPart{
+					{
+						PartNumber: 1,
+						ETag:       part1.ETag,
+					},
+				},
+			},
+		},
+	)
+	if err != nil {
+		return "", err
+	}
+
+	return *final.Location, nil
 }
