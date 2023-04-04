@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"time"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
 )
@@ -14,6 +16,20 @@ type QueryValues struct {
 }
 
 func ValidateQueryParams(p *QueryValues, c *fiber.Ctx) error {
+
+	err := c.QueryParser(p)
+	if err != nil {
+		return err
+	}
+
+	if p.RangeStart == "" {
+		p.RangeStart = "2021-01-01T00:00:00.000Z"
+	}
+
+	if p.RangeEnd == "" {
+		p.RangeEnd = time.Now().Format(time.RFC3339)
+	}
+
 	return c.QueryParser(p)
 }
 

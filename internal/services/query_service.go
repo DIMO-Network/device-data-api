@@ -100,15 +100,6 @@ func (uds *DataQueryService) FetchUserData(userDeviceID, startDate, endDate stri
 var pageSize = 10000
 
 func (uds *DataQueryService) formatUserDataRequest(userDeviceID, startDate, endDate string) *search.Request {
-
-	if startDate == "" {
-		startDate = "2021-01-01T00:00:00.000Z"
-	}
-
-	if endDate == "" {
-		endDate = time.Now().Format(time.RFC3339)
-	}
-
 	query := &search.Request{
 		Query: &types.Query{
 			Bool: &types.BoolQuery{
