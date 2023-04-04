@@ -146,7 +146,7 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 					}
 				}()
 
-				ud, err := d.QuerySvc.FetchUserData(params.UserDeviceID, params.RangeStart, params.RangeEnd, params.Timezone)
+				ud, err := d.QuerySvc.FetchUserData(params.UserDeviceID, params.RangeStart, params.RangeEnd)
 				if err != nil {
 					d.log.Err(err).Str("userId", params.UserID).Str("userDeviceID", params.UserDeviceID).Msg("error while fetching data from elasticsearch")
 					cancel()
