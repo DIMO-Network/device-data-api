@@ -130,6 +130,14 @@ func (uds *QueryStorageService) StreamDataToS3(ctx context.Context, userDeviceID
 				},
 			)
 			if err != nil {
+				_, s3err := uds.storageSvcClient.AbortMultipartUpload(ctx, &s3.AbortMultipartUploadInput{
+					Bucket:   aws.String(uds.AWSBucket),
+					Key:      aws.String(keyName),
+					UploadId: upload.UploadId,
+				})
+				if s3err != nil {
+					uds.log.Err(s3err).Msgf("error aborting multipart upload: %+v", err)
+				}
 				return downloadLinks, err
 			}
 
@@ -141,11 +149,18 @@ func (uds *QueryStorageService) StreamDataToS3(ctx context.Context, userDeviceID
 				Expires: &expires,
 			})
 			if err != nil {
+				_, s3err := uds.storageSvcClient.AbortMultipartUpload(ctx, &s3.AbortMultipartUploadInput{
+					Bucket:   aws.String(uds.AWSBucket),
+					Key:      aws.String(keyName),
+					UploadId: upload.UploadId,
+				})
+				if s3err != nil {
+					uds.log.Err(s3err).Msgf("error aborting multipart upload: %+v", err)
+				}
 				return downloadLinks, err
 			}
 
 			parts = make([]awstypes.CompletedPart, 0)
-			fmt.Println("new file: ", keyName)
 			newFile = false
 			fileSize = 0
 		}
@@ -153,6 +168,14 @@ func (uds *QueryStorageService) StreamDataToS3(ctx context.Context, userDeviceID
 		response, err := uds.executeESQuery(query)
 		if err != nil {
 			uds.log.Err(err).Msg("user data download: unable to query elasticsearch")
+			_, s3err := uds.storageSvcClient.AbortMultipartUpload(ctx, &s3.AbortMultipartUploadInput{
+				Bucket:   aws.String(uds.AWSBucket),
+				Key:      aws.String(keyName),
+				UploadId: upload.UploadId,
+			})
+			if s3err != nil {
+				uds.log.Err(s3err).Msgf("error aborting multipart upload: %+v", err)
+			}
 			return downloadLinks, err
 		}
 
@@ -165,6 +188,14 @@ func (uds *QueryStorageService) StreamDataToS3(ctx context.Context, userDeviceID
 		err = json.Unmarshal([]byte(gjson.Get(response, "hits.hits.#._source").Raw), &data)
 		if err != nil {
 			uds.log.Err(err).Msg("user data download: unable to unmarshal data")
+			_, s3err := uds.storageSvcClient.AbortMultipartUpload(ctx, &s3.AbortMultipartUploadInput{
+				Bucket:   aws.String(uds.AWSBucket),
+				Key:      aws.String(keyName),
+				UploadId: upload.UploadId,
+			})
+			if s3err != nil {
+				uds.log.Err(s3err).Msgf("error aborting multipart upload: %+v", err)
+			}
 			return downloadLinks, err
 		}
 
@@ -172,6 +203,14 @@ func (uds *QueryStorageService) StreamDataToS3(ctx context.Context, userDeviceID
 		fmt.Println(partNum)
 		dataString, err := uds.trimJSON(data)
 		if err != nil {
+			_, s3err := uds.storageSvcClient.AbortMultipartUpload(ctx, &s3.AbortMultipartUploadInput{
+				Bucket:   aws.String(uds.AWSBucket),
+				Key:      aws.String(keyName),
+				UploadId: upload.UploadId,
+			})
+			if s3err != nil {
+				uds.log.Err(s3err).Msgf("error aborting multipart upload: %+v", err)
+			}
 			return downloadLinks, err
 		}
 
@@ -188,7 +227,6 @@ func (uds *QueryStorageService) StreamDataToS3(ctx context.Context, userDeviceID
 
 		fileSize += len([]byte(dataString))
 		if fileSize > uds.MaxFileSize {
-			fmt.Println("should make another file")
 			dataString = strings.Trim(dataString, ",")
 
 			if !strings.HasSuffix(dataString, "]}") {
@@ -206,6 +244,14 @@ func (uds *QueryStorageService) StreamDataToS3(ctx context.Context, userDeviceID
 			Body:       reader,
 		})
 		if err != nil {
+			_, s3err := uds.storageSvcClient.AbortMultipartUpload(ctx, &s3.AbortMultipartUploadInput{
+				Bucket:   aws.String(uds.AWSBucket),
+				Key:      aws.String(keyName),
+				UploadId: upload.UploadId,
+			})
+			if s3err != nil {
+				uds.log.Err(s3err).Msgf("error aborting multipart upload: %+v", err)
+			}
 			return downloadLinks, err
 		}
 
@@ -230,6 +276,14 @@ func (uds *QueryStorageService) StreamDataToS3(ctx context.Context, userDeviceID
 		},
 	)
 	if err != nil {
+		_, s3err := uds.storageSvcClient.AbortMultipartUpload(ctx, &s3.AbortMultipartUploadInput{
+			Bucket:   aws.String(uds.AWSBucket),
+			Key:      aws.String(keyName),
+			UploadId: upload.UploadId,
+		})
+		if s3err != nil {
+			uds.log.Err(s3err).Msgf("error aborting multipart upload: %+v", err)
+		}
 		return downloadLinks, err
 	}
 
