@@ -28,6 +28,7 @@ type QueryStorageService struct {
 	AWSBucket               string
 	ElasticIndex            string
 	NATSDataDownloadSubject string
+	MaxFileSize             int
 }
 
 type UserData struct {
@@ -62,6 +63,7 @@ func NewQueryStorageService(es *elasticsearch.TypedClient, settings *config.Sett
 		AWSBucket:               settings.AWSBucketName,
 		ElasticIndex:            settings.ElasticIndex,
 		NATSDataDownloadSubject: settings.NATSDataDownloadSubject,
+		MaxFileSize:             settings.MaxFileSize,
 		log:                     log}, nil
 }
 
@@ -93,28 +95,65 @@ func (uds *QueryStorageService) executeESQuery(q *search.Request) (string, error
 	return response, nil
 }
 
-func (uds *QueryStorageService) StreamDataToS3(ctx context.Context, userDeviceID string, startDate, endDate time.Time) (string, error) {
-	query := uds.formatUserDataRequest(userDeviceID, startDate, endDate)
+func (uds *QueryStorageService) StreamDataToS3(ctx context.Context, userDeviceID string, startDate, endDate time.Time) ([]string, error) {
 	respSize := pageSize
+	var docCount int
+	var fileSize int
+	var newFile bool
+	var keyName string
+	downloadLinks := make([]string, 0)
+	parts := make([]awstypes.CompletedPart, 0)
+
+	query := uds.formatUserDataRequest(userDeviceID, startDate, endDate)
 
 	expires := time.Now().Add(24 * time.Hour)
-	keyName := fmt.Sprintf("userDownloads/%+v/DIMODeviceData_%+v_%+v_%+v.json", userDeviceID, userDeviceID, startDate, endDate) //startDate[:10], endDate[:10])
+	keyName, docCount = generateKeyName(userDeviceID, docCount, startDate, endDate)
 	upload, err := uds.storageSvcClient.CreateMultipartUpload(ctx, &s3.CreateMultipartUploadInput{
 		Bucket:  aws.String(uds.AWSBucket),
 		Key:     aws.String(keyName),
 		Expires: &expires,
 	})
 	if err != nil {
-		return "", err
+		return downloadLinks, err
 	}
 
-	parts := make([]awstypes.CompletedPart, 0)
-
 	for respSize == pageSize {
+		if newFile {
+			final, err := uds.storageSvcClient.CompleteMultipartUpload(ctx,
+				&s3.CompleteMultipartUploadInput{
+					Bucket:   aws.String(uds.AWSBucket),
+					Key:      aws.String(keyName),
+					UploadId: upload.UploadId,
+					MultipartUpload: &awstypes.CompletedMultipartUpload{
+						Parts: parts,
+					},
+				},
+			)
+			if err != nil {
+				return downloadLinks, err
+			}
+
+			downloadLinks = append(downloadLinks, *final.Location)
+			keyName, docCount = generateKeyName(userDeviceID, docCount, startDate, endDate)
+			upload, err = uds.storageSvcClient.CreateMultipartUpload(ctx, &s3.CreateMultipartUploadInput{
+				Bucket:  aws.String(uds.AWSBucket),
+				Key:     aws.String(keyName),
+				Expires: &expires,
+			})
+			if err != nil {
+				return downloadLinks, err
+			}
+
+			parts = make([]awstypes.CompletedPart, 0)
+			fmt.Println("new file: ", keyName)
+			newFile = false
+			fileSize = 0
+		}
+
 		response, err := uds.executeESQuery(query)
 		if err != nil {
 			uds.log.Err(err).Msg("user data download: unable to query elasticsearch")
-			return "", err
+			return downloadLinks, err
 		}
 
 		respSize = int(gjson.Get(response, "hits.hits.#").Int())
@@ -126,14 +165,14 @@ func (uds *QueryStorageService) StreamDataToS3(ctx context.Context, userDeviceID
 		err = json.Unmarshal([]byte(gjson.Get(response, "hits.hits.#._source").Raw), &data)
 		if err != nil {
 			uds.log.Err(err).Msg("user data download: unable to unmarshal data")
-			return "", err
+			return downloadLinks, err
 		}
 
 		partNum := int32(len(parts) + 1)
 		fmt.Println(partNum)
 		dataString, err := uds.trimJSON(data)
 		if err != nil {
-			return "", err
+			return downloadLinks, err
 		}
 
 		if partNum == 1 {
@@ -147,6 +186,17 @@ func (uds *QueryStorageService) StreamDataToS3(ctx context.Context, userDeviceID
 			dataString = dataString + ","
 		}
 
+		fileSize += len([]byte(dataString))
+		if fileSize > uds.MaxFileSize {
+			fmt.Println("should make another file")
+			dataString = strings.Trim(dataString, ",")
+
+			if !strings.HasSuffix(dataString, "]}") {
+				dataString += "]}"
+			}
+			newFile = true
+		}
+
 		reader := bytes.NewReader([]byte(dataString))
 		part, err := uds.storageSvcClient.UploadPart(ctx, &s3.UploadPartInput{
 			Bucket:     aws.String(uds.AWSBucket),
@@ -156,7 +206,7 @@ func (uds *QueryStorageService) StreamDataToS3(ctx context.Context, userDeviceID
 			Body:       reader,
 		})
 		if err != nil {
-			return "", err
+			return downloadLinks, err
 		}
 
 		parts = append(parts, awstypes.CompletedPart{
@@ -180,10 +230,11 @@ func (uds *QueryStorageService) StreamDataToS3(ctx context.Context, userDeviceID
 		},
 	)
 	if err != nil {
-		return "", err
+		return downloadLinks, err
 	}
 
-	return *final.Location, nil
+	downloadLinks = append(downloadLinks, *final.Location)
+	return downloadLinks, nil
 }
 
 // Elastic maximum.
@@ -226,4 +277,19 @@ func timeToEndpoint(t time.Time) *string {
 	}
 	s := t.Format(time.RFC3339)
 	return &s
+}
+
+func generateKeyName(userDeviceID string, docCount int, startDate, endDate time.Time) (string, int) {
+	var start, end string
+	docCount = docCount + 1
+
+	if !startDate.IsZero() {
+		start = "_" + startDate.Format("2006-01-02")
+	}
+
+	if !endDate.IsZero() {
+		end = "_" + startDate.Format("2006-01-02")
+	}
+
+	return fmt.Sprintf("userDownloads/%+v/%+v_DIMODeviceData_%+v%+v%+v.json", userDeviceID, docCount, userDeviceID, start, end), docCount
 }
