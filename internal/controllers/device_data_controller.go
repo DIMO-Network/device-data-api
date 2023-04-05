@@ -11,13 +11,12 @@ import (
 	"github.com/DIMO-Network/device-data-api/internal/config"
 	"github.com/DIMO-Network/device-data-api/internal/services"
 	pr "github.com/DIMO-Network/shared/middleware/privilegetoken"
-	"github.com/aquasecurity/esquery"
-	"github.com/elastic/go-elasticsearch/v7"
 	es8 "github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/core/search"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/some"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/calendarinterval"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/sortorder"
 	"github.com/gofiber/fiber/v2"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
@@ -28,7 +27,6 @@ import (
 type DeviceDataController struct {
 	Settings  *config.Settings
 	log       *zerolog.Logger
-	es        *elasticsearch.Client
 	deviceAPI services.DeviceAPIService
 	es8Client *es8.TypedClient
 }
@@ -45,13 +43,11 @@ func NewDeviceDataController(
 	settings *config.Settings,
 	logger *zerolog.Logger,
 	deviceAPIService services.DeviceAPIService,
-	es *elasticsearch.Client,
 	es8Client *es8.TypedClient,
 ) DeviceDataController {
 	return DeviceDataController{
 		Settings:  settings,
 		log:       logger,
-		es:        es,
 		deviceAPI: deviceAPIService,
 		es8Client: es8Client,
 	}
@@ -98,43 +94,8 @@ func (d *DeviceDataController) GetHistoricalRaw(c *fiber.Ctx) error {
 	if !exists {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
-	res, err := esquery.Search().
-		Query(
-			esquery.CustomQuery(
-				map[string]any{
-					"function_score": map[string]any{
-						"query": esquery.Bool().
-							Filter(
-								esquery.Term("subject", userDeviceID),
-								esquery.Range("data.timestamp").Gte(startDate).Lte(endDate),
-							).
-							Should(
-								esquery.Exists("data.odometer"),
-								esquery.Exists("data.latitude"),
-							).
-							MinimumShouldMatch(1).Map(),
-						"random_score": map[string]any{},
-					},
-				},
-			),
-		).
-		Size(1000).
-		Run(d.es, d.es.Search.WithContext(c.Context()), d.es.Search.WithIndex(d.Settings.DeviceDataIndexName))
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
-	if res.StatusCode >= fiber.StatusBadRequest {
-		d.log.Error().Str("userDeviceId", userDeviceID).Interface("response", res).Msgf("Got status code %d from Elastic.", res.StatusCode)
-		return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
-	}
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		d.log.Err(err).Str("userDeviceId", userDeviceID).Msg("Failed to read Elastic response body.")
-		return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
-	}
-	c.Set("Content-Type", fiber.MIMEApplicationJSON)
-	return c.Status(fiber.StatusOK).Send(body)
+
+	return d.getHistory(c, userDeviceID, startDate, endDate, types.SourceFilter{})
 }
 
 // GetHistoricalRawPermissioned godoc
@@ -181,50 +142,65 @@ func (d *DeviceDataController) GetHistoricalRawPermissioned(c *fiber.Ctx) error 
 
 	claims := c.Locals("tokenClaims").(pr.CustomClaims)
 	privileges := claims.PrivilegeIDs
-	query := esquery.Search()
+
+	var filter types.SourceFilter
 
 	if slices.Contains(privileges, AllTimeLocation) {
-		query = query.SourceIncludes("data.latitude", "data.longitude", "location", "data.cell", "cell")
+		filter.Includes = append(filter.Includes, "data.latitude", "data.longitude", "location", "data.cell", "cell")
 	} else {
-		query = query.SourceExcludes("data.latitude", "data.longitude", "location", "data.cell", "cell")
+		filter.Excludes = append(filter.Excludes, "data.latitude", "data.longitude", "location", "data.cell", "cell")
 	}
 
 	if slices.Contains(privileges, NonLocationData) {
-		query = query.SourceIncludes("*")
+		// Overrides the more limited Includes entries from above if the token also
+		// has AllTimeLocation.
+		filter.Includes = append(filter.Includes, "*")
 	}
 
-	res, err := query.Query(
-		esquery.CustomQuery(
-			map[string]any{
-				"function_score": map[string]any{
-					"query": esquery.Bool().
-						Filter(
-							esquery.Term("subject", userDevice.Id),
-							esquery.Range("data.timestamp").Gte(startDate).Lte(endDate),
-						).
-						Should(
-							esquery.Exists("data.odometer"),
-							esquery.Exists("data.latitude"),
-						).
-						MinimumShouldMatch(1).Map(),
-					"random_score": map[string]any{},
+	return d.getHistory(c, userDevice.Id, startDate, endDate, filter)
+}
+
+func (d *DeviceDataController) getHistory(c *fiber.Ctx, userDeviceID, startDate, endDate string, filter types.SourceFilter) error {
+	msm := types.MinimumShouldMatch(1)
+
+	var source types.SourceConfig = filter
+
+	req := search.Request{
+		Query: &types.Query{
+			FunctionScore: &types.FunctionScoreQuery{
+				Query: &types.Query{
+					Bool: &types.BoolQuery{
+						Filter: []types.Query{
+							{Term: map[string]types.TermQuery{"subject": {Value: userDeviceID}}},
+							{Range: map[string]types.RangeQuery{"data.timestamp": types.DateRangeQuery{Gte: some.String(startDate), Lte: some.String(endDate)}}},
+						},
+						Should: []types.Query{
+							{Exists: &types.ExistsQuery{Field: "data.odometer"}},
+							{Exists: &types.ExistsQuery{Field: "data.latitude"}},
+						},
+						MinimumShouldMatch: &msm,
+					},
 				},
+				Functions: []types.FunctionScore{{RandomScore: &types.RandomScoreFunction{}}},
 			},
-		),
-	).
-		Size(1000).
-		Run(d.es, d.es.Search.WithContext(c.Context()), d.es.Search.WithIndex(d.Settings.DeviceDataIndexName))
+		},
+		Size:    some.Int(1000),
+		Source_: &source,
+	}
+
+	res, err := d.es8Client.Search().Index(d.Settings.DeviceDataIndexName).Request(&req).Do(c.Context())
 	if err != nil {
 		return err
 	}
 	defer res.Body.Close()
+
 	if res.StatusCode >= fiber.StatusBadRequest {
-		d.log.Error().Str("userDeviceId", userDevice.Id).Interface("response", res).Msgf("Got status code %d from Elastic.", res.StatusCode)
+		d.log.Error().Str("userDeviceId", userDeviceID).Interface("response", res).Msgf("Got status code %d from Elastic.", res.StatusCode)
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
 	}
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		d.log.Err(err).Str("userDeviceId", userDevice.Id).Msg("Failed to read Elastic response body.")
+		d.log.Err(err).Str("userDeviceId", userDeviceID).Msg("Failed to read Elastic response body.")
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
 	}
 	c.Set("Content-Type", fiber.MIMEApplicationJSON)
@@ -253,11 +229,11 @@ func (d *DeviceDataController) GetDistanceDriven(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusNotFound, fmt.Sprintf("No device %s found for user %s", userDeviceID, userID))
 	}
 
-	odoStart, err := d.queryOdometer(c.Context(), esquery.OrderAsc, userDeviceID)
+	odoStart, err := d.queryOdometer(c.Context(), sortorder.Asc, userDeviceID)
 	if err != nil {
 		return errors.Wrap(err, "error querying odometer")
 	}
-	odoEnd, err := d.queryOdometer(c.Context(), esquery.OrderDesc, userDeviceID)
+	odoEnd, err := d.queryOdometer(c.Context(), sortorder.Desc, userDeviceID)
 	if err != nil {
 		return errors.Wrap(err, "error querying odometer")
 	}
@@ -396,24 +372,39 @@ func (d *DeviceDataController) GetDailyDistance(c *fiber.Ctx) error {
 }
 
 // queryOdometer gets the lowest or highest odometer reading depending on order - asc = lowest, desc = highest
-func (d *DeviceDataController) queryOdometer(ctx context.Context, order esquery.Order, userDeviceID string) (float64, error) {
-	res, err := esquery.Search().SourceIncludes("data.odometer").
-		Query(esquery.Bool().Must(
-			esquery.Term("subject", userDeviceID),
-			esquery.Exists("data.odometer"),
-		)).
-		Size(1).
-		Sort("data.odometer", order). // sort by data.odometer to be sure we're getting the highest or lowest number
-		Run(d.es, d.es.Search.WithContext(ctx), d.es.Search.WithIndex(d.Settings.DeviceDataIndexName))
+func (d *DeviceDataController) queryOdometer(ctx context.Context, order sortorder.SortOrder, userDeviceID string) (float64, error) {
+	req := search.Request{
+		Query: &types.Query{
+			Bool: &types.BoolQuery{
+				Filter: []types.Query{
+					{Term: map[string]types.TermQuery{"subject": {Value: userDeviceID}}},
+					{Exists: &types.ExistsQuery{Field: "data.odometer"}},
+				},
+			},
+		},
+		Size: some.Int(1),
+		Sort: []types.SortCombinations{types.SortOptions{SortOptions: map[string]types.FieldSort{"data.odometer": types.FieldSort{Order: &order}}}},
+	}
+
+	res, err := d.es8Client.Search().Index(d.Settings.DeviceDataIndexName).Request(&req).Do(ctx)
 	if err != nil {
 		return 0, err
 	}
-	defer res.Body.Close() // nolint
-	body, _ := io.ReadAll(res.Body)
+	defer res.Body.Close()
 
-	odometer := gjson.GetBytes(body, "hits.hits.0._source.data.odometer")
-	if odometer.Exists() {
-		return odometer.Float(), nil
+	if res.StatusCode != 200 {
+		return 0, fmt.Errorf("status code %d from Elastic", res.StatusCode)
 	}
-	return 0, nil
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return 0, err
+	}
+
+	if gjson.GetBytes(body, "hits.hits.#").Int() == 0 {
+		// Existing behavior. Not great.
+		return 0, nil
+	}
+
+	return gjson.GetBytes(body, "hits.hits.0._source.data.odometer").Float(), nil
 }
