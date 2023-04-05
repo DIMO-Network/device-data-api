@@ -134,10 +134,8 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 				msg.InProgress()
 
 				nestedCtx, cancel := context.WithCancel(ctx)
-				defer cancel()
-
 				go func() {
-					tick := time.NewTicker(1 * time.Second)
+					tick := time.NewTicker(5 * time.Second)
 					defer tick.Stop()
 					for {
 						select {
@@ -157,29 +155,10 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 					if err := msg.Nak(); err != nil {
 						d.log.Err(err).Str("userId", params.UserID).Str("userDeviceID", params.UserDeviceID).Msg("error while calling Nak")
 					}
-
 					continue
 				}
-				cancel()
 
-				nestedCtx, cancel = context.WithCancel(ctx)
-				defer cancel()
-
-				go func() {
-
-					tick := time.NewTicker(1 * time.Second)
-					defer tick.Stop()
-					for {
-						select {
-						case <-nestedCtx.Done():
-							return
-						case <-tick.C:
-							msg.InProgress()
-						}
-					}
-				}()
-
-				keyName := fmt.Sprintf("userDownloads/%+v/DIMODeviceData_%+v_%+v_%+v", params.UserDeviceID, params.UserDeviceID, params.Start, params.End)
+				keyName := fmt.Sprintf("userDownloads/%+v/DIMODeviceData_%+v_%+v_%+v.json", params.UserDeviceID, params.UserDeviceID, params.Start, params.End)
 				s3link, err := d.StorageSvc.UploadUserData(ctx, ud, keyName)
 				if err != nil {
 					d.log.Err(err).Str("userId", params.UserID).Str("userDeviceID", params.UserDeviceID).Msg("error while uploading data to s3")
@@ -188,9 +167,9 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 					if err := msg.Nak(); err != nil {
 						d.log.Err(err).Str("userId", params.UserID).Str("userDeviceID", params.UserDeviceID).Msg("error while calling Nak")
 					}
-
 					continue
 				}
+				// calling cancel directly
 				cancel()
 
 				msg.InProgress()
