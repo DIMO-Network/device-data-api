@@ -49,6 +49,9 @@ func NewDataDownloadController(settings *config.Settings, log *zerolog.Logger, e
 // @Tags         device-data
 // @Produce      json
 // @Success      200
+// @Param        userDeviceID  path   string  true   "user id"
+// @Param        startDate     query  string  false  "startDate eg 2022-01-01T00:00:00.000Z"
+// @Param        endDate       query  string  false  "endDate eg 2022-01-01T00:00:00.000Z"
 // @Router       /user/device-data/:userDeviceID/export/json/email [get]
 func (d *DataDownloadController) DataDownloadHandler(c *fiber.Ctx) error {
 	userID := getUserID(c)
