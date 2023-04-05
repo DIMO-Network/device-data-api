@@ -152,6 +152,8 @@ func (d *DeviceDataController) GetHistoricalRawPermissioned(c *fiber.Ctx) error 
 	}
 
 	if slices.Contains(privileges, NonLocationData) {
+		// Overrides the more limited Includes entries from above if the token also
+		// has AllTimeLocation.
 		filter.Includes = append(filter.Includes, "*")
 	}
 
