@@ -399,5 +399,10 @@ func (d *DeviceDataController) queryOdometer(ctx context.Context, order sortorde
 		return 0, err
 	}
 
+	if gjson.GetBytes(body, "hits.hits.#").Int() == 0 {
+		// Existing behavior. Not great.
+		return 0, nil
+	}
+
 	return gjson.GetBytes(body, "hits.hits.0._source.data.odometer").Float(), nil
 }
