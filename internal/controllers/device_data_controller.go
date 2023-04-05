@@ -187,7 +187,7 @@ func (d *DeviceDataController) GetHistoricalRawPermissioned(c *fiber.Ctx) error 
 
 	msm := types.MinimumShouldMatch(1)
 
-	filter := types.SourceFilter{}
+	var filter types.SourceFilter
 
 	if slices.Contains(privileges, AllTimeLocation) {
 		filter.Includes = append(filter.Includes, "data.latitude", "data.longitude", "location", "data.cell", "cell")
@@ -217,9 +217,7 @@ func (d *DeviceDataController) GetHistoricalRawPermissioned(c *fiber.Ctx) error 
 						MinimumShouldMatch: &msm,
 					},
 				},
-				Functions: []types.FunctionScore{
-					{RandomScore: &types.RandomScoreFunction{}},
-				},
+				Functions: []types.FunctionScore{{RandomScore: &types.RandomScoreFunction{}}},
 			},
 		},
 		Size:    some.Int(1000),
