@@ -5,12 +5,10 @@ go 1.18
 require (
 	github.com/DIMO-Network/shared v0.7.2
 	github.com/ansrivas/fiberprometheus/v2 v2.2.0
-	github.com/aquasecurity/esquery v0.2.0
 	github.com/arsmn/fiber-swagger/v2 v2.31.1
 	github.com/aws/aws-sdk-go-v2 v1.17.2
 	github.com/aws/aws-sdk-go-v2/config v1.18.4
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.29.5
-	github.com/elastic/go-elasticsearch/v7 v7.17.0
 	github.com/elastic/go-elasticsearch/v8 v8.5.0
 	github.com/ethereum/go-ethereum v1.10.26
 	github.com/gofiber/fiber/v2 v2.41.0
@@ -59,7 +57,6 @@ require (
 	github.com/avast/retry-go/v4 v4.1.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
-	github.com/fatih/structs v1.1.0 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.20.0 // indirect
 	github.com/go-openapi/spec v0.20.7 // indirect
