@@ -95,49 +95,7 @@ func (d *DeviceDataController) GetHistoricalRaw(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 
-	msm := types.MinimumShouldMatch(1)
-
-	req := search.Request{
-		Query: &types.Query{
-			FunctionScore: &types.FunctionScoreQuery{
-				Query: &types.Query{
-					Bool: &types.BoolQuery{
-						Filter: []types.Query{
-							{Term: map[string]types.TermQuery{"subject": {Value: userDeviceID}}},
-							{Range: map[string]types.RangeQuery{"data.timestamp": types.DateRangeQuery{Gte: some.String(startDate), Lte: some.String(endDate)}}},
-						},
-						Should: []types.Query{
-							{Exists: &types.ExistsQuery{Field: "data.odometer"}},
-							{Exists: &types.ExistsQuery{Field: "data.latitude"}},
-						},
-						MinimumShouldMatch: &msm,
-					},
-				},
-				Functions: []types.FunctionScore{
-					{RandomScore: &types.RandomScoreFunction{}},
-				},
-			},
-		},
-		Size: some.Int(1000),
-	}
-
-	res, err := d.es8Client.Search().Index(d.Settings.DeviceDataIndexName).Request(&req).Do(c.Context())
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode != 200 {
-		return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
-	}
-
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return err
-	}
-
-	c.Set("Content-Type", fiber.MIMEApplicationJSON)
-	return c.Send(body)
+	return d.getHistory(c, userDeviceID, startDate, endDate, types.SourceFilter{})
 }
 
 // GetHistoricalRawPermissioned godoc
@@ -185,8 +143,6 @@ func (d *DeviceDataController) GetHistoricalRawPermissioned(c *fiber.Ctx) error 
 	claims := c.Locals("tokenClaims").(pr.CustomClaims)
 	privileges := claims.PrivilegeIDs
 
-	msm := types.MinimumShouldMatch(1)
-
 	var filter types.SourceFilter
 
 	if slices.Contains(privileges, AllTimeLocation) {
@@ -199,6 +155,12 @@ func (d *DeviceDataController) GetHistoricalRawPermissioned(c *fiber.Ctx) error 
 		filter.Includes = append(filter.Includes, "*")
 	}
 
+	return d.getHistory(c, userDevice.Id, startDate, endDate, filter)
+}
+
+func (d *DeviceDataController) getHistory(c *fiber.Ctx, userDeviceID, startDate, endDate string, filter types.SourceFilter) error {
+	msm := types.MinimumShouldMatch(1)
+
 	var source types.SourceConfig = filter
 
 	req := search.Request{
@@ -207,7 +169,7 @@ func (d *DeviceDataController) GetHistoricalRawPermissioned(c *fiber.Ctx) error 
 				Query: &types.Query{
 					Bool: &types.BoolQuery{
 						Filter: []types.Query{
-							{Term: map[string]types.TermQuery{"subject": {Value: userDevice.Id}}},
+							{Term: map[string]types.TermQuery{"subject": {Value: userDeviceID}}},
 							{Range: map[string]types.RangeQuery{"data.timestamp": types.DateRangeQuery{Gte: some.String(startDate), Lte: some.String(endDate)}}},
 						},
 						Should: []types.Query{
@@ -231,12 +193,12 @@ func (d *DeviceDataController) GetHistoricalRawPermissioned(c *fiber.Ctx) error 
 	defer res.Body.Close()
 
 	if res.StatusCode >= fiber.StatusBadRequest {
-		d.log.Error().Str("userDeviceId", userDevice.Id).Interface("response", res).Msgf("Got status code %d from Elastic.", res.StatusCode)
+		d.log.Error().Str("userDeviceId", userDeviceID).Interface("response", res).Msgf("Got status code %d from Elastic.", res.StatusCode)
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
 	}
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		d.log.Err(err).Str("userDeviceId", userDevice.Id).Msg("Failed to read Elastic response body.")
+		d.log.Err(err).Str("userDeviceId", userDeviceID).Msg("Failed to read Elastic response body.")
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
 	}
 	c.Set("Content-Type", fiber.MIMEApplicationJSON)
