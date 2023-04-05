@@ -93,7 +93,7 @@ func (uds *QueryStorageService) executeESQuery(q *search.Request) (string, error
 	return response, nil
 }
 
-func (uds *QueryStorageService) StreamDataToS3(ctx context.Context, userDeviceID, startDate, endDate string) (string, error) {
+func (uds *QueryStorageService) StreamDataToS3(ctx context.Context, userDeviceID string, startDate, endDate time.Time) (string, error) {
 	query := uds.formatUserDataRequest(userDeviceID, startDate, endDate)
 	respSize := pageSize
 
@@ -189,15 +189,15 @@ func (uds *QueryStorageService) StreamDataToS3(ctx context.Context, userDeviceID
 // Elastic maximum.
 var pageSize = 10000
 
-func (uds *QueryStorageService) formatUserDataRequest(userDeviceID, startDate, endDate string) *search.Request {
+func (uds *QueryStorageService) formatUserDataRequest(userDeviceID string, startDate, endDate time.Time) *search.Request {
 	query := &search.Request{
 		Query: &types.Query{
 			Bool: &types.BoolQuery{
 				Filter: []types.Query{
 					{Match: map[string]types.MatchQuery{"subject": {Query: userDeviceID}}},
 					{Range: map[string]types.RangeQuery{"data.timestamp": types.DateRangeQuery{
-						Gte: &startDate,
-						Lte: &endDate,
+						Gte: timeToEndpoint(startDate),
+						Lte: timeToEndpoint(endDate),
 					}}},
 				},
 			},
@@ -205,7 +205,6 @@ func (uds *QueryStorageService) formatUserDataRequest(userDeviceID, startDate, e
 		Sort: []types.SortCombinations{"data.timestamp"}, // Default is ascending.
 		Size: &pageSize,
 	}
-
 	return query
 }
 
@@ -219,4 +218,12 @@ func (uds *QueryStorageService) trimJSON(data []map[string]interface{}) (string,
 	s = strings.TrimRight(s, "]")
 
 	return s, nil
+}
+
+func timeToEndpoint(t time.Time) *string {
+	if t.IsZero() {
+		return nil
+	}
+	s := t.Format(time.RFC3339)
+	return &s
 }

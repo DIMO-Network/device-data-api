@@ -43,6 +43,9 @@ func NewDataDownloadController(settings *config.Settings, log *zerolog.Logger, e
 // @Tags         device-data
 // @Produce      json
 // @Success      200
+// @Param        userDeviceID  path   string  true   "user id"
+// @Param        startDate     query  string  false  "startDate eg 2022-01-01T00:00:00.000Z"
+// @Param        endDate       query  string  false  "endDate eg 2022-01-01T00:00:00.000Z"
 // @Router       /user/device-data/:userDeviceID/export/json/email [get]
 func (d *DataDownloadController) DataDownloadHandler(c *fiber.Ctx) error {
 	userID := getUserID(c)
@@ -125,10 +128,8 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 				msg.InProgress()
 
 				nestedCtx, cancel := context.WithCancel(ctx)
-				defer cancel()
-
 				go func() {
-					tick := time.NewTicker(1 * time.Second)
+					tick := time.NewTicker(5 * time.Second)
 					defer tick.Stop()
 					for {
 						select {
@@ -140,7 +141,7 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 					}
 				}()
 
-				s3link, err := d.QuerySvc.StreamDataToS3(ctx, params.UserDeviceID, params.RangeStart, params.RangeEnd)
+				s3link, err := d.QuerySvc.StreamDataToS3(ctx, params.UserDeviceID, params.Start, params.End)
 				if err != nil {
 					d.log.Err(err).Str("userId", params.UserID).Str("userDeviceID", params.UserDeviceID).Msg("error while fetching data from elasticsearch")
 					cancel()
@@ -148,13 +149,10 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 					if err := msg.Nak(); err != nil {
 						d.log.Err(err).Str("userId", params.UserID).Str("userDeviceID", params.UserDeviceID).Msg("error while calling Nak")
 					}
-
 					continue
 				}
-				cancel()
 
-				nestedCtx, cancel = context.WithCancel(ctx)
-				defer cancel()
+				cancel()
 
 				msg.InProgress()
 

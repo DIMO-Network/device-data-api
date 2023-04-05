@@ -8,28 +8,13 @@ import (
 )
 
 type QueryValues struct {
-	RangeStart   string `query:"rangestart" json:"rangeStart"`
-	RangeEnd     string `query:"rangeend" json:"rangeEnd"`
-	Timezone     string `query:"timezone" json:"timeZone"`
-	UserID       string `query:"-" json:"userId"`
-	UserDeviceID string `query:"-" json:"userDeviceId"`
+	Start        time.Time `query:"start" json:"start"`
+	End          time.Time `query:"end" json:"end"`
+	UserID       string    `query:"-" json:"userId"`
+	UserDeviceID string    `query:"-" json:"userDeviceId"`
 }
 
 func ValidateQueryParams(p *QueryValues, c *fiber.Ctx) error {
-
-	err := c.QueryParser(p)
-	if err != nil {
-		return err
-	}
-
-	if p.RangeStart == "" {
-		p.RangeStart = "2022-01-01T00:00:00.000Z"
-	}
-
-	if p.RangeEnd == "" {
-		p.RangeEnd = time.Now().Format(time.RFC3339)
-	}
-
 	return c.QueryParser(p)
 }
 
