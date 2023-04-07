@@ -95,200 +95,207 @@ func (uds *QueryStorageService) executeESQuery(q *search.Request) (string, error
 	return response, nil
 }
 
-func (uds *QueryStorageService) StreamDataToS3(ctx context.Context, userDeviceID string, startDate, endDate time.Time) ([]string, error) {
-	respSize := pageSize
-	var docCount int
-	var fileSize int
-	var newFile bool
-	var keyName string
-	downloadLinks := make([]string, 0)
-	parts := make([]awstypes.CompletedPart, 0)
+func (ud *userData) executeESQuery(q *search.Request) (string, error) {
+	res, err := ud.es.Search().
+		Index(ud.ElasticIndex).
+		Request(q).
+		Do(context.Background())
+	if err != nil {
+		ud.log.Err(err).Msg("Could not query Elasticsearch")
+		return "", err
+	}
+	defer res.Body.Close()
 
-	query := uds.formatUserDataRequest(userDeviceID, startDate, endDate)
+	responseBytes, err := io.ReadAll(res.Body)
+	if err != nil {
+		ud.log.Err(err).Msg("Could not parse Elasticsearch response body")
+		return "", err
+	}
+	response := string(responseBytes)
 
-	expires := time.Now().Add(24 * time.Hour)
-	keyName, docCount = generateKeyName(userDeviceID, docCount, startDate, endDate)
+	if res.StatusCode != 200 {
+		ud.log.Info().RawJSON("elasticsearchResponseBody", responseBytes).Msg("Error from Elastic.")
+
+		err := fmt.Errorf("invalid status code when querying elastic: %d", res.StatusCode)
+		return response, err
+	}
+
+	return response, nil
+}
+
+type userData struct {
+	es               *elasticsearch.TypedClient
+	storageSvcClient *s3.Client
+	log              *zerolog.Logger
+	AWSBucket        string
+	ElasticIndex     string
+	MaxFileSize      int
+	keyName          string
+	uploadObj        *s3.CreateMultipartUploadOutput
+	fileSize         int
+	userDeviceID     string
+	uploadParts      []awstypes.CompletedPart
+	downloadLinks    []string
+	query            *search.Request
+	docCount         int
+}
+
+func (uds *QueryStorageService) newS3Writer(ctx context.Context, query *search.Request, bucketName, userDeviceID string, startDate, endDate time.Time) (*userData, error) {
+
+	exp := time.Now().Add(24 * time.Hour)
+
+	keyName, docCount := generateKeyName(userDeviceID, 0, startDate, endDate)
 	upload, err := uds.storageSvcClient.CreateMultipartUpload(ctx, &s3.CreateMultipartUploadInput{
 		Bucket:  aws.String(uds.AWSBucket),
 		Key:     aws.String(keyName),
-		Expires: &expires,
+		Expires: &exp,
 	})
 	if err != nil {
-		return downloadLinks, err
+		return nil, err
 	}
 
-	for respSize == pageSize {
-		if newFile {
-			final, err := uds.storageSvcClient.CompleteMultipartUpload(ctx,
-				&s3.CompleteMultipartUploadInput{
-					Bucket:   aws.String(uds.AWSBucket),
-					Key:      aws.String(keyName),
-					UploadId: upload.UploadId,
-					MultipartUpload: &awstypes.CompletedMultipartUpload{
-						Parts: parts,
-					},
-				},
-			)
-			if err != nil {
-				_, s3err := uds.storageSvcClient.AbortMultipartUpload(ctx, &s3.AbortMultipartUploadInput{
-					Bucket:   aws.String(uds.AWSBucket),
-					Key:      aws.String(keyName),
-					UploadId: upload.UploadId,
-				})
-				if s3err != nil {
-					uds.log.Err(s3err).Msgf("error aborting multipart upload: %+v", err)
-				}
-				return downloadLinks, err
-			}
+	return &userData{
+		uploadParts:      []awstypes.CompletedPart{},
+		AWSBucket:        bucketName,
+		uploadObj:        upload,
+		keyName:          keyName,
+		docCount:         docCount,
+		es:               uds.es,
+		storageSvcClient: uds.storageSvcClient,
+		log:              uds.log,
+		ElasticIndex:     uds.ElasticIndex,
+		MaxFileSize:      uds.MaxFileSize,
+		userDeviceID:     userDeviceID,
+		query:            query,
+	}, nil
 
-			downloadLinks = append(downloadLinks, *final.Location)
-			keyName, docCount = generateKeyName(userDeviceID, docCount, startDate, endDate)
-			upload, err = uds.storageSvcClient.CreateMultipartUpload(ctx, &s3.CreateMultipartUploadInput{
-				Bucket:  aws.String(uds.AWSBucket),
-				Key:     aws.String(keyName),
-				Expires: &expires,
-			})
-			if err != nil {
-				_, s3err := uds.storageSvcClient.AbortMultipartUpload(ctx, &s3.AbortMultipartUploadInput{
-					Bucket:   aws.String(uds.AWSBucket),
-					Key:      aws.String(keyName),
-					UploadId: upload.UploadId,
-				})
-				if s3err != nil {
-					uds.log.Err(s3err).Msgf("error aborting multipart upload: %+v", err)
-				}
-				return downloadLinks, err
-			}
+}
 
-			parts = make([]awstypes.CompletedPart, 0)
-			newFile = false
-			fileSize = 0
-		}
+func (ud *userData) partNum() int32 {
+	return int32(len(ud.uploadParts) + 1)
+}
 
-		response, err := uds.executeESQuery(query)
-		if err != nil {
-			uds.log.Err(err).Msg("user data download: unable to query elasticsearch")
-			_, s3err := uds.storageSvcClient.AbortMultipartUpload(ctx, &s3.AbortMultipartUploadInput{
-				Bucket:   aws.String(uds.AWSBucket),
-				Key:      aws.String(keyName),
-				UploadId: upload.UploadId,
-			})
-			if s3err != nil {
-				uds.log.Err(s3err).Msgf("error aborting multipart upload: %+v", err)
-			}
-			return downloadLinks, err
-		}
+func (ud *userData) abortUploadHandleError(ctx context.Context, err error) {
+	_, s3err := ud.storageSvcClient.AbortMultipartUpload(ctx, &s3.AbortMultipartUploadInput{
+		Bucket:   aws.String(ud.AWSBucket),
+		Key:      aws.String(ud.keyName),
+		UploadId: ud.uploadObj.UploadId,
+	})
+	if s3err != nil {
+		ud.log.Err(s3err).Msgf("error aborting multipart upload: %+v", err)
+	}
+}
 
-		respSize = int(gjson.Get(response, "hits.hits.#").Int())
-		if respSize == 0 {
-			break
-		}
+func (ud *userData) uploadPartToS3(ctx context.Context, reader *bytes.Reader, uploadParts []awstypes.CompletedPart) ([]awstypes.CompletedPart, error) {
 
-		data := make([]map[string]interface{}, respSize)
-		err = json.Unmarshal([]byte(gjson.Get(response, "hits.hits.#._source").Raw), &data)
-		if err != nil {
-			uds.log.Err(err).Msg("user data download: unable to unmarshal data")
-			_, s3err := uds.storageSvcClient.AbortMultipartUpload(ctx, &s3.AbortMultipartUploadInput{
-				Bucket:   aws.String(uds.AWSBucket),
-				Key:      aws.String(keyName),
-				UploadId: upload.UploadId,
-			})
-			if s3err != nil {
-				uds.log.Err(s3err).Msgf("error aborting multipart upload: %+v", err)
-			}
-			return downloadLinks, err
-		}
+	partNum := int32(len(uploadParts) + 1)
 
-		partNum := int32(len(parts) + 1)
-		fmt.Println(partNum)
-		dataString, err := uds.trimJSON(data)
-		if err != nil {
-			_, s3err := uds.storageSvcClient.AbortMultipartUpload(ctx, &s3.AbortMultipartUploadInput{
-				Bucket:   aws.String(uds.AWSBucket),
-				Key:      aws.String(keyName),
-				UploadId: upload.UploadId,
-			})
-			if s3err != nil {
-				uds.log.Err(s3err).Msgf("error aborting multipart upload: %+v", err)
-			}
-			return downloadLinks, err
-		}
-
-		if partNum == 1 {
-			opening := fmt.Sprintf(`{"userDeviceId": "%s","requestTimestamp": "%s", "data": [`, userDeviceID, time.Now().Format(time.RFC3339))
-			dataString = opening + dataString
-		}
-
-		if respSize != pageSize {
-			dataString = dataString + "]}"
-		} else {
-			dataString = dataString + ","
-		}
-
-		fileSize += len([]byte(dataString))
-		if fileSize > uds.MaxFileSize {
-			dataString = strings.Trim(dataString, ",")
-
-			if !strings.HasSuffix(dataString, "]}") {
-				dataString += "]}"
-			}
-			newFile = true
-		}
-
-		reader := bytes.NewReader([]byte(dataString))
-		part, err := uds.storageSvcClient.UploadPart(ctx, &s3.UploadPartInput{
-			Bucket:     aws.String(uds.AWSBucket),
-			Key:        aws.String(keyName),
-			UploadId:   upload.UploadId,
-			PartNumber: partNum,
-			Body:       reader,
-		})
-		if err != nil {
-			_, s3err := uds.storageSvcClient.AbortMultipartUpload(ctx, &s3.AbortMultipartUploadInput{
-				Bucket:   aws.String(uds.AWSBucket),
-				Key:      aws.String(keyName),
-				UploadId: upload.UploadId,
-			})
-			if s3err != nil {
-				uds.log.Err(s3err).Msgf("error aborting multipart upload: %+v", err)
-			}
-			return downloadLinks, err
-		}
-
-		parts = append(parts, awstypes.CompletedPart{
-			PartNumber: partNum,
-			ETag:       part.ETag,
-		})
-
-		sA := gjson.Get(response, fmt.Sprintf("hits.hits.%d.sort.0", respSize-1))
-		query.SearchAfter = []types.FieldValue{sA.String()}
-
+	part, err := ud.storageSvcClient.UploadPart(ctx, &s3.UploadPartInput{
+		Bucket:     aws.String(ud.AWSBucket),
+		Key:        aws.String(ud.keyName),
+		UploadId:   ud.uploadObj.UploadId,
+		PartNumber: partNum,
+		Body:       reader,
+	})
+	if err != nil {
+		ud.log.Err(err).Msg("error writing part to s3")
+		ud.abortUploadHandleError(ctx, err)
+		return uploadParts, err
 	}
 
-	final, err := uds.storageSvcClient.CompleteMultipartUpload(ctx,
+	uploadParts = append(uploadParts, awstypes.CompletedPart{
+		PartNumber: partNum,
+		ETag:       part.ETag,
+	})
+
+	return uploadParts, nil
+}
+
+func (ud *userData) finishWritingToS3(ctx context.Context, uploadParts []awstypes.CompletedPart) {
+	final, err := ud.storageSvcClient.CompleteMultipartUpload(ctx,
 		&s3.CompleteMultipartUploadInput{
-			Bucket:   aws.String(uds.AWSBucket),
-			Key:      aws.String(keyName),
-			UploadId: upload.UploadId,
+			Bucket:   aws.String(ud.AWSBucket),
+			Key:      aws.String(ud.keyName),
+			UploadId: ud.uploadObj.UploadId,
 			MultipartUpload: &awstypes.CompletedMultipartUpload{
-				Parts: parts,
+				Parts: uploadParts,
 			},
 		},
 	)
 	if err != nil {
-		_, s3err := uds.storageSvcClient.AbortMultipartUpload(ctx, &s3.AbortMultipartUploadInput{
-			Bucket:   aws.String(uds.AWSBucket),
-			Key:      aws.String(keyName),
-			UploadId: upload.UploadId,
-		})
-		if s3err != nil {
-			uds.log.Err(s3err).Msgf("error aborting multipart upload: %+v", err)
-		}
-		return downloadLinks, err
+		ud.log.Err(err).Msg("error finishing file write to s3")
+		ud.abortUploadHandleError(ctx, err)
+		return
 	}
 
-	downloadLinks = append(downloadLinks, *final.Location)
-	return downloadLinks, nil
+	ud.downloadLinks = append(ud.downloadLinks, *final.Location)
+}
+
+func (ud *userData) writeToS3(ctx context.Context, response string) error {
+
+	respSize := int(gjson.Get(response, "hits.hits.#").Int())
+	data := make([]map[string]interface{}, respSize)
+	err := json.Unmarshal([]byte(gjson.Get(response, "hits.hits.#._source").Raw), &data)
+	if err != nil {
+		ud.log.Err(err).Msg("user data download: unable to unmarshal data")
+		ud.abortUploadHandleError(ctx, err)
+		return err
+	}
+
+	dataString, err := trimJSON(data)
+	ud.fileSize += len([]byte(dataString))
+
+	if ud.partNum() == 1 {
+		opening := fmt.Sprintf(`{"userDeviceId": "%s","requestTimestamp": "%s", "data": [`, ud.userDeviceID, time.Now().Format(time.RFC3339))
+		dataString = opening + dataString
+	}
+
+	if respSize < pageSize || ud.fileSize > ud.MaxFileSize {
+		dataString = dataString + "]}"
+		reader := bytes.NewReader([]byte(dataString))
+		uploadParts, err := ud.uploadPartToS3(ctx, reader, ud.uploadParts)
+		if err != nil {
+			return err
+		}
+		ud.finishWritingToS3(ctx, uploadParts)
+		return nil
+	}
+
+	dataString = dataString + ","
+	reader := bytes.NewReader([]byte(dataString))
+	ud.uploadParts, err = ud.uploadPartToS3(ctx, reader, ud.uploadParts)
+	if err != nil {
+		return err
+	}
+
+	sA := gjson.Get(response, fmt.Sprintf("hits.hits.%d.sort.0", respSize-1))
+	ud.query.SearchAfter = []types.FieldValue{sA.String()}
+
+	response, err = ud.executeESQuery(ud.query)
+	if err != nil {
+		ud.log.Err(err).Msg("user data download: unable to unmarshal data")
+		ud.abortUploadHandleError(ctx, err)
+		return err
+	}
+
+	return ud.writeToS3(ctx, response)
+
+}
+
+func (uds *QueryStorageService) StreamDataToS3(ctx context.Context, userDeviceID string, startDate, endDate time.Time) ([]string, error) {
+
+	query := uds.formatUserDataRequest(userDeviceID, startDate, endDate)
+	response, err := uds.executeESQuery(query)
+	if err != nil {
+		return []string{}, err
+	}
+
+	s3writer, err := uds.newS3Writer(ctx, query, uds.AWSBucket, userDeviceID, startDate, endDate)
+
+	s3writer.writeToS3(ctx, response)
+
+	return s3writer.downloadLinks, nil
+
 }
 
 // Elastic maximum.
@@ -313,7 +320,7 @@ func (uds *QueryStorageService) formatUserDataRequest(userDeviceID string, start
 	return query
 }
 
-func (uds *QueryStorageService) trimJSON(data []map[string]interface{}) (string, error) {
+func trimJSON(data []map[string]interface{}) (string, error) {
 	b, err := json.Marshal(data)
 	if err != nil {
 		return "", err
