@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/tidwall/sjson"
 	"io"
 	"strconv"
 	"time"
@@ -25,10 +26,12 @@ import (
 )
 
 type DeviceDataController struct {
-	Settings  *config.Settings
-	log       *zerolog.Logger
-	deviceAPI services.DeviceAPIService
-	es8Client *es8.TypedClient
+	Settings       *config.Settings
+	log            *zerolog.Logger
+	es             *elasticsearch.Client
+	deviceAPI      services.DeviceAPIService
+	es8Client      *es8.TypedClient
+	definitionsAPI services.DeviceDefinitionsAPIService
 }
 
 const (
@@ -43,13 +46,17 @@ func NewDeviceDataController(
 	settings *config.Settings,
 	logger *zerolog.Logger,
 	deviceAPIService services.DeviceAPIService,
+	es *elasticsearch.Client,
 	es8Client *es8.TypedClient,
+	definitionsAPIService services.DeviceDefinitionsAPIService,
 ) DeviceDataController {
 	return DeviceDataController{
-		Settings:  settings,
-		log:       logger,
-		deviceAPI: deviceAPIService,
-		es8Client: es8Client,
+		Settings:       settings,
+		log:            logger,
+		es:             es,
+		deviceAPI:      deviceAPIService,
+		es8Client:      es8Client,
+		definitionsAPI: definitionsAPIService,
 	}
 }
 
@@ -87,15 +94,36 @@ func (d *DeviceDataController) GetHistoricalRaw(c *fiber.Ctx) error {
 	}
 
 	// todo: cache user devices in memory
-	exists, err := d.deviceAPI.UserDeviceBelongsToUserID(c.Context(), userID, userDeviceID)
+	userDevice, err := d.deviceAPI.GetUserDevice(c.Context(), userDeviceID)
 	if err != nil {
 		return err
 	}
+	exists := userDevice.UserId == userID
+
 	if !exists {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 
 	return d.getHistory(c, userDeviceID, startDate, endDate, types.SourceFilter{})
+}
+
+func addRangeIfNotExists(ctx context.Context, deviceDefSvc services.DeviceDefinitionsAPIService, body []byte, deviceDefinitionID string) ([]byte, error) {
+	result := gjson.GetBytes(body, "hits.hits.#.source.data.range") // exists in array?
+	if result.Exists() && len(result.Array()) > 0 {
+		return body, nil
+	}
+	definition, err := deviceDefSvc.GetDeviceDefinition(ctx, deviceDefinitionID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not get device definition by id: %s", deviceDefinitionID)
+	}
+	resultFuel := gjson.GetBytes(body, "hits.hits.#.source.data.fuelPercentRemaining")
+	for _, r := range resultFuel.Array() {
+		// note range is reported in km
+		//definition.DeviceDefinitions[0].DeviceAttributes[0].Name
+		body, _ = sjson.SetBytes(body, fmt.Sprintf("hits.hits.%d.source.data.range", r.Index), 24.5)
+	}
+
+	return body, nil
 }
 
 // GetHistoricalRawPermissioned godoc
