@@ -16,7 +16,6 @@ import (
 	pr "github.com/DIMO-Network/shared/middleware/privilegetoken"
 	"github.com/ansrivas/fiberprometheus/v2"
 	swagger "github.com/arsmn/fiber-swagger/v2"
-	es7 "github.com/elastic/go-elasticsearch/v7"
 	es8 "github.com/elastic/go-elasticsearch/v8"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gofiber/fiber/v2"
@@ -117,18 +116,6 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 		KeyRefreshUnknownKID: &keyRefreshUnknownKID,
 	})
 
-	// Minor hazard of migration.
-	esClient7, err := es7.NewClient(es7.Config{
-		Addresses:            []string{settings.ElasticSearchAnalyticsHost},
-		Username:             settings.ElasticSearchAnalyticsUsername,
-		Password:             settings.ElasticSearchAnalyticsPassword,
-		EnableRetryOnTimeout: true,
-		MaxRetries:           5,
-	})
-	if err != nil {
-		panic(err)
-	}
-
 	esClient8, err := es8.NewTypedClient(es8.Config{
 		Addresses:  []string{settings.ElasticSearchAnalyticsHost},
 		Username:   settings.ElasticSearchAnalyticsUsername,
@@ -141,7 +128,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 
 	deviceAPIService := services.NewDeviceAPIService(settings.DevicesAPIGRPCAddr)
 
-	deviceDataController := controllers.NewDeviceDataController(settings, &logger, deviceAPIService, esClient7, esClient8)
+	deviceDataController := controllers.NewDeviceDataController(settings, &logger, deviceAPIService, esClient8)
 
 	if settings.EnablePrivileges {
 		logger.Info().Str("jwkUrl", settings.TokenExchangeJWTKeySetURL).Str("vehicleAddr", settings.VehicleNFTAddress).Msg("Privileges enabled.")
