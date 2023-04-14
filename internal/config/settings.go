@@ -30,6 +30,7 @@ type Settings struct {
 	NATSDataDownloadSubject        string `yaml:"NATS_DATA_DOWNLOAD_SUBJECT"`
 	NATSAckTimeout                 string `yaml:"NATS_ACK_TIMEOUT"`
 	NATSDurableConsumer            string `yaml:"NATS_DURABLE_CONSUMER"`
+	MaxFileSize                    int    `yaml:"MAX_AWS_FILE_SIZE"`
 
 	EnablePrivileges          bool   `yaml:"ENABLE_PRIVILEGES"`
 	TokenExchangeJWTKeySetURL string `yaml:"TOKEN_EXCHANGE_JWK_KEY_SET_URL"`
