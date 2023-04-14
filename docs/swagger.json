@@ -16,9 +16,30 @@
                 "tags": [
                     "device-data"
                 ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "user id",
+                        "name": "userDeviceID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "startDate eg 2022-01-01T00:00:00.000Z",
+                        "name": "startDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "endDate eg 2022-01-01T00:00:00.000Z",
+                        "name": "endDate",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
@@ -91,7 +112,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     },
                     "404": {
                         "description": "no device found for user with provided parameters"
@@ -136,12 +157,12 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
         },
-        "/vehicle/{tokenID}/history": {
+        "/vehicle/:tokenID/history": {
             "get": {
                 "security": [
                     {
@@ -159,7 +180,7 @@
                     {
                         "type": "integer",
                         "description": "token id",
-                        "name": "toeknID",
+                        "name": "tokenID",
                         "in": "path",
                         "required": true
                     },
@@ -178,35 +199,13 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
         }
     },
     "definitions": {
-        "github.com_DIMO-Network_device-data-api_internal_controllers.DailyDistanceDay": {
-            "type": "object",
-            "properties": {
-                "date": {
-                    "type": "string"
-                },
-                "distance": {
-                    "type": "number"
-                }
-            }
-        },
-        "github.com_DIMO-Network_device-data-api_internal_controllers.DailyDistanceResp": {
-            "type": "object",
-            "properties": {
-                "days": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github.com_DIMO-Network_device-data-api_internal_controllers.DailyDistanceDay"
-                    }
-                }
-            }
-        },
         "internal_controllers.DailyDistanceDay": {
             "type": "object",
             "properties": {

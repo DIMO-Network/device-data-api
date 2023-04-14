@@ -1,19 +1,5 @@
 basePath: /v1
 definitions:
-  github.com_DIMO-Network_device-data-api_internal_controllers.DailyDistanceDay:
-    properties:
-      date:
-        type: string
-      distance:
-        type: number
-    type: object
-  github.com_DIMO-Network_device-data-api_internal_controllers.DailyDistanceResp:
-    properties:
-      days:
-        items:
-          $ref: '#/definitions/github.com_DIMO-Network_device-data-api_internal_controllers.DailyDistanceDay'
-        type: array
-    type: object
   internal_controllers.DailyDistanceDay:
     properties:
       date:
@@ -36,11 +22,25 @@ paths:
   /user/device-data/:userDeviceID/export/json/email:
     get:
       description: returns message indicating that download will be sent to user email
+      parameters:
+      - description: user id
+        in: path
+        name: userDeviceID
+        required: true
+        type: string
+      - description: startDate eg 2022-01-01T00:00:00.000Z
+        in: query
+        name: startDate
+        type: string
+      - description: endDate eg 2022-01-01T00:00:00.000Z
+        in: query
+        name: endDate
+        type: string
       produces:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
       tags:
       - device-data
   /user/device-data/{userDeviceID}/daily-distance:
@@ -85,7 +85,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
         "404":
           description: no device found for user with provided parameters
       security:
@@ -114,18 +114,18 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - BearerAuth: []
       tags:
       - device-data
-  /vehicle/{tokenID}/history:
+  /vehicle/:tokenID/history:
     get:
       description: Get all historical data for a tokenID, within start and end range
       parameters:
       - description: token id
         in: path
-        name: toeknID
+        name: tokenID
         required: true
         type: integer
       - description: startDate eg 2022-01-02. if empty two weeks back
@@ -140,7 +140,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - BearerAuth: []
       tags:
