@@ -42,28 +42,28 @@ func NewDataDownloadController(settings *config.Settings, log *zerolog.Logger, e
 }
 
 // DataDownloadHandler godoc
-// @Description  returns message indicating that download will be sent to user email
+// @Description  Enqueues a data export job for the specified device. A link to download
+// @Description  a large JSON file of signals will be emailed to the address on file for the
+// @Description  current user.
 // @Tags         device-data
 // @Produce      json
 // @Success      200
-// @Param        userDeviceID  path   string  true   "user id"
-// @Param        startDate     query  string  false  "startDate eg 2022-01-01T00:00:00.000Z"
-// @Param        endDate       query  string  false  "endDate eg 2022-01-01T00:00:00.000Z"
+// @Security     BearerAuth
+// @Param        userDeviceID  path   string  true   "Device id" Example(2OQjmqUt9dguQbJt1WImuVfje3W)
+// @Param        start     query  string  false  "Start timestamp in RFC-3339 format" Example(2023-04-14T07:20:50.52Z)
+// @Param        end       query  string  false  "End timestamp in RFC-3339 format" Example(2023-04-14T08:11:33.94Z)
 // @Router       /user/device-data/{userDeviceID}/export/json/email [get]
 func (d *DataDownloadController) DataDownloadHandler(c *fiber.Ctx) error {
 	userID := getUserID(c)
 	userDeviceID := c.Params("userDeviceID")
-	exists, err := d.deviceAPI.UserDeviceBelongsToUserID(c.Context(), userID, userDeviceID)
-	if err != nil {
+	if isOwner, err := d.deviceAPI.UserDeviceBelongsToUserID(c.Context(), userID, userDeviceID); err != nil {
 		return err
-	}
-	if !exists {
+	} else if !isOwner {
 		return fiber.NewError(fiber.StatusNotFound, fmt.Sprintf("No device %s found for user %s", userDeviceID, userID))
 	}
 
 	var params QueryValues
-	err = ValidateQueryParams(&params, c)
-	if err != nil {
+	if err := c.QueryParser(&params); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
@@ -75,8 +75,7 @@ func (d *DataDownloadController) DataDownloadHandler(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	_, err = d.NATSSvc.JetStream.Publish(d.QuerySvc.NATSDataDownloadSubject, b)
-	if err != nil {
+	if _, err = d.NATSSvc.JetStream.Publish(d.QuerySvc.NATSDataDownloadSubject, b); err != nil {
 		return err
 	}
 

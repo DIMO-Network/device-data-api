@@ -14,10 +14,6 @@ type QueryValues struct {
 	UserDeviceID string    `query:"-" json:"userDeviceId"`
 }
 
-func ValidateQueryParams(p *QueryValues, c *fiber.Ctx) error {
-	return c.QueryParser(p)
-}
-
 func getUserID(c *fiber.Ctx) string {
 	token := c.Locals("user").(*jwt.Token)
 	claims := token.Claims.(jwt.MapClaims)

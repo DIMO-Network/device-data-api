@@ -70,26 +70,34 @@ paths:
       - device-data
   /user/device-data/{userDeviceID}/export/json/email:
     get:
-      description: returns message indicating that download will be sent to user email
+      description: |-
+        Enqueues a data export job for the specified device. A link to download
+        a large JSON file of signals will be emailed to the address on file for the
+        current user.
       parameters:
-      - description: user id
+      - description: Device id
+        example: 2OQjmqUt9dguQbJt1WImuVfje3W
         in: path
         name: userDeviceID
         required: true
         type: string
-      - description: startDate eg 2022-01-01T00:00:00.000Z
+      - description: Start timestamp in RFC-3339 format
+        example: "2023-04-14T07:20:50.52Z"
         in: query
-        name: startDate
+        name: start
         type: string
-      - description: endDate eg 2022-01-01T00:00:00.000Z
+      - description: End timestamp in RFC-3339 format
+        example: "2023-04-14T08:11:33.94Z"
         in: query
-        name: endDate
+        name: end
         type: string
       produces:
       - application/json
       responses:
         "200":
           description: OK
+      security:
+      - BearerAuth: []
       tags:
       - device-data
   /user/device-data/{userDeviceID}/historical:
