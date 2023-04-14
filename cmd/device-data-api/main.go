@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -13,14 +15,14 @@ import (
 	"github.com/DIMO-Network/device-data-api/internal/controllers"
 	"github.com/DIMO-Network/device-data-api/internal/services"
 	"github.com/DIMO-Network/shared"
-	pr "github.com/DIMO-Network/shared/middleware/privilegetoken"
-	swagger "github.com/arsmn/fiber-swagger/v2"
-	es8 "github.com/elastic/go-elasticsearch/v8"
+	"github.com/DIMO-Network/shared/middleware/privilegetoken"
+	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	jwtware "github.com/gofiber/jwt/v3"
+	"github.com/gofiber/swagger"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
 )
@@ -32,12 +34,9 @@ import (
 // @in                          header
 // @name                        Authorization
 func main() {
-	gitSha1 := os.Getenv("GIT_SHA1")
-	//ctx := context.Background()
 	logger := zerolog.New(os.Stdout).With().
 		Timestamp().
 		Str("app", "device-data-api").
-		Str("git-sha1", gitSha1).
 		Logger()
 
 	settings, err := shared.LoadConfig[config.Settings]("settings.yaml")
@@ -49,33 +48,6 @@ func main() {
 		logger.Fatal().Err(err).Msgf("could not parse LOG_LEVEL: %s", settings.LogLevel)
 	}
 	zerolog.SetGlobalLevel(level)
-
-	if len(os.Args) > 1 {
-		switch subCommand := os.Args[1]; subCommand {
-		case "data-download-consumer":
-			esClient8, err := es8.NewTypedClient(es8.Config{
-				Addresses:  []string{settings.ElasticSearchAnalyticsHost},
-				Username:   settings.ElasticSearchAnalyticsUsername,
-				Password:   settings.ElasticSearchAnalyticsPassword,
-				MaxRetries: 5,
-			})
-			if err != nil {
-				panic(err)
-			}
-
-			deviceAPIService := services.NewDeviceAPIService(settings.DevicesAPIGRPCAddr)
-
-			dataDownloadController, err := controllers.NewDataDownloadController(&settings, &logger, esClient8, deviceAPIService)
-			if err != nil {
-				panic(err)
-			}
-
-			err = dataDownloadController.DataDownloadConsumer(context.Background())
-			if err != nil {
-				logger.Info().Err(err).Msg("data download consuemr error")
-			}
-		}
-	}
 
 	// start the actual stuff
 	startPrometheus(logger)
@@ -99,11 +71,8 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 	app.Use(cors.New())
 
 	app.Get("/", healthCheck)
-	sc := swagger.Config{ // custom
-		// Expand ("list") or Collapse ("none") tag groups by default
-		//DocExpansion: "list",
-	}
-	app.Get("/v1/swagger/*", swagger.New(sc))
+	app.Get("/v1/swagger/*", swagger.HandlerDefault)
+
 	// secured paths
 	keyRefreshInterval := time.Hour
 	keyRefreshUnknownKID := true
@@ -111,44 +80,45 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 		KeySetURL:            settings.JwtKeySetURL,
 		KeyRefreshInterval:   &keyRefreshInterval,
 		KeyRefreshUnknownKID: &keyRefreshUnknownKID,
+		ErrorHandler: func(c *fiber.Ctx, err error) error {
+			return fiber.NewError(fiber.StatusUnauthorized, "Invalid JWT.")
+		},
 	})
 
-	esClient8, err := es8.NewTypedClient(es8.Config{
+	esClient8, err := elasticsearch.NewTypedClient(elasticsearch.Config{
 		Addresses:  []string{settings.ElasticSearchAnalyticsHost},
 		Username:   settings.ElasticSearchAnalyticsUsername,
 		Password:   settings.ElasticSearchAnalyticsPassword,
 		MaxRetries: 5,
 	})
 	if err != nil {
-		panic(err)
+		logger.Fatal().Err(err).Msg("Error constructing Elasticsearch client.")
 	}
 
 	deviceAPIService := services.NewDeviceAPIService(settings.DevicesAPIGRPCAddr)
 
 	deviceDataController := controllers.NewDeviceDataController(settings, &logger, deviceAPIService, esClient8)
 
-	if settings.EnablePrivileges {
-		logger.Info().Str("jwkUrl", settings.TokenExchangeJWTKeySetURL).Str("vehicleAddr", settings.VehicleNFTAddress).Msg("Privileges enabled.")
-		privilegeAuth := jwtware.New(jwtware.Config{
-			KeySetURL:            settings.TokenExchangeJWTKeySetURL,
-			KeyRefreshInterval:   &keyRefreshInterval,
-			KeyRefreshUnknownKID: &keyRefreshUnknownKID,
-			ErrorHandler: func(c *fiber.Ctx, err error) error {
-				logger.Err(err).Msg("Privilege token error.")
-				return fiber.DefaultErrorHandler(c, err)
-			},
-		})
+	logger.Info().Str("jwkUrl", settings.TokenExchangeJWTKeySetURL).Str("vehicleAddr", settings.VehicleNFTAddress).Msg("Privileges enabled.")
+	privilegeAuth := jwtware.New(jwtware.Config{
+		KeySetURL:            settings.TokenExchangeJWTKeySetURL,
+		KeyRefreshInterval:   &keyRefreshInterval,
+		KeyRefreshUnknownKID: &keyRefreshUnknownKID,
+		ErrorHandler: func(c *fiber.Ctx, err error) error {
+			logger.Err(err).Msg("Privilege token error.")
+			return fiber.DefaultErrorHandler(c, err)
+		},
+	})
 
-		vToken := app.Group("/v1/vehicle/:tokenID", privilegeAuth)
+	vToken := app.Group("/v1/vehicle/:tokenID", privilegeAuth)
 
-		tk := pr.New(pr.Config{
-			Log: &logger,
-		})
-		vehicleAddr := common.HexToAddress(settings.VehicleNFTAddress)
+	tk := privilegetoken.New(privilegetoken.Config{
+		Log: &logger,
+	})
+	vehicleAddr := common.HexToAddress(settings.VehicleNFTAddress)
 
-		// Probably want constants for 1 and 4 here.
-		vToken.Get("/history", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.AllTimeLocation}), deviceDataController.GetHistoricalRawPermissioned)
-	}
+	// Probably want constants for 1 and 4 here.
+	vToken.Get("/history", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.AllTimeLocation}), deviceDataController.GetHistoricalRawPermissioned)
 
 	v1Auth := app.Group("/v1", jwtAuth)
 	v1Auth.Get("/user/device-data/:userDeviceID/historical", deviceDataController.GetHistoricalRaw)
@@ -199,28 +169,24 @@ func startPrometheus(logger zerolog.Logger) {
 // ErrorHandler custom handler to log recovered errors using our logger and return json instead of string
 func ErrorHandler(c *fiber.Ctx, err error, logger zerolog.Logger) error {
 	code := fiber.StatusInternalServerError // Default 500 statuscode
+	message := "Internal error."
 
-	if e, ok := err.(*fiber.Error); ok {
-		// Override status code if fiber.Error type
+	var e *fiber.Error
+	if errors.As(err, &e) {
 		code = e.Code
+		message = e.Message
 	}
-	c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSON)
-	logger.Err(err).Msg("caught an error")
 
-	return c.Status(code).JSON(fiber.Map{
-		"error": true,
-		"msg":   err.Error(),
-	})
+	logger.Err(err).Int("code", code).Str("path", strings.TrimPrefix(c.Path(), "/")).Msg("Failed request.")
+
+	return c.Status(code).JSON(CodeResp{Code: code, Message: message})
+}
+
+type CodeResp struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
 }
 
 func healthCheck(c *fiber.Ctx) error {
-	res := map[string]interface{}{
-		"data": "Server is up and running",
-	}
-
-	if err := c.JSON(res); err != nil {
-		return err
-	}
-
-	return nil
+	return c.JSON(CodeResp{Code: 200, Message: "Server is up."})
 }
