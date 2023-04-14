@@ -155,7 +155,7 @@ func (uds *QueryStorageService) newS3Writer(ctx context.Context, query *search.R
 	}
 
 	return &userData{
-		uploadParts:      []awstypes.CompletedPart{},
+		uploadParts:      make([]awstypes.CompletedPart, 0),
 		AWSBucket:        bucketName,
 		uploadObj:        upload,
 		keyName:          keyName,
@@ -188,7 +188,7 @@ func (ud *userData) abortUploadHandleError(ctx context.Context, err error) {
 
 func (ud *userData) uploadPartToS3(ctx context.Context, reader *bytes.Reader, uploadParts []awstypes.CompletedPart) ([]awstypes.CompletedPart, error) {
 
-	partNum := int32(len(uploadParts) + 1)
+	partNum := ud.partNum()
 
 	part, err := ud.storageSvcClient.UploadPart(ctx, &s3.UploadPartInput{
 		Bucket:     aws.String(ud.AWSBucket),
@@ -250,7 +250,8 @@ func (ud *userData) writeToS3(ctx context.Context, response string) error {
 		dataString = opening + dataString
 	}
 
-	if respSize < pageSize || ud.fileSize > ud.MaxFileSize {
+	// when we want to set a max file size, also check if ud.fileSize > ud.MaxFileSize here
+	if respSize < pageSize {
 		dataString = dataString + "]}"
 		reader := bytes.NewReader([]byte(dataString))
 		uploadParts, err := ud.uploadPartToS3(ctx, reader, ud.uploadParts)
@@ -291,6 +292,9 @@ func (uds *QueryStorageService) StreamDataToS3(ctx context.Context, userDeviceID
 	}
 
 	s3writer, err := uds.newS3Writer(ctx, query, uds.AWSBucket, userDeviceID, startDate, endDate)
+	if err != nil {
+		return []string{}, err
+	}
 
 	s3writer.writeToS3(ctx, response)
 
