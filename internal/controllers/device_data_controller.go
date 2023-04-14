@@ -383,7 +383,7 @@ func (d *DeviceDataController) queryOdometer(ctx context.Context, order sortorde
 			},
 		},
 		Size: some.Int(1),
-		Sort: []types.SortCombinations{types.SortOptions{SortOptions: map[string]types.FieldSort{"data.odometer": types.FieldSort{Order: &order}}}},
+		Sort: []types.SortCombinations{types.SortOptions{SortOptions: map[string]types.FieldSort{"data.odometer": {Order: &order}}}},
 	}
 
 	res, err := d.es8Client.Search().Index(d.Settings.DeviceDataIndexName).Request(&req).Do(ctx)
