@@ -107,7 +107,7 @@ func (d *DeviceDataController) GetHistoricalRaw(c *fiber.Ctx) error {
 // @Param        startDate     query  string  false  "startDate eg 2022-01-02. if empty two weeks back"
 // @Param        endDate       query  string  false  "endDate eg 2022-03-01. if empty today"
 // @Security     BearerAuth
-// @Router       /vehicle/:tokenID/history [get]
+// @Router       /vehicle/{tokenID}/history [get]
 func (d *DeviceDataController) GetHistoricalRawPermissioned(c *fiber.Ctx) error {
 	const dateLayout = "2006-01-02" // date layout support by elastic
 	tokenID := c.Params("tokenID")

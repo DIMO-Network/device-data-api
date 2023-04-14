@@ -7,43 +7,6 @@
     },
     "basePath": "/v1",
     "paths": {
-        "/user/device-data/:userDeviceID/export/json/email": {
-            "get": {
-                "description": "returns message indicating that download will be sent to user email",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "device-data"
-                ],
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "user id",
-                        "name": "userDeviceID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "startDate eg 2022-01-01T00:00:00.000Z",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "endDate eg 2022-01-01T00:00:00.000Z",
-                        "name": "endDate",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                }
-            }
-        },
         "/user/device-data/{userDeviceID}/daily-distance": {
             "get": {
                 "security": [
@@ -120,6 +83,43 @@
                 }
             }
         },
+        "/user/device-data/{userDeviceID}/export/json/email": {
+            "get": {
+                "description": "returns message indicating that download will be sent to user email",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "device-data"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "user id",
+                        "name": "userDeviceID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "startDate eg 2022-01-01T00:00:00.000Z",
+                        "name": "startDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "endDate eg 2022-01-01T00:00:00.000Z",
+                        "name": "endDate",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/user/device-data/{userDeviceID}/historical": {
             "get": {
                 "security": [
@@ -162,7 +162,7 @@
                 }
             }
         },
-        "/vehicle/:tokenID/history": {
+        "/vehicle/{tokenID}/history": {
             "get": {
                 "security": [
                     {

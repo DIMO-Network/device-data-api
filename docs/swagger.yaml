@@ -19,30 +19,6 @@ info:
   title: DIMO Device Data API
   version: "1.0"
 paths:
-  /user/device-data/:userDeviceID/export/json/email:
-    get:
-      description: returns message indicating that download will be sent to user email
-      parameters:
-      - description: user id
-        in: path
-        name: userDeviceID
-        required: true
-        type: string
-      - description: startDate eg 2022-01-01T00:00:00.000Z
-        in: query
-        name: startDate
-        type: string
-      - description: endDate eg 2022-01-01T00:00:00.000Z
-        in: query
-        name: endDate
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      tags:
-      - device-data
   /user/device-data/{userDeviceID}/daily-distance:
     get:
       description: Get kilometers driven for a userDeviceID each day.
@@ -92,6 +68,30 @@ paths:
       - BearerAuth: []
       tags:
       - device-data
+  /user/device-data/{userDeviceID}/export/json/email:
+    get:
+      description: returns message indicating that download will be sent to user email
+      parameters:
+      - description: user id
+        in: path
+        name: userDeviceID
+        required: true
+        type: string
+      - description: startDate eg 2022-01-01T00:00:00.000Z
+        in: query
+        name: startDate
+        type: string
+      - description: endDate eg 2022-01-01T00:00:00.000Z
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      tags:
+      - device-data
   /user/device-data/{userDeviceID}/historical:
     get:
       description: Get all historical data for a userDeviceID, within start and end
@@ -119,7 +119,7 @@ paths:
       - BearerAuth: []
       tags:
       - device-data
-  /vehicle/:tokenID/history:
+  /vehicle/{tokenID}/history:
     get:
       description: Get all historical data for a tokenID, within start and end range
       parameters:
