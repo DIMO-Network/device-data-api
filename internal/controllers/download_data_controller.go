@@ -49,6 +49,9 @@ func NewDataDownloadController(settings *config.Settings, log *zerolog.Logger, e
 // @Tags         device-data
 // @Produce      json
 // @Success      200
+// @Param        userDeviceID  path   string  true   "user id"
+// @Param        startDate     query  string  false  "startDate eg 2022-01-01T00:00:00.000Z"
+// @Param        endDate       query  string  false  "endDate eg 2022-01-01T00:00:00.000Z"
 // @Router       /user/device-data/:userDeviceID/export/json/email [get]
 func (d *DataDownloadController) DataDownloadHandler(c *fiber.Ctx) error {
 	userID := getUserID(c)
@@ -136,7 +139,7 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 				var data services.UserData
 				var fetchDataError error
 				go func() {
-					d, err := d.QuerySvc.FetchUserData(params.UserDeviceID)
+					d, err := d.QuerySvc.FetchUserData(params.UserDeviceID, params.Start, params.End)
 					c <- d
 					eC <- err
 				}()
@@ -206,4 +209,6 @@ type dataDownloadRequestStatus struct {
 	UserID       string `json:"userId"`
 	UserDeviceID string `json:"userDeviceId"`
 	Message      string `json:"message"`
+	RangeStart   string `json:"rangeStart,omitempty"`
+	RangeEnd     string `json:"rangeEnd,omitempty"`
 }

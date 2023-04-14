@@ -1,16 +1,17 @@
 package controllers
 
 import (
+	"time"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
 )
 
 type QueryValues struct {
-	RangeStart   string `query:"range_start" json:"rangeStart"`
-	RangeEnd     string `query:"range_end" json:"rangeEnd"`
-	Timezone     string `query:"time_zone" json:"timeZone"`
-	UserID       string `query:"-" json:"userId"`
-	UserDeviceID string `query:"-" json:"userDeviceId"`
+	Start        time.Time `query:"start" json:"start"`
+	End          time.Time `query:"end" json:"end"`
+	UserID       string    `query:"-" json:"userId"`
+	UserDeviceID string    `query:"-" json:"userDeviceId"`
 }
 
 func ValidateQueryParams(p *QueryValues, c *fiber.Ctx) error {
