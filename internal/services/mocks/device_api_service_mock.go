@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	devices "github.com/DIMO-Network/shared/api/devices"
+	devices "github.com/DIMO-Network/devices-api/pkg/grpc"
 	gomock "github.com/golang/mock/gomock"
 )
 

@@ -14,7 +14,6 @@ import (
 	"github.com/DIMO-Network/device-data-api/internal/services"
 	"github.com/DIMO-Network/shared"
 	pr "github.com/DIMO-Network/shared/middleware/privilegetoken"
-	"github.com/ansrivas/fiberprometheus/v2"
 	swagger "github.com/arsmn/fiber-swagger/v2"
 	es8 "github.com/elastic/go-elasticsearch/v8"
 	"github.com/ethereum/go-ethereum/common"
@@ -91,8 +90,6 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 		DisableStartupMessage: true,
 		ReadBufferSize:        16000,
 	})
-	prometheus := fiberprometheus.New(settings.ServiceName)
-	app.Use(prometheus.Middleware)
 
 	app.Use(recover.New(recover.Config{
 		Next:              nil,
