@@ -243,6 +243,11 @@ func (ud *userData) writeToS3(ctx context.Context, response string) error {
 	}
 
 	dataString, err := trimJSON(data)
+	if err != nil {
+		ud.log.Err(err).Msg("user data download: error trimming data")
+		ud.abortUploadHandleError(ctx, err)
+		return err
+	}
 	ud.fileSize += len([]byte(dataString))
 
 	if ud.partNum() == 1 {
@@ -293,10 +298,15 @@ func (uds *QueryStorageService) StreamDataToS3(ctx context.Context, userDeviceID
 
 	s3writer, err := uds.newS3Writer(ctx, query, uds.AWSBucket, userDeviceID, startDate, endDate)
 	if err != nil {
+		uds.log.Err(err).Msg("data streaming service: error creating s3 writer object")
 		return []string{}, err
 	}
 
-	s3writer.writeToS3(ctx, response)
+	err = s3writer.writeToS3(ctx, response)
+	if err != nil {
+		uds.log.Err(err).Msg("data streaming service: unable to write data to s3")
+		return []string{}, err
+	}
 
 	return s3writer.downloadLinks, nil
 

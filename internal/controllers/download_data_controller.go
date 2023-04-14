@@ -25,6 +25,9 @@ type DataDownloadController struct {
 
 func NewDataDownloadController(settings *config.Settings, log *zerolog.Logger, esClient8 *es8.TypedClient, deviceAPIService services.DeviceAPIService) (*DataDownloadController, error) {
 	querySvc, err := services.NewQueryStorageService(esClient8, settings, log)
+	if err != nil {
+		return nil, err
+	}
 	emailSvc := services.NewEmailService(settings, log)
 	nats, err := services.NewNATSService(settings, log)
 	if err != nil {
@@ -103,29 +106,26 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 		for _, msg := range msgs {
 			mtd, err := msg.Metadata()
 			if err != nil {
+				d.nak(msg, nil)
 				d.log.Info().Err(err).Msg("unable to parse metadata for message")
+				continue
 			}
 
 			select {
 			case <-ctx.Done():
-				if err := msg.Nak(); err != nil {
-					d.log.Info().Err(err).Msgf("data download msg.Nak failure")
-				}
+				d.nak(msg, nil)
 				return nil
 			default:
 				var params QueryValues
 				err = json.Unmarshal(msg.Data, &params)
 				if err != nil {
-					if err := msg.Nak(); err != nil {
-						d.log.Error().Msgf("message nak failed: %+v", err)
-						return err
-					}
+					d.nak(msg, &params)
 					d.log.Error().Msgf("unable to parse query parameters: %+v", err)
 					continue
 				}
 
 				d.log.Info().Str("userId", params.UserID).Str("userDeviceID", params.UserDeviceID).Msg("data download initiated")
-				msg.InProgress()
+				d.inProgress(msg, params)
 
 				nestedCtx, cancel := context.WithCancel(ctx)
 				go func() {
@@ -136,40 +136,54 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 						case <-nestedCtx.Done():
 							return
 						case <-tick.C:
-							msg.InProgress()
+							d.inProgress(msg, params)
 						}
 					}
 				}()
 
 				s3link, err := d.QuerySvc.StreamDataToS3(ctx, params.UserDeviceID, params.Start, params.End)
 				if err != nil {
+					d.nak(msg, &params)
 					d.log.Err(err).Str("userId", params.UserID).Str("userDeviceID", params.UserDeviceID).Msg("error while fetching data from elasticsearch")
 					cancel()
-
-					if err := msg.Nak(); err != nil {
-						d.log.Err(err).Str("userId", params.UserID).Str("userDeviceID", params.UserDeviceID).Msg("error while calling Nak")
-					}
 					continue
 				}
-
 				cancel()
 
-				msg.InProgress()
+				d.inProgress(msg, params)
 
 				err = d.EmailSvc.SendEmail(params.UserID, s3link)
 				if err != nil {
-					if err := msg.Nak(); err != nil {
-						d.log.Error().Msgf("message nak failed: %+v", err)
-						return err
-					}
+					d.nak(msg, &params)
 					d.log.Err(err).Msg("unable to put send email")
 					continue
 				}
 
-				msg.Ack()
+				d.ack(msg, params)
 				d.log.Info().Str("userId", params.UserID).Str("userDeviceID", params.UserDeviceID).Uint64("numDelivered", mtd.NumDelivered).Msg("data download completed")
 			}
 		}
+	}
+}
+
+func (d *DataDownloadController) ack(msg *nats.Msg, params QueryValues) {
+	if err := msg.Ack(); err != nil {
+		d.log.Err(err).Str("userId", params.UserID).Str("userDeviceID", params.UserDeviceID).Msg("message ack failed")
+	}
+}
+
+func (d *DataDownloadController) inProgress(msg *nats.Msg, params QueryValues) {
+	if err := msg.InProgress(); err != nil {
+		d.log.Err(err).Str("userId", params.UserID).Str("userDeviceID", params.UserDeviceID).Msg("message in progress failed")
+	}
+}
+
+func (d *DataDownloadController) nak(msg *nats.Msg, params *QueryValues) {
+	err := msg.Nak()
+	if params == nil {
+		d.log.Err(err).Msg("message nak failed")
+	} else {
+		d.log.Err(err).Str("userId", params.UserID).Str("userDeviceID", params.UserDeviceID).Msg("message nak failed")
 	}
 }
 
