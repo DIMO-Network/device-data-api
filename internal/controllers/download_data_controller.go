@@ -133,57 +133,44 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 				d.log.Info().Str("userId", params.UserID).Str("userDeviceID", params.UserDeviceID).Msg("data download initiated")
 				msg.InProgress()
 
-				// fetch user data in a channel so that we can continue to call msg.InProgress()
-				c := make(chan services.UserData, 1)
-				eC := make(chan error, 1)
-				var data services.UserData
-				var fetchDataError error
+				nestedCtx, cancel := context.WithCancel(ctx)
 				go func() {
-					d, err := d.QuerySvc.FetchUserData(params.UserDeviceID, params.Start, params.End)
-					c <- d
-					eC <- err
+					tick := time.NewTicker(5 * time.Second)
+					defer tick.Stop()
+					for {
+						select {
+						case <-nestedCtx.Done():
+							return
+						case <-tick.C:
+							msg.InProgress()
+						}
+					}
 				}()
 
-				tick := time.NewTicker(1 * time.Second)
-			Loop:
-				for {
-					select {
-					case d := <-c:
-						data = d
-						break Loop
-					case fetchDataError := <-eC:
-						if fetchDataError != nil {
-							if err := msg.Nak(); err != nil {
-								d.log.Error().Msgf("message nak failed: %+v", err)
-								return err
-							}
-							d.log.Err(err).Msg("unable to fetch user data")
-							break Loop
-						}
-					case <-tick.C:
-						msg.InProgress()
-					}
-					break
-				}
-				tick.Stop()
-				if fetchDataError != nil {
-					continue
-				}
-
-				msg.InProgress()
-
-				// should we overwrite this file by having the date only, not full timestamp, in name?
-				// otherwise, someone could spam us and run up our AWS storage/ costs
-				keyName := "userDownloads/" + params.UserDeviceID + "/" + time.Now().Format(time.RFC3339) + ".json"
-				s3link, err := d.StorageSvc.UploadUserData(ctx, data, keyName)
+				ud, err := d.QuerySvc.FetchUserData(params.UserDeviceID, params.Start, params.End)
 				if err != nil {
+					d.log.Err(err).Str("userId", params.UserID).Str("userDeviceID", params.UserDeviceID).Msg("error while fetching data from elasticsearch")
+					cancel()
+
 					if err := msg.Nak(); err != nil {
-						d.log.Error().Msgf("message nak failed: %+v", err)
-						return err
+						d.log.Err(err).Str("userId", params.UserID).Str("userDeviceID", params.UserDeviceID).Msg("error while calling Nak")
 					}
-					d.log.Err(err).Msg("unable to put data on s3")
 					continue
 				}
+
+				keyName := fmt.Sprintf("userDownloads/%+v/DIMODeviceData_%+v_%+v_%+v.json", params.UserDeviceID, params.UserDeviceID, params.Start, params.End)
+				s3link, err := d.StorageSvc.UploadUserData(ctx, ud, keyName)
+				if err != nil {
+					d.log.Err(err).Str("userId", params.UserID).Str("userDeviceID", params.UserDeviceID).Msg("error while uploading data to s3")
+					cancel()
+
+					if err := msg.Nak(); err != nil {
+						d.log.Err(err).Str("userId", params.UserID).Str("userDeviceID", params.UserDeviceID).Msg("error while calling Nak")
+					}
+					continue
+				}
+				// calling cancel directly
+				cancel()
 
 				msg.InProgress()
 
