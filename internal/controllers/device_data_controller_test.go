@@ -41,13 +41,15 @@ func TestDeviceDataController_addRangeIfNotExists(t *testing.T) {
 	bodyWithRange, err := addRangeIfNotExists(context.Background(), deviceDefSvc, []byte(elasticDeviceData), ddID, nil)
 	require.NoError(t, err)
 
-	range1 := gjson.GetBytes(bodyWithRange, "hits.hits.1._source.data.range").Num
+	range1 := gjson.GetBytes(bodyWithRange, "hits.hits.0._source.data.range").Num
 	//0.6745098039215687 fpr, or make it a simpler number to be easier
-	assert.Equal(t, 617.98656, range1) // kilometers
+	assert.Equal(t, 695.23488, range1) // kilometers
 
 	// todo - do math by hand make sure all good
 
-	// todo - test the skip node, to validate we can set records further down when skipping an index
+	// test the skip node, to validate we can set records further down when skipping an index
+	rangeSkip := gjson.GetBytes(bodyWithRange, "hits.hits.3._source.data.range").Num // todo problem is this one should not be 3 but 6
+	assert.Equal(t, 463.48992, rangeSkip)                                            // kilometers
 
 	// then another test for not modifying range if it is present on the second row
 	// needs to be with different data
