@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	_ "embed"
+	"github.com/tidwall/sjson"
 	"testing"
 
 	mock_services "github.com/DIMO-Network/device-data-api/internal/services/mocks"
@@ -56,3 +57,23 @@ func TestDeviceDataController_addRangeIfNotExists(t *testing.T) {
 
 //go:embed historical_data_test.json
 var elasticDeviceData string
+
+func TestDeviceDataController_addRangeIfNotExists_NoChangeIfRangeExists(t *testing.T) {
+	controller := gomock.NewController(t)
+	deviceDefSvc := mock_services.NewMockDeviceDefinitionsAPIService(controller)
+	ddID := ksuid.New().String()
+
+	deviceDefSvc.EXPECT().GetDeviceDefinition(gomock.Any(), ddID).Times(0)
+
+	// if range exists anywhere in the body, do not add range anywhere
+	bodySetRange, err2 := sjson.Set(elasticDeviceData, "hits.hits.0._source.data.range", 100.50)
+	require.NoError(t, err2)
+
+	bodyWithRange, err := addRangeIfNotExists(context.Background(), deviceDefSvc, []byte(bodySetRange), ddID, nil)
+	require.NoError(t, err)
+
+	range1 := gjson.GetBytes(bodyWithRange, "hits.hits.0._source.data.range").Num
+	assert.Equal(t, 100.50, range1) // kilometers
+	range2 := gjson.GetBytes(bodyWithRange, "hits.hits.1._source.data.range").Num
+	assert.Equal(t, float64(0), range2, "expected no range property to exist here")
+}

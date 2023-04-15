@@ -113,7 +113,8 @@ func addRangeIfNotExists(ctx context.Context, deviceDefSvc services.DeviceDefini
 		return body, nil
 	}
 	// check if range is already present in any document
-	if gjson.GetBytes(body, "hits.hits.#(source.data.range>0)1.source.data.range").Exists() {
+	// todo this is always returning false
+	if gjson.GetBytes(body, "hits.hits.#(_source.data.range>0)0._source.data.range").Exists() {
 		return body, nil
 	}
 

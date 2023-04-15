@@ -87,7 +87,7 @@ func GetActualDeviceDefinitionMetadataValues(dd *grpc.GetDeviceDefinitionItemRes
 
 func CalculateRange(rangeData *DeviceDefinitionRange, fuelPercentRemaining float64) *float64 {
 	if rangeData.FuelTankCapGal > 0 && rangeData.Mpg > 0 {
-		fuelTankAtGal := rangeData.FuelTankCapGal * fuelPercentRemaining
+		fuelTankAtGal := rangeData.FuelTankCapGal * (fuelPercentRemaining - 0.04) // subtract a little for more conservative estimate
 		rangeMiles := rangeData.Mpg * fuelTankAtGal
 		rangeKm := 1.60934 * rangeMiles
 		return &rangeKm
