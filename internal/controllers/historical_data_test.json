@@ -20,6 +20,7 @@
         "_score": 0.9998271,
         "_source": {
           "data": {
+            "fuelPercentRemaining": 0.9,
             "altitude": 216.6,
             "wifi": {
               "ssid": "",
@@ -59,7 +60,6 @@
             "hdop": 0.7,
             "speed": 63,
             "makeSlug": "mercedes-benz",
-            "fuelPercentRemaining": 0.9,
             "modelSlug": "r-class",
             "engineLoad": 0.5490196078431372,
             "intakeTemp": 9,
@@ -98,6 +98,7 @@
         "_score": 0.99835396,
         "_source": {
           "data": {
+            "fuelPercentRemaining": 0.8,
             "altitude": 188.4,
             "coolantTemp": 61,
             "ambientTemp": 5,
@@ -166,6 +167,7 @@
         "_score": 0.9964268,
         "_source": {
           "data": {
+            "fuelPercentRemaining": 0.7,
             "altitude": 202,
             "coolantTemp": 66,
             "ambientTemp": 7,
@@ -212,7 +214,6 @@
             },
             "speed": 76,
             "makeSlug": "mercedes-benz",
-            "fuelPercentRemaining": 0.7,
             "modelSlug": "r-class",
             "engineLoad": 0.16862745098039217,
             "model": "R-Class",

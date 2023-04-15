@@ -124,15 +124,16 @@ func addRangeIfNotExists(ctx context.Context, deviceDefSvc services.DeviceDefini
 	// extract the range values from definition, already done in devices-api, copy that code or move to shared
 	rangeData := GetActualDeviceDefinitionMetadataValues(definition, null.StringFromPtr(deviceStyleID))
 
-	resultFuel := gjson.GetBytes(body, "hits.hits.#._source.data.fuelPercentRemaining")
-	for i, r := range resultFuel.Array() {
+	resultData := gjson.GetBytes(body, "hits.hits.#._source.data")
+	for i, r := range resultData.Array() {
 		// note range is reported in km
-		if r.Exists() {
-			rangeKm := CalculateRange(rangeData, r.Num)
+		fuelResult := r.Get("fuelPercentRemaining")
+		if fuelResult.Exists() {
+			rangeKm := CalculateRange(rangeData, fuelResult.Num)
 			if rangeKm != nil {
 				body, err = sjson.SetBytes(body, fmt.Sprintf("hits.hits.%d._source.data.range", i), rangeKm)
 				if err != nil {
-					fmt.Println("could not set range " + err.Error())
+					return body, err
 				}
 			}
 		}
@@ -250,7 +251,7 @@ func (d *DeviceDataController) getHistory(c *fiber.Ctx, userDevice *grpc.UserDev
 
 	body, err = addRangeIfNotExists(c.Context(), d.definitionsAPI, body, userDevice.DeviceDefinitionId, userDevice.DeviceStyleId)
 	if err != nil {
-		localLog.Err(err).Msg("could not add range calculation to document")
+		localLog.Warn().Err(err).Msg("could not add range calculation to document")
 	}
 
 	c.Set("Content-Type", fiber.MIMEApplicationJSON)

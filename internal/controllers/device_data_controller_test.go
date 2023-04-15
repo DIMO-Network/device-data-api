@@ -41,20 +41,17 @@ func TestDeviceDataController_addRangeIfNotExists(t *testing.T) {
 	bodyWithRange, err := addRangeIfNotExists(context.Background(), deviceDefSvc, []byte(elasticDeviceData), ddID, nil)
 	require.NoError(t, err)
 
-	range1 := gjson.GetBytes(bodyWithRange, "hits.hits.0._source.data.range").Num
-	//0.6745098039215687 fpr, or make it a simpler number to be easier
-	assert.Equal(t, 695.23488, range1) // kilometers
+	range1 := gjson.GetBytes(bodyWithRange, "hits.hits.0._source.data.range").Num //0.9
+	assert.Equal(t, 695.23488, range1)                                            // kilometers
 
-	// todo - do math by hand make sure all good
+	range2 := gjson.GetBytes(bodyWithRange, "hits.hits.1._source.data.range").Num //0.8
+	assert.Equal(t, 617.98656, range2)                                            // kilometers
 
-	// test the skip node, to validate we can set records further down when skipping an index
-	rangeSkip := gjson.GetBytes(bodyWithRange, "hits.hits.3._source.data.range").Num // todo problem is this one should not be 3 but 6
+	range3 := gjson.GetBytes(bodyWithRange, "hits.hits.2._source.data.range").Num //0.7
+	assert.Equal(t, 540.73824, range3)
+
+	rangeSkip := gjson.GetBytes(bodyWithRange, "hits.hits.6._source.data.range").Num //0.6
 	assert.Equal(t, 463.48992, rangeSkip)                                            // kilometers
-
-	// then another test for not modifying range if it is present on the second row
-	// needs to be with different data
-	//rangeUnchanged := gjson.GetBytes(bodyWithRange, "hits.hits.2._source.data.range").Num
-	//assert.Equal(t, 400, rangeUnchanged)
 }
 
 //go:embed historical_data_test.json
