@@ -1,13 +1,15 @@
 package controllers
 
 import (
-	"github.com/DIMO-Network/device-definitions-api/pkg/grpc"
 	"time"
+
+	"github.com/DIMO-Network/device-definitions-api/pkg/grpc"
+
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/volatiletech/null/v8"
-	"strconv"
 )
 
 type QueryValues struct {

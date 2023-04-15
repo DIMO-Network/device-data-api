@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/tidwall/sjson"
-	"github.com/volatiletech/null/v8"
 	"io"
 	"strconv"
 	"time"
+
+	"github.com/tidwall/sjson"
+	"github.com/volatiletech/null/v8"
 
 	"github.com/DIMO-Network/device-data-api/internal/config"
 	"github.com/DIMO-Network/device-data-api/internal/services"
@@ -29,7 +30,6 @@ import (
 type DeviceDataController struct {
 	Settings       *config.Settings
 	log            *zerolog.Logger
-	es             *elasticsearch.Client
 	deviceAPI      services.DeviceAPIService
 	es8Client      *es8.TypedClient
 	definitionsAPI services.DeviceDefinitionsAPIService
@@ -47,14 +47,12 @@ func NewDeviceDataController(
 	settings *config.Settings,
 	logger *zerolog.Logger,
 	deviceAPIService services.DeviceAPIService,
-	es *elasticsearch.Client,
 	es8Client *es8.TypedClient,
 	definitionsAPIService services.DeviceDefinitionsAPIService,
 ) DeviceDataController {
 	return DeviceDataController{
 		Settings:       settings,
 		log:            logger,
-		es:             es,
 		deviceAPI:      deviceAPIService,
 		es8Client:      es8Client,
 		definitionsAPI: definitionsAPIService,

@@ -3,6 +3,8 @@ package controllers
 import (
 	"context"
 	_ "embed"
+	"testing"
+
 	mock_services "github.com/DIMO-Network/device-data-api/internal/services/mocks"
 	pb "github.com/DIMO-Network/device-definitions-api/pkg/grpc"
 	"github.com/golang/mock/gomock"
@@ -10,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
-	"testing"
 )
 
 func TestDeviceDataController_addRangeIfNotExists(t *testing.T) {

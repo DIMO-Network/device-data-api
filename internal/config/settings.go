@@ -35,4 +35,5 @@ type Settings struct {
 	EnablePrivileges          bool   `yaml:"ENABLE_PRIVILEGES"`
 	TokenExchangeJWTKeySetURL string `yaml:"TOKEN_EXCHANGE_JWK_KEY_SET_URL"`
 	VehicleNFTAddress         string `yaml:"VEHICLE_NFT_ADDRESS"`
+	DeviceDefinitionsGRPCAddr string `yaml:"DEVICE_DEFINITIONS_GRPC_ADDR"`
 }
