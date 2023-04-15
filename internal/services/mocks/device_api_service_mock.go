@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	devices "github.com/DIMO-Network/devices-api/pkg/grpc"
+	grpc "github.com/DIMO-Network/devices-api/pkg/grpc"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -36,10 +36,10 @@ func (m *MockDeviceAPIService) EXPECT() *MockDeviceAPIServiceMockRecorder {
 }
 
 // GetUserDevice mocks base method.
-func (m *MockDeviceAPIService) GetUserDevice(ctx context.Context, userDeviceID string) (*devices.UserDevice, error) {
+func (m *MockDeviceAPIService) GetUserDevice(ctx context.Context, userDeviceID string) (*grpc.UserDevice, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUserDevice", ctx, userDeviceID)
-	ret0, _ := ret[0].(*devices.UserDevice)
+	ret0, _ := ret[0].(*grpc.UserDevice)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -50,11 +50,26 @@ func (mr *MockDeviceAPIServiceMockRecorder) GetUserDevice(ctx, userDeviceID inte
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserDevice", reflect.TypeOf((*MockDeviceAPIService)(nil).GetUserDevice), ctx, userDeviceID)
 }
 
+// GetUserDeviceByTokenID mocks base method.
+func (m *MockDeviceAPIService) GetUserDeviceByTokenID(ctx context.Context, tokenID int64) (*grpc.UserDevice, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserDeviceByTokenID", ctx, tokenID)
+	ret0, _ := ret[0].(*grpc.UserDevice)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserDeviceByTokenID indicates an expected call of GetUserDeviceByTokenID.
+func (mr *MockDeviceAPIServiceMockRecorder) GetUserDeviceByTokenID(ctx, tokenID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserDeviceByTokenID", reflect.TypeOf((*MockDeviceAPIService)(nil).GetUserDeviceByTokenID), ctx, tokenID)
+}
+
 // ListUserDevicesForUser mocks base method.
-func (m *MockDeviceAPIService) ListUserDevicesForUser(ctx context.Context, userID string) (*devices.ListUserDevicesForUserResponse, error) {
+func (m *MockDeviceAPIService) ListUserDevicesForUser(ctx context.Context, userID string) (*grpc.ListUserDevicesForUserResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListUserDevicesForUser", ctx, userID)
-	ret0, _ := ret[0].(*devices.ListUserDevicesForUserResponse)
+	ret0, _ := ret[0].(*grpc.ListUserDevicesForUserResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -65,7 +80,7 @@ func (mr *MockDeviceAPIServiceMockRecorder) ListUserDevicesForUser(ctx, userID i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListUserDevicesForUser", reflect.TypeOf((*MockDeviceAPIService)(nil).ListUserDevicesForUser), ctx, userID)
 }
 
-// UserDeviceBelongsToUserId mocks base method.
+// UserDeviceBelongsToUserID mocks base method.
 func (m *MockDeviceAPIService) UserDeviceBelongsToUserID(ctx context.Context, userID, userDeviceID string) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UserDeviceBelongsToUserID", ctx, userID, userDeviceID)
@@ -74,8 +89,8 @@ func (m *MockDeviceAPIService) UserDeviceBelongsToUserID(ctx context.Context, us
 	return ret0, ret1
 }
 
-// UserDeviceBelongsToUserId indicates an expected call of UserDeviceBelongsToUserId.
-func (mr *MockDeviceAPIServiceMockRecorder) UserDeviceBelongsToUserId(ctx, userID, userDeviceID interface{}) *gomock.Call {
+// UserDeviceBelongsToUserID indicates an expected call of UserDeviceBelongsToUserID.
+func (mr *MockDeviceAPIServiceMockRecorder) UserDeviceBelongsToUserID(ctx, userID, userDeviceID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UserDeviceBelongsToUserID", reflect.TypeOf((*MockDeviceAPIService)(nil).UserDeviceBelongsToUserID), ctx, userID, userDeviceID)
 }

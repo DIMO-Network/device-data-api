@@ -96,8 +96,9 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 	}
 
 	deviceAPIService := services.NewDeviceAPIService(settings.DevicesAPIGRPCAddr)
+	definitionsAPIService := services.NewDeviceDefinitionsAPIService(settings.DeviceDefinitionsGRPCAddr)
 
-	deviceDataController := controllers.NewDeviceDataController(settings, &logger, deviceAPIService, esClient8)
+	deviceDataController := controllers.NewDeviceDataController(settings, &logger, deviceAPIService, esClient8, definitionsAPIService)
 
 	logger.Info().Str("jwkUrl", settings.TokenExchangeJWTKeySetURL).Str("vehicleAddr", settings.VehicleNFTAddress).Msg("Privileges enabled.")
 	privilegeAuth := jwtware.New(jwtware.Config{

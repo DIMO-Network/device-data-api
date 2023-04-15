@@ -1,0 +1,509 @@
+{
+  "took": 107,
+  "timed_out": false,
+  "_shards": {
+    "total": 440,
+    "successful": 440,
+    "skipped": 424,
+    "failed": 0
+  },
+  "hits": {
+    "total": {
+      "value": 1070,
+      "relation": "eq"
+    },
+    "max_score": 0.9998271,
+    "hits": [
+      {
+        "_index": "device-status-prod-2023-03-29",
+        "_id": "2NhomhOY8eqVvdmFJ1HuKy90IVA",
+        "_score": 0.9998271,
+        "_source": {
+          "data": {
+            "fuelPercentRemaining": 0.9,
+            "altitude": 216.6,
+            "wifi": {
+              "ssid": "",
+              "status": "scanning"
+            },
+            "throttlePosition": 0.2,
+            "year": 2006,
+            "batteryVoltage": 13.8,
+            "latitude": 42.51689,
+            "deviceDefinitionId": "24GEF73wUVCRbnCsWG7P7FyTsdp",
+            "nsat": 9,
+            "cell": {
+              "ip": "100.74.26.58",
+              "details": {
+                "global_cell_id": 5503234,
+                "cell_[0]": {
+                  "rssi": "-80.6 dBm",
+                  "rsrq": "-18.8 dB",
+                  "rsrp": "-118.3 dBm",
+                  "physical_cell_id": 307
+                },
+                "cell_[1]": {
+                  "rssi": "-92.6 dBm",
+                  "rsrq": "-15.6 dB",
+                  "rsrp": "-116.9 dBm",
+                  "physical_cell_id": 491
+                },
+                "plmn": 310026,
+                "cell_[2]": {
+                  "rssi": "-92.6 dBm",
+                  "rsrq": "-15.0 dB",
+                  "rsrp": "-115.9 dBm",
+                  "physical_cell_id": 240
+                }
+              }
+            },
+            "hdop": 0.7,
+            "speed": 63,
+            "makeSlug": "mercedes-benz",
+            "modelSlug": "r-class",
+            "engineLoad": 0.5490196078431372,
+            "intakeTemp": 9,
+            "model": "R-Class",
+            "runTime": 1643,
+            "region": "Americas",
+            "device": {
+              "schema_version": "v2",
+              "hw_version": 5.2,
+              "device_id": "3d020f1f-7a5c-463f-a57a-785bae2ea760",
+              "imei": "860195055690553",
+              "unit_id": "90ab41a8-f68d-fa05-fb03-3251b8b62c97",
+              "sw_version": "0202b790",
+              "timestamp": 1680125834835
+            },
+            "make": "Mercedes-Benz",
+            "engineSpeed": 1781,
+            "longitude": -83.22898,
+            "timestamp": "2023-03-29T21:37:14.835Z"
+          },
+          "subject": "2Bz5Wv4icb5Il1vBsaFjJKeILN7",
+          "specversion": "1.0",
+          "location": {
+            "lon": "-83.22898",
+            "lat": "42.51689"
+          },
+          "id": "2NhomhOY8eqVvdmFJ1HuKy90IVA",
+          "source": "dimo/integration/27qftVRWQYpVDcO5DltO5Ojbjxk",
+          "time": "2023-03-29T21:37:15.55Z",
+          "type": "zone.dimo.device.status.update"
+        }
+      },
+      {
+        "_index": "device-status-prod-2023-03-29",
+        "_id": "2NgyWoMlilM0w756CURFGuxPxhv",
+        "_score": 0.99835396,
+        "_source": {
+          "data": {
+            "fuelPercentRemaining": 0.8,
+            "altitude": 188.4,
+            "coolantTemp": 61,
+            "ambientTemp": 5,
+            "year": 2006,
+            "latitude": 42.4467,
+            "deviceDefinitionId": "24GEF73wUVCRbnCsWG7P7FyTsdp",
+            "nsat": 7,
+            "cell": {
+              "ip": "100.72.184.98",
+              "details": {
+                "global_cell_id": 25934340,
+                "cell_[0]": {
+                  "rssi": "-59.9 dBm",
+                  "rsrq": "-10.2 dB",
+                  "rsrp": "-90.0 dBm",
+                  "physical_cell_id": 295
+                },
+                "plmn": 310026
+              }
+            },
+            "speed": 122,
+            "makeSlug": "mercedes-benz",
+            "fuelPercentRemaining": 0.8,
+            "modelSlug": "r-class",
+            "engineLoad": 0.4196078431372549,
+            "model": "R-Class",
+            "runTime": 738,
+            "make": "Mercedes-Benz",
+            "engineSpeed": 2467.5,
+            "longitude": -83.20544,
+            "timestamp": "2023-03-29T14:27:32.94Z",
+            "wifi": {
+              "ssid": "",
+              "status": "scanning"
+            },
+            "throttlePosition": 0.22745098039215686,
+            "batteryVoltage": 13.7,
+            "hdop": 0.8,
+            "intakeTemp": 7,
+            "region": "Americas",
+            "device": {
+              "schema_version": "v2",
+              "hw_version": 5.2,
+              "device_id": "3d020f1f-7a5c-463f-a57a-785bae2ea760",
+              "imei": "860195055690553",
+              "unit_id": "90ab41a8-f68d-fa05-fb03-3251b8b62c97",
+              "sw_version": "0202b790",
+              "timestamp": 1680100052940
+            }
+          },
+          "subject": "2Bz5Wv4icb5Il1vBsaFjJKeILN7",
+          "specversion": "1.0",
+          "location": {
+            "lon": "-83.20544",
+            "lat": "42.4467"
+          },
+          "id": "2NgyWoMlilM0w756CURFGuxPxhv",
+          "source": "dimo/integration/27qftVRWQYpVDcO5DltO5Ojbjxk",
+          "time": "2023-03-29T14:27:33.611Z",
+          "type": "zone.dimo.device.status.update"
+        }
+      },
+      {
+        "_index": "device-status-prod-2023-04-04",
+        "_id": "2NxjmgpU2RzBMJ7296M6xYplY95",
+        "_score": 0.9964268,
+        "_source": {
+          "data": {
+            "fuelPercentRemaining": 0.7,
+            "altitude": 202,
+            "coolantTemp": 66,
+            "ambientTemp": 7,
+            "year": 2006,
+            "latitude": 42.56882,
+            "deviceDefinitionId": "24GEF73wUVCRbnCsWG7P7FyTsdp",
+            "nsat": 8,
+            "cell": {
+              "ip": "100.69.201.63",
+              "details": {
+                "global_cell_id": 5835779,
+                "cell_[4]": {
+                  "rssi": "-73.2 dBm",
+                  "rsrq": "-15.9 dB",
+                  "rsrp": "-98.8 dBm",
+                  "physical_cell_id": 463
+                },
+                "cell_[0]": {
+                  "rssi": "-73.4 dBm",
+                  "rsrq": "-15.4 dB",
+                  "rsrp": "-98.8 dBm",
+                  "physical_cell_id": 246
+                },
+                "cell_[1]": {
+                  "rssi": "-60.0 dBm",
+                  "rsrq": "-11.6 dB",
+                  "rsrp": "-92.8 dBm",
+                  "physical_cell_id": 161
+                },
+                "plmn": 310026,
+                "cell_[2]": {
+                  "rssi": "-73.2 dBm",
+                  "rsrq": "-16.6 dB",
+                  "rsrp": "-99.8 dBm",
+                  "physical_cell_id": 319
+                },
+                "cell_[3]": {
+                  "rssi": "-73.2 dBm",
+                  "rsrq": "-16.1 dB",
+                  "rsrp": "-100.8 dBm",
+                  "physical_cell_id": 347
+                }
+              }
+            },
+            "speed": 76,
+            "makeSlug": "mercedes-benz",
+            "modelSlug": "r-class",
+            "engineLoad": 0.16862745098039217,
+            "model": "R-Class",
+            "runTime": 1162,
+            "make": "Mercedes-Benz",
+            "engineSpeed": 1608.75,
+            "longitude": -83.12787,
+            "timestamp": "2023-04-04T12:53:06.532Z",
+            "wifi": {
+              "ssid": "Amplified",
+              "status": "scanning"
+            },
+            "throttlePosition": 0.13333333333333333,
+            "batteryVoltage": 13.7,
+            "hdop": 0.7,
+            "region": "Americas",
+            "device": {
+              "schema_version": "v2",
+              "hw_version": 5.2,
+              "device_id": "3d020f1f-7a5c-463f-a57a-785bae2ea760",
+              "imei": "860195055690553",
+              "unit_id": "90ab41a8-f68d-fa05-fb03-3251b8b62c97",
+              "sw_version": "0202b790",
+              "timestamp": 1680612786532
+            }
+          },
+          "subject": "2Bz5Wv4icb5Il1vBsaFjJKeILN7",
+          "specversion": "1.0",
+          "location": {
+            "lon": "-83.12787",
+            "lat": "42.56882"
+          },
+          "id": "2NxjmgpU2RzBMJ7296M6xYplY95",
+          "source": "dimo/integration/27qftVRWQYpVDcO5DltO5Ojbjxk",
+          "time": "2023-04-04T12:53:07.198Z",
+          "type": "zone.dimo.device.status.update"
+        }
+      },
+      {
+        "_index": "device-status-prod-2023-03-21",
+        "_id": "2NKbnn2spcCHbVkenYyZQNCOjqT",
+        "_score": 0.99599975,
+        "_source": {
+          "data": {
+            "altitude": 225.3,
+            "wifi": {
+              "ssid": "",
+              "status": "scanning"
+            },
+            "year": 2006,
+            "batteryVoltage": 13.7,
+            "latitude": 42.51784,
+            "deviceDefinitionId": "24GEF73wUVCRbnCsWG7P7FyTsdp",
+            "nsat": 4,
+            "cell": {
+              "ip": "100.79.24.250",
+              "details": {
+                "global_cell_id": 10116483,
+                "cell_[0]": {
+                  "rssi": "-54.6 dBm",
+                  "rsrq": "-6.0 dB",
+                  "rsrp": "-82.0 dBm",
+                  "physical_cell_id": 24
+                },
+                "plmn": 310026
+              }
+            },
+            "hdop": 1,
+            "makeSlug": "mercedes-benz",
+            "modelSlug": "r-class",
+            "model": "R-Class",
+            "region": "Americas",
+            "device": {
+              "schema_version": "v2",
+              "hw_version": 5.2,
+              "device_id": "3d020f1f-7a5c-463f-a57a-785bae2ea760",
+              "imei": "860195055690553",
+              "unit_id": "90ab41a8-f68d-fa05-fb03-3251b8b62c97",
+              "sw_version": "0202b790",
+              "timestamp": 1679415888496
+            },
+            "make": "Mercedes-Benz",
+            "longitude": -83.22428,
+            "timestamp": "2023-03-21T16:24:48.496Z"
+          },
+          "subject": "2Bz5Wv4icb5Il1vBsaFjJKeILN7",
+          "specversion": "1.0",
+          "location": {
+            "lon": "-83.22428",
+            "lat": "42.51784"
+          },
+          "id": "2NKbnn2spcCHbVkenYyZQNCOjqT",
+          "source": "dimo/integration/27qftVRWQYpVDcO5DltO5Ojbjxk",
+          "time": "2023-03-21T16:24:49.108Z",
+          "type": "zone.dimo.device.status.update"
+        }
+      },
+      {
+        "_index": "device-status-prod-2023-03-26",
+        "_id": "2NYw7w0eevV5pexKsQYQn504hQU",
+        "_score": 0.9959012,
+        "_source": {
+          "data": {
+            "altitude": 203.7,
+            "wifi": {
+              "ssid": "",
+              "status": "scanning"
+            },
+            "year": 2006,
+            "batteryVoltage": 13.8,
+            "latitude": 42.51762,
+            "deviceDefinitionId": "24GEF73wUVCRbnCsWG7P7FyTsdp",
+            "nsat": 9,
+            "cell": {
+              "ip": "100.76.188.166",
+              "details": {
+                "global_cell_id": 10116483,
+                "cell_[0]": {
+                  "rssi": "-63.7 dBm",
+                  "cell_selection_rx_level": 29,
+                  "rsrq": "-6.6 dB",
+                  "rsrp": "-90.2 dBm",
+                  "physical_cell_id": 24
+                },
+                "plmn": 310026
+              }
+            },
+            "hdop": 0.8,
+            "makeSlug": "mercedes-benz",
+            "modelSlug": "r-class",
+            "model": "R-Class",
+            "region": "Americas",
+            "device": {
+              "schema_version": "v2",
+              "hw_version": 5.2,
+              "device_id": "3d020f1f-7a5c-463f-a57a-785bae2ea760",
+              "imei": "860195055690553",
+              "unit_id": "90ab41a8-f68d-fa05-fb03-3251b8b62c97",
+              "sw_version": "0202b790",
+              "timestamp": 1679854158600
+            },
+            "make": "Mercedes-Benz",
+            "longitude": -83.22095,
+            "timestamp": "2023-03-26T18:09:18.599Z"
+          },
+          "subject": "2Bz5Wv4icb5Il1vBsaFjJKeILN7",
+          "specversion": "1.0",
+          "location": {
+            "lon": "-83.22095",
+            "lat": "42.51762"
+          },
+          "id": "2NYw7w0eevV5pexKsQYQn504hQU",
+          "source": "dimo/integration/27qftVRWQYpVDcO5DltO5Ojbjxk",
+          "time": "2023-03-26T18:09:19.281Z",
+          "type": "zone.dimo.device.status.update"
+        }
+      },
+      {
+        "_index": "device-status-prod-2023-03-30",
+        "_id": "2NkET6PTtwDepliMuHTjimOBREc",
+        "_score": 0.99574536,
+        "_source": {
+          "data": {
+            "altitude": 218.3,
+            "wifi": {
+              "ssid": "Amplified",
+              "status": "completed"
+            },
+            "year": 2006,
+            "batteryVoltage": 11.9,
+            "latitude": 42.51759,
+            "deviceDefinitionId": "24GEF73wUVCRbnCsWG7P7FyTsdp",
+            "nsat": 7,
+            "cell": {
+              "ip": "100.65.81.18",
+              "details": {
+                "global_cell_id": 6855952,
+                "cell_[0]": {
+                  "rssi": "-77.2 dBm",
+                  "rsrq": "-9.6 dB",
+                  "rsrp": "-107.9 dBm",
+                  "physical_cell_id": 236
+                },
+                "cell_[1]": {
+                  "rssi": "-92.4 dBm",
+                  "rsrq": "-11.7 dB",
+                  "rsrp": "-112.7 dBm",
+                  "physical_cell_id": 13
+                },
+                "plmn": 310026
+              }
+            },
+            "hdop": 0.9,
+            "makeSlug": "mercedes-benz",
+            "modelSlug": "r-class",
+            "model": "R-Class",
+            "runTime": 0,
+            "region": "Americas",
+            "device": {
+              "schema_version": "v2",
+              "hw_version": 5.2,
+              "device_id": "3d020f1f-7a5c-463f-a57a-785bae2ea760",
+              "imei": "860195055690553",
+              "unit_id": "90ab41a8-f68d-fa05-fb03-3251b8b62c97",
+              "sw_version": "0202b790",
+              "timestamp": 1680199682670
+            },
+            "make": "Mercedes-Benz",
+            "longitude": -83.23233,
+            "timestamp": "2023-03-30T18:08:02.67Z"
+          },
+          "subject": "2Bz5Wv4icb5Il1vBsaFjJKeILN7",
+          "specversion": "1.0",
+          "location": {
+            "lon": "-83.23233",
+            "lat": "42.51759"
+          },
+          "id": "2NkET6PTtwDepliMuHTjimOBREc",
+          "source": "dimo/integration/27qftVRWQYpVDcO5DltO5Ojbjxk",
+          "time": "2023-03-30T18:08:04.795Z",
+          "type": "zone.dimo.device.status.update"
+        }
+      },
+      {
+        "_index": "device-status-prod-2023-03-22",
+        "_id": "2NNBlCvnNLUw5MQUU60GDLhP2rC",
+        "_score": 0.9943301,
+        "_source": {
+          "data": {
+            "fuelPercentRemaining": 0.6,
+            "altitude": 208,
+            "wifi": {
+              "ssid": "Amplified",
+              "status": "completed"
+            },
+            "year": 2006,
+            "latitude": 42.51766,
+            "deviceDefinitionId": "24GEF73wUVCRbnCsWG7P7FyTsdp",
+            "nsat": 7,
+            "cell": {
+              "ip": "100.66.244.28",
+              "details": {
+                "global_cell_id": 6855952,
+                "cell_[0]": {
+                  "rssi": "-75.3 dBm",
+                  "cell_selection_rx_level": 17,
+                  "rsrq": "-12.8 dB",
+                  "rsrp": "-106.8 dBm",
+                  "physical_cell_id": 236
+                },
+                "cell_[1]": {
+                  "rssi": "-87.1 dBm",
+                  "cell_selection_rx_level": 14,
+                  "rsrq": "-13.4 dB",
+                  "rsrp": "-109.5 dBm",
+                  "physical_cell_id": 13
+                },
+                "plmn": 310026
+              }
+            },
+            "hdop": 0.8,
+            "makeSlug": "mercedes-benz",
+            "modelSlug": "r-class",
+            "model": "R-Class",
+            "region": "Americas",
+            "device": {
+              "schema_version": "v2",
+              "hw_version": 5.2,
+              "device_id": "3d020f1f-7a5c-463f-a57a-785bae2ea760",
+              "imei": "860195055690553",
+              "unit_id": "90ab41a8-f68d-fa05-fb03-3251b8b62c97",
+              "sw_version": "0202b790",
+              "timestamp": 1679494807020
+            },
+            "make": "Mercedes-Benz",
+            "longitude": -83.23241,
+            "timestamp": "2023-03-22T14:20:07.019Z"
+          },
+          "subject": "2Bz5Wv4icb5Il1vBsaFjJKeILN7",
+          "specversion": "1.0",
+          "location": {
+            "lon": "-83.23241",
+            "lat": "42.51766"
+          },
+          "id": "2NNBlCvnNLUw5MQUU60GDLhP2rC",
+          "source": "dimo/integration/27qftVRWQYpVDcO5DltO5Ojbjxk",
+          "time": "2023-03-22T14:20:07.665Z",
+          "type": "zone.dimo.device.status.update"
+        }
+      }
+    ]
+  }
+}

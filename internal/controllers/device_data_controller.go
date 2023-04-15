@@ -4,9 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/DIMO-Network/devices-api/pkg/grpc"
 	"io"
 	"strconv"
 	"time"
+
+	"github.com/tidwall/sjson"
+	"github.com/volatiletech/null/v8"
 
 	"github.com/DIMO-Network/device-data-api/internal/config"
 	"github.com/DIMO-Network/device-data-api/internal/services"
@@ -25,10 +29,11 @@ import (
 )
 
 type DeviceDataController struct {
-	Settings  *config.Settings
-	log       *zerolog.Logger
-	deviceAPI services.DeviceAPIService
-	es8Client *es8.TypedClient
+	Settings       *config.Settings
+	log            *zerolog.Logger
+	deviceAPI      services.DeviceAPIService
+	es8Client      *es8.TypedClient
+	definitionsAPI services.DeviceDefinitionsAPIService
 }
 
 const (
@@ -44,12 +49,14 @@ func NewDeviceDataController(
 	logger *zerolog.Logger,
 	deviceAPIService services.DeviceAPIService,
 	es8Client *es8.TypedClient,
+	definitionsAPIService services.DeviceDefinitionsAPIService,
 ) DeviceDataController {
 	return DeviceDataController{
-		Settings:  settings,
-		log:       logger,
-		deviceAPI: deviceAPIService,
-		es8Client: es8Client,
+		Settings:       settings,
+		log:            logger,
+		deviceAPI:      deviceAPIService,
+		es8Client:      es8Client,
+		definitionsAPI: definitionsAPIService,
 	}
 }
 
@@ -87,15 +94,53 @@ func (d *DeviceDataController) GetHistoricalRaw(c *fiber.Ctx) error {
 	}
 
 	// todo: cache user devices in memory
-	exists, err := d.deviceAPI.UserDeviceBelongsToUserID(c.Context(), userID, userDeviceID)
+	userDevice, err := d.deviceAPI.GetUserDevice(c.Context(), userDeviceID)
 	if err != nil {
 		return err
 	}
+	exists := userDevice.UserId == userID
+
 	if !exists {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 
-	return d.getHistory(c, userDeviceID, startDate, endDate, types.SourceFilter{})
+	return d.getHistory(c, userDevice, startDate, endDate, types.SourceFilter{})
+}
+
+func addRangeIfNotExists(ctx context.Context, deviceDefSvc services.DeviceDefinitionsAPIService, body []byte, deviceDefinitionID string, deviceStyleID *string) ([]byte, error) {
+	result := gjson.GetBytes(body, "hits.hits.#.source.data.range") // exists in array?
+	if result.Exists() && len(result.Array()) > 0 {
+		return body, nil
+	}
+	// check if range is already present in any document
+	// todo this is always returning false
+	if gjson.GetBytes(body, "hits.hits.#(_source.data.range>0)0._source.data.range").Exists() {
+		return body, nil
+	}
+
+	definition, err := deviceDefSvc.GetDeviceDefinition(ctx, deviceDefinitionID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not get device definition by id: %s", deviceDefinitionID)
+	}
+	// extract the range values from definition, already done in devices-api, copy that code or move to shared
+	rangeData := GetActualDeviceDefinitionMetadataValues(definition, null.StringFromPtr(deviceStyleID))
+
+	resultData := gjson.GetBytes(body, "hits.hits.#._source.data")
+	for i, r := range resultData.Array() {
+		// note range is reported in km
+		fuelResult := r.Get("fuelPercentRemaining")
+		if fuelResult.Exists() {
+			rangeKm := CalculateRange(rangeData, fuelResult.Num)
+			if rangeKm != nil {
+				body, err = sjson.SetBytes(body, fmt.Sprintf("hits.hits.%d._source.data.range", i), rangeKm)
+				if err != nil {
+					return body, err
+				}
+			}
+		}
+	}
+
+	return body, nil
 }
 
 // GetHistoricalRawPermissioned godoc
@@ -157,10 +202,10 @@ func (d *DeviceDataController) GetHistoricalRawPermissioned(c *fiber.Ctx) error 
 		filter.Includes = append(filter.Includes, "*")
 	}
 
-	return d.getHistory(c, userDevice.Id, startDate, endDate, filter)
+	return d.getHistory(c, userDevice, startDate, endDate, filter)
 }
 
-func (d *DeviceDataController) getHistory(c *fiber.Ctx, userDeviceID, startDate, endDate string, filter types.SourceFilter) error {
+func (d *DeviceDataController) getHistory(c *fiber.Ctx, userDevice *grpc.UserDevice, startDate, endDate string, filter types.SourceFilter) error {
 	msm := types.MinimumShouldMatch(1)
 
 	var source types.SourceConfig = filter
@@ -171,7 +216,7 @@ func (d *DeviceDataController) getHistory(c *fiber.Ctx, userDeviceID, startDate,
 				Query: &types.Query{
 					Bool: &types.BoolQuery{
 						Filter: []types.Query{
-							{Term: map[string]types.TermQuery{"subject": {Value: userDeviceID}}},
+							{Term: map[string]types.TermQuery{"subject": {Value: userDevice.Id}}},
 							{Range: map[string]types.RangeQuery{"data.timestamp": types.DateRangeQuery{Gte: some.String(startDate), Lte: some.String(endDate)}}},
 						},
 						Should: []types.Query{
@@ -194,15 +239,22 @@ func (d *DeviceDataController) getHistory(c *fiber.Ctx, userDeviceID, startDate,
 	}
 	defer res.Body.Close()
 
+	localLog := d.log.With().Str("userDeviceId", userDevice.Id).Interface("response", res).Logger()
 	if res.StatusCode >= fiber.StatusBadRequest {
-		d.log.Error().Str("userDeviceId", userDeviceID).Interface("response", res).Msgf("Got status code %d from Elastic.", res.StatusCode)
+		localLog.Error().Str("userDeviceId", userDevice.Id).Interface("response", res).Msgf("Got status code %d from Elastic.", res.StatusCode)
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
 	}
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		d.log.Err(err).Str("userDeviceId", userDeviceID).Msg("Failed to read Elastic response body.")
+		localLog.Err(err).Str("userDeviceId", userDevice.Id).Msg("Failed to read Elastic response body.")
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
 	}
+
+	body, err = addRangeIfNotExists(c.Context(), d.definitionsAPI, body, userDevice.DeviceDefinitionId, userDevice.DeviceStyleId)
+	if err != nil {
+		localLog.Warn().Err(err).Msg("could not add range calculation to document")
+	}
+
 	c.Set("Content-Type", fiber.MIMEApplicationJSON)
 	return c.Status(fiber.StatusOK).Send(body)
 }
