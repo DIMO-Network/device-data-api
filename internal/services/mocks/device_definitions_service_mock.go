@@ -36,10 +36,10 @@ func (m *MockDeviceDefinitionsAPIService) EXPECT() *MockDeviceDefinitionsAPIServ
 }
 
 // GetDeviceDefinition mocks base method.
-func (m *MockDeviceDefinitionsAPIService) GetDeviceDefinition(ctx context.Context, id string) (*grpc.GetDeviceDefinitionResponse, error) {
+func (m *MockDeviceDefinitionsAPIService) GetDeviceDefinition(ctx context.Context, id string) (*grpc.GetDeviceDefinitionItemResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetDeviceDefinition", ctx, id)
-	ret0, _ := ret[0].(*grpc.GetDeviceDefinitionResponse)
+	ret0, _ := ret[0].(*grpc.GetDeviceDefinitionItemResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

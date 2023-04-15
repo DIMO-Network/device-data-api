@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/tidwall/sjson"
+	"github.com/volatiletech/null/v8"
 	"io"
 	"strconv"
 	"time"
@@ -107,20 +108,36 @@ func (d *DeviceDataController) GetHistoricalRaw(c *fiber.Ctx) error {
 	return d.getHistory(c, userDeviceID, startDate, endDate, types.SourceFilter{})
 }
 
-func addRangeIfNotExists(ctx context.Context, deviceDefSvc services.DeviceDefinitionsAPIService, body []byte, deviceDefinitionID string) ([]byte, error) {
+func addRangeIfNotExists(ctx context.Context, deviceDefSvc services.DeviceDefinitionsAPIService, body []byte, deviceDefinitionID string, deviceStyleID *string) ([]byte, error) {
 	result := gjson.GetBytes(body, "hits.hits.#.source.data.range") // exists in array?
 	if result.Exists() && len(result.Array()) > 0 {
 		return body, nil
 	}
+	// check if range is already present in any document
+	// todo this is saying exists when it doesn't
+	if gjson.GetBytes(body, "hits.hits.#(source.data.range>0)1.source.data.range").Exists() {
+		return body, nil
+	}
+
 	definition, err := deviceDefSvc.GetDeviceDefinition(ctx, deviceDefinitionID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not get device definition by id: %s", deviceDefinitionID)
 	}
-	resultFuel := gjson.GetBytes(body, "hits.hits.#.source.data.fuelPercentRemaining")
-	for _, r := range resultFuel.Array() {
+	// extract the range values from definition, already done in devices-api, copy that code or move to shared
+	rangeData := GetActualDeviceDefinitionMetadataValues(definition, null.StringFromPtr(deviceStyleID))
+
+	resultFuel := gjson.GetBytes(body, "hits.hits.#._source.data.fuelPercentRemaining")
+	for i, r := range resultFuel.Array() {
 		// note range is reported in km
-		//definition.DeviceDefinitions[0].DeviceAttributes[0].Name
-		body, _ = sjson.SetBytes(body, fmt.Sprintf("hits.hits.%d.source.data.range", r.Index), 24.5)
+		if r.Exists() {
+			rangeKm := CalculateRange(rangeData, r.Num)
+			if rangeKm != nil {
+				body, err = sjson.SetBytes(body, fmt.Sprintf("hits.hits.%d._source.data.range", i), rangeKm)
+				if err != nil {
+					fmt.Println("could not set range " + err.Error())
+				}
+			}
+		}
 	}
 
 	return body, nil

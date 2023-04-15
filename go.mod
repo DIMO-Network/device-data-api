@@ -3,8 +3,8 @@ module github.com/DIMO-Network/device-data-api
 go 1.18
 
 require (
-	github.com/DIMO-Network/device-definitions-api v0.9.7
-	github.com/DIMO-Network/devices-api v1.13.23
+	github.com/DIMO-Network/device-definitions-api v0.9.9
+	github.com/DIMO-Network/devices-api v1.13.24
 	github.com/DIMO-Network/shared v0.9.3
 	github.com/aws/aws-sdk-go-v2 v1.17.8
 	github.com/aws/aws-sdk-go-v2/config v1.18.21
@@ -23,6 +23,7 @@ require (
 	github.com/swaggo/swag v1.8.12
 	github.com/tidwall/gjson v1.14.4
 	github.com/tidwall/sjson v1.2.5
+	github.com/volatiletech/null/v8 v8.1.2
 	golang.org/x/exp v0.0.0-20230321023759-10a507213a29
 	google.golang.org/grpc v1.54.0
 )
@@ -46,6 +47,8 @@ require (
 	github.com/aws/smithy-go v1.13.5 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/elastic/elastic-transport-go/v8 v8.1.0 // indirect
+	github.com/friendsofgo/errors v0.9.2 // indirect
+	github.com/gofrs/uuid v4.3.0+incompatible // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.18 // indirect
@@ -60,6 +63,10 @@ require (
 	github.com/savsgio/gotils v0.0.0-20230208104028-c358bd845dee // indirect
 	github.com/swaggo/files/v2 v2.0.0 // indirect
 	github.com/tinylib/msgp v1.1.8 // indirect
+	github.com/volatiletech/inflect v0.0.1 // indirect
+	github.com/volatiletech/randomize v0.0.1 // indirect
+	github.com/volatiletech/strmangle v0.0.4 // indirect
+	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 )
 
 require (

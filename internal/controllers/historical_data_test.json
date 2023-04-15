@@ -59,7 +59,7 @@
             "hdop": 0.7,
             "speed": 63,
             "makeSlug": "mercedes-benz",
-            "fuelPercentRemaining": 0.6745098039215687,
+            "fuelPercentRemaining": 0.9,
             "modelSlug": "r-class",
             "engineLoad": 0.5490196078431372,
             "intakeTemp": 9,
@@ -120,7 +120,7 @@
             },
             "speed": 122,
             "makeSlug": "mercedes-benz",
-            "fuelPercentRemaining": 0.7882352941176471,
+            "fuelPercentRemaining": 0.8,
             "modelSlug": "r-class",
             "engineLoad": 0.4196078431372549,
             "model": "R-Class",
@@ -212,7 +212,7 @@
             },
             "speed": 76,
             "makeSlug": "mercedes-benz",
-            "fuelPercentRemaining": 0.6,
+            "fuelPercentRemaining": 0.7,
             "modelSlug": "r-class",
             "engineLoad": 0.16862745098039217,
             "model": "R-Class",
@@ -442,6 +442,7 @@
         "_score": 0.9943301,
         "_source": {
           "data": {
+            "fuelPercentRemaining": 0.6,
             "altitude": 208,
             "wifi": {
               "ssid": "Amplified",
