@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"errors"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"net/http"
 	"os"
 	"os/signal"
@@ -94,9 +96,20 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Error constructing Elasticsearch client.")
 	}
+	// establish grpc connections
+	definitionsConn, err := grpc.Dial(settings.DeviceDefinitionsGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		logger.Fatal().Err(err).Msg("failed to dial device definitions grpc")
+	}
+	defer definitionsConn.Close()
+	devicesConn, err := grpc.Dial(settings.DevicesAPIGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		logger.Fatal().Err(err).Msg("failed to dial devices grpc")
+	}
+	defer devicesConn.Close()
 
-	deviceAPIService := services.NewDeviceAPIService(settings.DevicesAPIGRPCAddr)
-	definitionsAPIService := services.NewDeviceDefinitionsAPIService(settings.DeviceDefinitionsGRPCAddr)
+	deviceAPIService := services.NewDeviceAPIService(devicesConn)
+	definitionsAPIService := services.NewDeviceDefinitionsAPIService(definitionsConn)
 
 	deviceDataController := controllers.NewDeviceDataController(settings, &logger, deviceAPIService, esClient8, definitionsAPIService)
 
