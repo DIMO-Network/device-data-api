@@ -2,10 +2,10 @@ package services
 
 import (
 	"context"
+	"fmt"
 
 	pb "github.com/DIMO-Network/devices-api/pkg/grpc"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 //go:generate mockgen -source device_api_service.go -destination mocks/device_api_service_mock.go
@@ -17,21 +17,19 @@ type DeviceAPIService interface {
 }
 
 // NewDeviceAPIService API wrapper to call device-data-api to get the userDevices associated with a userId over grpc
-func NewDeviceAPIService(devicesAPIGRPCAddr string) DeviceAPIService {
-	return &deviceAPIService{devicesAPIGRPCAddr: devicesAPIGRPCAddr}
+func NewDeviceAPIService(devicesConn *grpc.ClientConn) DeviceAPIService {
+	return &deviceAPIService{devicesConn: devicesConn}
 }
 
 type deviceAPIService struct {
-	devicesAPIGRPCAddr string
+	devicesConn *grpc.ClientConn
 }
 
 func (das *deviceAPIService) ListUserDevicesForUser(ctx context.Context, userID string) (*pb.ListUserDevicesForUserResponse, error) {
-	conn, err := grpc.Dial(das.devicesAPIGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		return nil, err
+	if len(userID) == 0 {
+		return nil, fmt.Errorf("user id was empty - invalid")
 	}
-	defer conn.Close()
-	deviceClient := pb.NewUserDeviceServiceClient(conn)
+	deviceClient := pb.NewUserDeviceServiceClient(das.devicesConn)
 
 	devicesForUser, err := deviceClient.ListUserDevicesForUser(ctx, &pb.ListUserDevicesForUserRequest{
 		UserId: userID,
@@ -52,12 +50,10 @@ func (das *deviceAPIService) UserDeviceBelongsToUserID(ctx context.Context, user
 }
 
 func (das *deviceAPIService) GetUserDevice(ctx context.Context, userDeviceID string) (*pb.UserDevice, error) {
-	conn, err := grpc.Dial(das.devicesAPIGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		return nil, err
+	if len(userDeviceID) == 0 {
+		return nil, fmt.Errorf("user device id was empty - invalid")
 	}
-	defer conn.Close()
-	deviceClient := pb.NewUserDeviceServiceClient(conn)
+	deviceClient := pb.NewUserDeviceServiceClient(das.devicesConn)
 
 	userDevice, err := deviceClient.GetUserDevice(ctx, &pb.GetUserDeviceRequest{
 		Id: userDeviceID,
@@ -70,12 +66,7 @@ func (das *deviceAPIService) GetUserDevice(ctx context.Context, userDeviceID str
 }
 
 func (das *deviceAPIService) GetUserDeviceByTokenID(ctx context.Context, tokenID int64) (*pb.UserDevice, error) {
-	conn, err := grpc.Dial(das.devicesAPIGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Close()
-	deviceClient := pb.NewUserDeviceServiceClient(conn)
+	deviceClient := pb.NewUserDeviceServiceClient(das.devicesConn)
 
 	userDevice, err := deviceClient.GetUserDeviceByTokenId(ctx, &pb.GetUserDeviceByTokenIdRequest{
 		TokenId: tokenID,
