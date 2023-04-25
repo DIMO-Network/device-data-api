@@ -120,7 +120,7 @@ func addRangeIfNotExists(ctx context.Context, deviceDefSvc services.DeviceDefini
 
 	definition, err := deviceDefSvc.GetDeviceDefinition(ctx, deviceDefinitionID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not get device definition by id: %s", deviceDefinitionID)
+		return body, errors.Wrapf(err, "could not get device definition by id: %s", deviceDefinitionID)
 	}
 	// extract the range values from definition, already done in devices-api, copy that code or move to shared
 	rangeData := GetActualDeviceDefinitionMetadataValues(definition, null.StringFromPtr(deviceStyleID))
