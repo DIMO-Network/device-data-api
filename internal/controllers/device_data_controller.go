@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/DIMO-Network/devices-api/pkg/grpc"
 	"io"
 	"strconv"
 	"time"
+
+	"github.com/DIMO-Network/devices-api/pkg/grpc"
 
 	"github.com/tidwall/sjson"
 	"github.com/volatiletech/null/v8"
@@ -107,13 +108,12 @@ func (d *DeviceDataController) GetHistoricalRaw(c *fiber.Ctx) error {
 	return d.getHistory(c, userDevice, startDate, endDate, types.SourceFilter{})
 }
 
+// addRangeIfNotExists will add range based on mpg and fuelTankCapacity to the json body, only if there are no existing range entries (eg. smartcar added)
 func addRangeIfNotExists(ctx context.Context, deviceDefSvc services.DeviceDefinitionsAPIService, body []byte, deviceDefinitionID string, deviceStyleID *string) ([]byte, error) {
-	result := gjson.GetBytes(body, "hits.hits.#.source.data.range") // exists in array?
-	if result.Exists() && len(result.Array()) > 0 {
+	if len(body) == 0 {
 		return body, nil
 	}
 	// check if range is already present in any document
-	// todo this is always returning false
 	if gjson.GetBytes(body, "hits.hits.#(_source.data.range>0)0._source.data.range").Exists() {
 		return body, nil
 	}
@@ -239,7 +239,8 @@ func (d *DeviceDataController) getHistory(c *fiber.Ctx, userDevice *grpc.UserDev
 	}
 	defer res.Body.Close()
 
-	localLog := d.log.With().Str("userDeviceId", userDevice.Id).Interface("response", res).Logger()
+	localLog := d.log.With().Str("userDeviceId", userDevice.Id).
+		Str("deviceDefinitionId", userDevice.DeviceDefinitionId).Interface("response", res).Logger()
 	if res.StatusCode >= fiber.StatusBadRequest {
 		localLog.Error().Str("userDeviceId", userDevice.Id).Interface("response", res).Msgf("Got status code %d from Elastic.", res.StatusCode)
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")

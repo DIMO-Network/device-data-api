@@ -3,8 +3,9 @@ package controllers
 import (
 	"context"
 	_ "embed"
-	"github.com/tidwall/sjson"
 	"testing"
+
+	"github.com/tidwall/sjson"
 
 	mock_services "github.com/DIMO-Network/device-data-api/internal/services/mocks"
 	pb "github.com/DIMO-Network/device-definitions-api/pkg/grpc"
