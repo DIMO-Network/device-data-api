@@ -16,6 +16,7 @@ env:
   TOKEN_EXCHANGE_JWK_KEY_SET_URL: http://dex-roles-rights-prod.prod.svc.cluster.local:5556/keys
   VEHICLE_NFT_ADDRESS: '0xba5738a18d83d41847dffbdc6101d37c69c9b0cf'
   DEVICE_DEFINITIONS_GRPC_ADDR: device-definitions-api-prod:8086
+  USERS_API_GRPC_ADDR: users-api-prod:8086
 ingress:
   enabled: true
   className: nginx

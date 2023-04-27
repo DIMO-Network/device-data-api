@@ -16,9 +16,11 @@ import (
 	_ "github.com/DIMO-Network/device-data-api/docs"
 	"github.com/DIMO-Network/device-data-api/internal/config"
 	"github.com/DIMO-Network/device-data-api/internal/controllers"
+	"github.com/DIMO-Network/device-data-api/internal/middleware/owner"
 	"github.com/DIMO-Network/device-data-api/internal/services"
 	"github.com/DIMO-Network/shared"
 	"github.com/DIMO-Network/shared/middleware/privilegetoken"
+	pb "github.com/DIMO-Network/users-api/pkg/grpc"
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gofiber/fiber/v2"
@@ -109,8 +111,15 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 	}
 	defer devicesConn.Close()
 
+	usersConn, err := grpc.Dial(settings.UsersAPIGRPCAddr)
+	if err != nil {
+		logger.Fatal().Err(err).Msgf("Failed to dial users-api at %s", settings.UsersAPIGRPCAddr)
+	}
+	defer usersConn.Close()
+
 	deviceAPIService := services.NewDeviceAPIService(devicesConn)
 	definitionsAPIService := services.NewDeviceDefinitionsAPIService(definitionsConn)
+	usersClient := pb.NewUserServiceClient(usersConn)
 
 	deviceDataController := controllers.NewDeviceDataController(settings, &logger, deviceAPIService, esClient8, definitionsAPIService)
 
@@ -136,9 +145,12 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 	vToken.Get("/history", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.AllTimeLocation}), deviceDataController.GetHistoricalRawPermissioned)
 
 	v1Auth := app.Group("/v1", jwtAuth)
-	v1Auth.Get("/user/device-data/:userDeviceID/historical", deviceDataController.GetHistoricalRaw)
-	v1Auth.Get("/user/device-data/:userDeviceID/distance-driven", deviceDataController.GetDistanceDriven)
-	v1Auth.Get("/user/device-data/:userDeviceID/daily-distance", deviceDataController.GetDailyDistance)
+
+	udMw := owner.New(usersClient, deviceAPIService, &logger)
+	udOwner := v1Auth.Group("/user/device-data/:userDeviceID", udMw)
+	udOwner.Get("/historical", deviceDataController.GetHistoricalRaw)
+	udOwner.Get("/distance-driven", deviceDataController.GetDistanceDriven)
+	udOwner.Get("/daily-distance", deviceDataController.GetDailyDistance)
 
 	if settings.Environment != "prod" {
 		dataDownloadController, err := controllers.NewDataDownloadController(settings, &logger, esClient8, deviceAPIService)
@@ -146,7 +158,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 			panic(err)
 		}
 
-		v1Auth.Get("/user/device-data/:userDeviceID/export/json/email", dataDownloadController.DataDownloadHandler)
+		udOwner.Get("/export/json/email", dataDownloadController.DataDownloadHandler)
 		go func() {
 			err = dataDownloadController.DataDownloadConsumer(context.Background())
 			if err != nil {

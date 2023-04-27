@@ -9,7 +9,7 @@ import (
 	"time"
 
 	pb_devices "github.com/DIMO-Network/devices-api/pkg/grpc"
-	pb "github.com/DIMO-Network/shared/api/users"
+	pb "github.com/DIMO-Network/users-api/pkg/grpc"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/rs/zerolog"

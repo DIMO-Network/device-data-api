@@ -3,14 +3,18 @@ package owner
 import (
 	"testing"
 
+	mock_services "github.com/DIMO-Network/device-data-api/internal/services/mocks"
 	"github.com/DIMO-Network/device-data-api/internal/test"
-	pb_devices "github.com/DIMO-Network/devices-api/pkg/grpc"
-	pb "github.com/DIMO-Network/shared/api/users"
+	pbdvc "github.com/DIMO-Network/devices-api/pkg/grpc"
+	pb "github.com/DIMO-Network/users-api/pkg/grpc"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gofiber/fiber/v2"
+	"github.com/golang/mock/gomock"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func TestOwnerMiddleware(t *testing.T) {
@@ -21,9 +25,9 @@ func TestOwnerMiddleware(t *testing.T) {
 	userDeviceID := "2OeRoU9VmbFVpgpPy3BjY2WsMMm"
 
 	logger := test.Logger()
-
+	cont := gomock.NewController(t)
 	usersClient := &test.UsersClient{}
-	devicesClient := &test.DevicesClient{}
+	devicesClient := mock_services.NewMockDeviceAPIService(cont)
 	middleware := New(usersClient, devicesClient, logger)
 
 	app := test.SetupAppFiber(*logger)
@@ -94,9 +98,7 @@ func TestOwnerMiddleware(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
-
 			usersClient.Store = map[string]*pb.User{}
-			devicesClient.Store = map[string]*pb_devices.UserDevice{}
 
 			if c.UserExists {
 				u := &pb.User{Id: userID}
@@ -106,13 +108,14 @@ func TestOwnerMiddleware(t *testing.T) {
 				usersClient.Store[userID] = u
 			}
 
-			if c.DeviceUserID != "" {
-				d := &pb_devices.UserDevice{Id: userDeviceID}
+			if c.DeviceUserID == "" {
+				devicesClient.EXPECT().GetUserDevice(gomock.Any(), userDeviceID).Return(nil, status.Error(codes.NotFound, "Device not found."))
+			} else {
+				d := &pbdvc.UserDevice{Id: userDeviceID, UserId: c.DeviceUserID}
 				if c.DeviceOwnerAddress != "" {
 					d.OwnerAddress = common.Hex2Bytes(c.DeviceOwnerAddress)
 				}
-				d.UserId = userID
-				devicesClient.Store[userDeviceID] = d
+				devicesClient.EXPECT().GetUserDevice(gomock.Any(), userDeviceID).Return(d, nil)
 			}
 
 			res, err := app.Test(request)
