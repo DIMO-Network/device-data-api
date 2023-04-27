@@ -13,7 +13,7 @@ import (
 	"net/textproto"
 
 	"github.com/DIMO-Network/device-data-api/internal/config"
-	pb "github.com/DIMO-Network/shared/api/users"
+	pb "github.com/DIMO-Network/users-api/pkg/grpc"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

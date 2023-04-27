@@ -54,7 +54,7 @@ func NewDataDownloadController(settings *config.Settings, log *zerolog.Logger, e
 // @Param        end       query  string  false  "End timestamp in RFC-3339 format" Example(2023-04-14T08:11:33.94Z)
 // @Router       /user/device-data/{userDeviceID}/export/json/email [get]
 func (d *DataDownloadController) DataDownloadHandler(c *fiber.Ctx) error {
-	userID := getUserID(c)
+	userID := GetUserID(c)
 	userDeviceID := c.Params("userDeviceID")
 	if isOwner, err := d.deviceAPI.UserDeviceBelongsToUserID(c.Context(), userID, userDeviceID); err != nil {
 		return err
