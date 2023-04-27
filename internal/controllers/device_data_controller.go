@@ -73,7 +73,7 @@ func NewDeviceDataController(
 // @Router       /user/device-data/{userDeviceID}/historical [get]
 func (d *DeviceDataController) GetHistoricalRaw(c *fiber.Ctx) error {
 	const dateLayout = "2006-01-02" // date layout support by elastic
-	userID := getUserID(c)
+	userID := GetUserID(c)
 	userDeviceID := c.Params("userDeviceID")
 	startDate := c.Query("startDate")
 	if startDate == "" {
@@ -271,7 +271,7 @@ func (d *DeviceDataController) getHistory(c *fiber.Ctx, userDevice *grpc.UserDev
 // @Security     BearerAuth
 // @Router       /user/device-data/{userDeviceID}/distance-driven [get]
 func (d *DeviceDataController) GetDistanceDriven(c *fiber.Ctx) error {
-	userID := getUserID(c)
+	userID := GetUserID(c)
 	userDeviceID := c.Params("userDeviceID")
 
 	exists, err := d.deviceAPI.UserDeviceBelongsToUserID(c.Context(), userID, userDeviceID)
@@ -333,7 +333,7 @@ type DailyDistanceResp struct {
 // @Security     BearerAuth
 // @Router       /user/device-data/{userDeviceID}/daily-distance [get]
 func (d *DeviceDataController) GetDailyDistance(c *fiber.Ctx) error {
-	userID := getUserID(c)
+	userID := GetUserID(c)
 	userDeviceID := c.Params("userDeviceID")
 
 	tz := c.Query("time_zone")

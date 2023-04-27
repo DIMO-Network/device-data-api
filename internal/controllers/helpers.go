@@ -19,7 +19,7 @@ type QueryValues struct {
 	UserDeviceID string    `query:"-" json:"userDeviceId"`
 }
 
-func getUserID(c *fiber.Ctx) string {
+func GetUserID(c *fiber.Ctx) string {
 	token := c.Locals("user").(*jwt.Token)
 	claims := token.Claims.(jwt.MapClaims)
 	userID := claims["sub"].(string)
