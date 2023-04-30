@@ -111,7 +111,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 	}
 	defer devicesConn.Close()
 
-	usersConn, err := grpc.Dial(settings.UsersAPIGRPCAddr)
+	usersConn, err := grpc.Dial(settings.UsersAPIGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		logger.Fatal().Err(err).Msgf("Failed to dial users-api at %s", settings.UsersAPIGRPCAddr)
 	}
