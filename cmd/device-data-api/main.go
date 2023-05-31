@@ -8,7 +8,6 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
-	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -79,8 +78,6 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 	app.Get("/v1/swagger/*", swagger.HandlerDefault)
 
 	// secured paths
-	keyRefreshInterval := time.Hour
-	keyRefreshUnknownKID := true
 	jwtAuth := jwtware.New(jwtware.Config{
 		JWKSetURLs: []string{settings.JwtKeySetURL},
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
