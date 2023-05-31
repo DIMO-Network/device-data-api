@@ -10,7 +10,7 @@ import (
 
 	pb "github.com/DIMO-Network/users-api/pkg/grpc"
 	"github.com/gofiber/fiber/v2"
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

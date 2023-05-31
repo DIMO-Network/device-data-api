@@ -23,10 +23,10 @@ import (
 	pb "github.com/DIMO-Network/users-api/pkg/grpc"
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/ethereum/go-ethereum/common"
+	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/recover"
-	jwtware "github.com/gofiber/jwt/v3"
 	"github.com/gofiber/swagger"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
@@ -82,9 +82,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 	keyRefreshInterval := time.Hour
 	keyRefreshUnknownKID := true
 	jwtAuth := jwtware.New(jwtware.Config{
-		KeySetURL:            settings.JwtKeySetURL,
-		KeyRefreshInterval:   &keyRefreshInterval,
-		KeyRefreshUnknownKID: &keyRefreshUnknownKID,
+		JWKSetURLs: []string{settings.JwtKeySetURL},
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			return fiber.NewError(fiber.StatusUnauthorized, "Invalid JWT.")
 		},
@@ -125,9 +123,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 
 	logger.Info().Str("jwkUrl", settings.TokenExchangeJWTKeySetURL).Str("vehicleAddr", settings.VehicleNFTAddress).Msg("Privileges enabled.")
 	privilegeAuth := jwtware.New(jwtware.Config{
-		KeySetURL:            settings.TokenExchangeJWTKeySetURL,
-		KeyRefreshInterval:   &keyRefreshInterval,
-		KeyRefreshUnknownKID: &keyRefreshUnknownKID,
+		JWKSetURLs: []string{settings.TokenExchangeJWTKeySetURL},
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			logger.Err(err).Msg("Privilege token error.")
 			return fiber.DefaultErrorHandler(c, err)
