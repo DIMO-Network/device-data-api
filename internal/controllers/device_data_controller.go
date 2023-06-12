@@ -255,9 +255,44 @@ func (d *DeviceDataController) getHistory(c *fiber.Ctx, userDevice *grpc.UserDev
 	if err != nil {
 		localLog.Warn().Err(err).Msg("could not add range calculation to document")
 	}
+	body, err = removeOdometerIfInvalid(body)
 
 	c.Set("Content-Type", fiber.MIMEApplicationJSON)
 	return c.Status(fiber.StatusOK).Send(body)
+}
+
+func removeOdometerIfInvalid(body []byte) ([]byte, error) {
+	if len(body) == 0 {
+		return body, nil
+	}
+	var err error
+
+	resultData := gjson.GetBytes(body, "hits.hits.#._source.data")
+	for i, r := range resultData.Array() {
+		// note range is reported in km
+		odoResult := r.Get("odometer")
+		if odoResult.Exists() {
+			if !isOdometerValid(odoResult.Float()) {
+				// set json to remove?
+				body, err = sjson.DeleteBytes(body, fmt.Sprintf("hits.hits.%d._source.data.odometer", i))
+				if err != nil {
+					return body, err
+				}
+			}
+		}
+	}
+
+	return body, nil
+}
+
+func isOdometerValid(odometer float64) bool {
+	if odometer <= 100 {
+		return false
+	}
+	if odometer == 65539 || odometer == 65538 {
+		return false
+	}
+	return true
 }
 
 // GetDistanceDriven godoc

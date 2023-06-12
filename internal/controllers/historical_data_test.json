@@ -167,6 +167,7 @@
         "_score": 0.9964268,
         "_source": {
           "data": {
+            "odometer": 6,
             "fuelPercentRemaining": 0.7,
             "altitude": 202,
             "coolantTemp": 66,
@@ -258,6 +259,7 @@
         "_score": 0.99599975,
         "_source": {
           "data": {
+            "odometer": 65539,
             "altitude": 225.3,
             "wifi": {
               "ssid": "",
@@ -317,6 +319,7 @@
         "_score": 0.9959012,
         "_source": {
           "data": {
+            "odometer": 65538,
             "altitude": 203.7,
             "wifi": {
               "ssid": "",
