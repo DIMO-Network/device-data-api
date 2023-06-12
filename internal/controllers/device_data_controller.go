@@ -433,8 +433,10 @@ func (d *DeviceDataController) GetDailyDistance(c *fiber.Ctx) error {
 		var dp *float64
 
 		if b.MaxOdom.Value != nil {
-			d := *b.MaxOdom.Value - *b.MinOdom.Value
-			dp = &d
+			if shared.IsOdometerValid(*b.MaxOdom.Value) {
+				d := *b.MaxOdom.Value - *b.MinOdom.Value
+				dp = &d
+			}
 		}
 
 		day := DailyDistanceDay{
@@ -482,6 +484,8 @@ func (d *DeviceDataController) queryOdometer(ctx context.Context, order sortorde
 		// Existing behavior. Not great.
 		return 0, nil
 	}
+
+	body = removeOdometerIfInvalid(body)
 
 	return gjson.GetBytes(body, "hits.hits.0._source.data.odometer").Float(), nil
 }
