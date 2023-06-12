@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/DIMO-Network/shared"
 	"io"
 	"strconv"
 	"time"
@@ -261,6 +262,7 @@ func (d *DeviceDataController) getHistory(c *fiber.Ctx, userDevice *grpc.UserDev
 	return c.Status(fiber.StatusOK).Send(body)
 }
 
+// removeOdometerIfInvalid removes the odometer json properties we consider invalid
 func removeOdometerIfInvalid(body []byte) ([]byte, error) {
 	if len(body) == 0 {
 		return body, nil
@@ -272,7 +274,7 @@ func removeOdometerIfInvalid(body []byte) ([]byte, error) {
 		// note range is reported in km
 		odoResult := r.Get("odometer")
 		if odoResult.Exists() {
-			if !isOdometerValid(odoResult.Float()) {
+			if !shared.IsOdometerValid(odoResult.Float()) {
 				// set json to remove?
 				body, err = sjson.DeleteBytes(body, fmt.Sprintf("hits.hits.%d._source.data.odometer", i))
 				if err != nil {
@@ -283,16 +285,6 @@ func removeOdometerIfInvalid(body []byte) ([]byte, error) {
 	}
 
 	return body, nil
-}
-
-func isOdometerValid(odometer float64) bool {
-	if odometer <= 100 {
-		return false
-	}
-	if odometer == 65539 || odometer == 65538 {
-		return false
-	}
-	return true
 }
 
 // GetDistanceDriven godoc
