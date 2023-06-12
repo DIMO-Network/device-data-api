@@ -5,6 +5,10 @@ github.com/DIMO-Network/devices-api v1.13.24 h1:p1fZtnF7/TzPYRQGevknGy8SY3No8Igc
 github.com/DIMO-Network/devices-api v1.13.24/go.mod h1:rf4Pt4tjucFu1BrlG3masSpwA3vCp4V/LCO0BEseVr8=
 github.com/DIMO-Network/shared v0.9.3 h1:wJjgyg3AxHkztp3TE42S/WZfCmfYXAgdEIKPKygCYmM=
 github.com/DIMO-Network/shared v0.9.3/go.mod h1:Edzbgny+7yh/CKKWKAUbOVT6K+dUWBFAxkYa89kvIxU=
+github.com/DIMO-Network/shared v0.9.5 h1:H2kfY3NFoatMoAmEcUAZgOWGRsp18pexdd4WVtxy8Yk=
+github.com/DIMO-Network/shared v0.9.5/go.mod h1:NtfLKGdUL/47pM4t2WTWiUMDtvLs48py+xcPWdaZzUA=
+github.com/DIMO-Network/shared v0.9.51 h1:ww3lLhNREq9I1gm238bEN+wVmwPx/KftUnxI7gHGOLU=
+github.com/DIMO-Network/shared v0.9.51/go.mod h1:NtfLKGdUL/47pM4t2WTWiUMDtvLs48py+xcPWdaZzUA=
 github.com/DIMO-Network/users-api v0.6.3 h1:pqm9Mb/N+lUn+pXrbH2CAVV/+dz8yhFHJ5vnXr2DQHs=
 github.com/DIMO-Network/users-api v0.6.3/go.mod h1:aIZ41w04/Vfb8xqxA4UeNT0N/CoyPEjeGWRuLa98OEo=
 github.com/KyleBanks/depth v1.2.1 h1:5h8fQADFrWtarTdtDudMmGsC7GPbOAu6RVB3ffsVFHc=

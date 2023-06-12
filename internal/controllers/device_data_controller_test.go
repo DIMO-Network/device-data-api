@@ -78,3 +78,18 @@ func TestDeviceDataController_addRangeIfNotExists_NoChangeIfRangeExists(t *testi
 	range2 := gjson.GetBytes(bodyWithRange, "hits.hits.1._source.data.range").Num
 	assert.Equal(t, float64(0), range2, "expected no range property to exist here")
 }
+
+func Test_removeOdometerIfInvalid(t *testing.T) {
+
+	body := removeOdometerIfInvalid([]byte(elasticDeviceData))
+
+	// check that all bad odometers removed
+	odo2 := gjson.GetBytes(body, "hits.hits.2._source.data.odometer")
+	assert.False(t, odo2.Exists())
+
+	odo3 := gjson.GetBytes(body, "hits.hits.3._source.data.odometer")
+	assert.False(t, odo3.Exists())
+
+	odo4 := gjson.GetBytes(body, "hits.hits.4._source.data.odometer")
+	assert.False(t, odo4.Exists())
+}
