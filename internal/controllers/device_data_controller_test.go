@@ -81,8 +81,7 @@ func TestDeviceDataController_addRangeIfNotExists_NoChangeIfRangeExists(t *testi
 
 func Test_removeOdometerIfInvalid(t *testing.T) {
 
-	body, err := removeOdometerIfInvalid([]byte(elasticDeviceData))
-	require.NoError(t, err)
+	body := removeOdometerIfInvalid([]byte(elasticDeviceData))
 
 	// check that all bad odometers removed
 	odo2 := gjson.GetBytes(body, "hits.hits.2._source.data.odometer")

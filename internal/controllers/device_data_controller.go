@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/DIMO-Network/shared"
 	"io"
 	"strconv"
 	"time"
+
+	"github.com/DIMO-Network/shared"
 
 	"github.com/DIMO-Network/devices-api/pkg/grpc"
 
@@ -256,18 +257,17 @@ func (d *DeviceDataController) getHistory(c *fiber.Ctx, userDevice *grpc.UserDev
 	if err != nil {
 		localLog.Warn().Err(err).Msg("could not add range calculation to document")
 	}
-	body, err = removeOdometerIfInvalid(body)
+	body = removeOdometerIfInvalid(body)
 
 	c.Set("Content-Type", fiber.MIMEApplicationJSON)
 	return c.Status(fiber.StatusOK).Send(body)
 }
 
 // removeOdometerIfInvalid removes the odometer json properties we consider invalid
-func removeOdometerIfInvalid(body []byte) ([]byte, error) {
+func removeOdometerIfInvalid(body []byte) []byte {
 	if len(body) == 0 {
-		return body, nil
+		return body
 	}
-	var err error
 
 	resultData := gjson.GetBytes(body, "hits.hits.#._source.data")
 	for i, r := range resultData.Array() {
@@ -276,15 +276,12 @@ func removeOdometerIfInvalid(body []byte) ([]byte, error) {
 		if odoResult.Exists() {
 			if !shared.IsOdometerValid(odoResult.Float()) {
 				// set json to remove?
-				body, err = sjson.DeleteBytes(body, fmt.Sprintf("hits.hits.%d._source.data.odometer", i))
-				if err != nil {
-					return body, err
-				}
+				body, _ = sjson.DeleteBytes(body, fmt.Sprintf("hits.hits.%d._source.data.odometer", i))
 			}
 		}
 	}
 
-	return body, nil
+	return body
 }
 
 // GetDistanceDriven godoc
