@@ -234,7 +234,7 @@ func (ud *userData) finishWritingToS3(ctx context.Context, uploadParts []awstype
 		return
 	}
 
-	ud.presign.PresignGetObject(ctx, &s3.GetObjectInput{
+	pr, err := ud.presign.PresignGetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(ud.AWSBucket),
 		Key:    aws.String(ud.keyName),
 	},
@@ -242,7 +242,11 @@ func (ud *userData) finishWritingToS3(ctx context.Context, uploadParts []awstype
 			po.Expires = 24 * time.Hour
 		},
 	)
-	ud.downloadLinks = append(ud.downloadLinks, *final.Location)
+	if err != nil {
+		ud.log.Err(err).Msg("Error generating presign link.")
+	}
+
+	ud.downloadLinks = append(ud.downloadLinks, pr.URL)
 }
 
 func (ud *userData) writeToS3(ctx context.Context, response string) error {
