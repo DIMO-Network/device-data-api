@@ -18,6 +18,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/core/search"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/rs/zerolog"
+	"github.com/segmentio/ksuid"
 	"github.com/tidwall/gjson"
 )
 
@@ -62,7 +63,7 @@ func NewQueryStorageService(es *elasticsearch.TypedClient, settings *config.Sett
 		es:                      es,
 		storageSvcClient:        s3Client,
 		AWSBucket:               settings.AWSBucketName,
-		ElasticIndex:            settings.ElasticIndex,
+		ElasticIndex:            settings.DeviceDataIndexName,
 		NATSDataDownloadSubject: settings.NATSDataDownloadSubject,
 		MaxFileSize:             settings.MaxFileSize,
 		log:                     log,
@@ -141,19 +142,18 @@ type userData struct {
 	uploadParts      []awstypes.CompletedPart
 	downloadLinks    []string
 	query            *search.Request
-	docCount         int
 	presign          *s3.PresignClient
 }
 
-func (uds *QueryStorageService) newS3Writer(ctx context.Context, query *search.Request, bucketName, userDeviceID string, startDate, endDate time.Time) (*userData, error) {
+func (uds *QueryStorageService) newS3Writer(ctx context.Context, query *search.Request, bucketName, userDeviceID string) (*userData, error) {
 
 	exp := time.Now().Add(24 * time.Hour)
 
-	keyName, docCount := generateKeyName(userDeviceID, 0, startDate, endDate)
+	keyName := fmt.Sprintf("%s/%s", userDeviceID, ksuid.New().String())
 	upload, err := uds.storageSvcClient.CreateMultipartUpload(ctx, &s3.CreateMultipartUploadInput{
 		Bucket:  aws.String(uds.AWSBucket),
 		Key:     aws.String(keyName),
-		Expires: &exp,
+		Expires: aws.Time(exp),
 	})
 	if err != nil {
 		return nil, err
@@ -164,7 +164,6 @@ func (uds *QueryStorageService) newS3Writer(ctx context.Context, query *search.R
 		AWSBucket:        bucketName,
 		uploadObj:        upload,
 		keyName:          keyName,
-		docCount:         docCount,
 		es:               uds.es,
 		storageSvcClient: uds.storageSvcClient,
 		log:              uds.log,
@@ -306,15 +305,14 @@ func (ud *userData) writeToS3(ctx context.Context, response string) error {
 
 }
 
-func (uds *QueryStorageService) StreamDataToS3(ctx context.Context, userDeviceID string, startDate, endDate time.Time) ([]string, error) {
-
-	query := uds.formatUserDataRequest(userDeviceID, startDate, endDate)
+func (uds *QueryStorageService) StreamDataToS3(ctx context.Context, userDeviceID string) ([]string, error) {
+	query := uds.formatUserDataRequest(userDeviceID)
 	response, err := uds.executeESQuery(query)
 	if err != nil {
 		return []string{}, err
 	}
 
-	s3writer, err := uds.newS3Writer(ctx, query, uds.AWSBucket, userDeviceID, startDate, endDate)
+	s3writer, err := uds.newS3Writer(ctx, query, uds.AWSBucket, userDeviceID)
 	if err != nil {
 		uds.log.Err(err).Msg("data streaming service: error creating s3 writer object")
 		return []string{}, err
@@ -333,16 +331,12 @@ func (uds *QueryStorageService) StreamDataToS3(ctx context.Context, userDeviceID
 // Elastic maximum.
 var pageSize = 10000
 
-func (uds *QueryStorageService) formatUserDataRequest(userDeviceID string, startDate, endDate time.Time) *search.Request {
+func (uds *QueryStorageService) formatUserDataRequest(userDeviceID string) *search.Request {
 	query := &search.Request{
 		Query: &types.Query{
 			Bool: &types.BoolQuery{
 				Filter: []types.Query{
 					{Match: map[string]types.MatchQuery{"subject": {Query: userDeviceID}}},
-					{Range: map[string]types.RangeQuery{"data.timestamp": types.DateRangeQuery{
-						Gte: timeToEndpoint(startDate),
-						Lte: timeToEndpoint(endDate),
-					}}},
 				},
 			},
 		},
@@ -362,27 +356,4 @@ func trimJSON(data []map[string]interface{}) (string, error) {
 	s = strings.TrimRight(s, "]")
 
 	return s, nil
-}
-
-func timeToEndpoint(t time.Time) *string {
-	if t.IsZero() {
-		return nil
-	}
-	s := t.Format(time.RFC3339)
-	return &s
-}
-
-func generateKeyName(userDeviceID string, docCount int, startDate, endDate time.Time) (string, int) {
-	var start, end string
-	docCount = docCount + 1
-
-	if !startDate.IsZero() {
-		start = "_" + startDate.Format("2006-01-02")
-	}
-
-	if !endDate.IsZero() {
-		end = "_" + startDate.Format("2006-01-02")
-	}
-
-	return fmt.Sprintf("userDownloads/%+v/%+v_DIMODeviceData_%+v%+v%+v.json", userDeviceID, docCount, userDeviceID, start, end), docCount
 }

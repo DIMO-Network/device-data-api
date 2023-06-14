@@ -3,7 +3,6 @@ package controllers
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/DIMO-Network/device-data-api/internal/config"
@@ -50,32 +49,19 @@ func NewDataDownloadController(settings *config.Settings, log *zerolog.Logger, e
 // @Success      200
 // @Security     BearerAuth
 // @Param        userDeviceID  path   string  true   "Device id" Example(2OQjmqUt9dguQbJt1WImuVfje3W)
-// @Param        start     query  string  false  "Start timestamp in RFC-3339 format" Example(2023-04-14T07:20:50.52Z)
-// @Param        end       query  string  false  "End timestamp in RFC-3339 format" Example(2023-04-14T08:11:33.94Z)
 // @Router       /user/device-data/{userDeviceID}/export/json/email [post]
 func (d *DataDownloadController) DataDownloadHandler(c *fiber.Ctx) error {
 	userID := GetUserID(c)
 	userDeviceID := c.Params("userDeviceID")
-	if isOwner, err := d.deviceAPI.UserDeviceBelongsToUserID(c.Context(), userID, userDeviceID); err != nil {
-		return err
-	} else if !isOwner {
-		return fiber.NewError(fiber.StatusNotFound, fmt.Sprintf("No device %s found for user %s", userDeviceID, userID))
+
+	params := QueryValues{
+		UserID:       userID,
+		UserDeviceID: userDeviceID,
 	}
 
-	var params QueryValues
-	if err := c.QueryParser(&params); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
-	}
+	b, _ := json.Marshal(params)
 
-	params.UserDeviceID = userDeviceID
-	params.UserID = userID
-
-	b, err := json.Marshal(params)
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
-	}
-
-	if _, err = d.NATSSvc.JetStream.Publish(d.QuerySvc.NATSDataDownloadSubject, b); err != nil {
+	if _, err := d.NATSSvc.JetStream.Publish(d.QuerySvc.NATSDataDownloadSubject, b); err != nil {
 		return err
 	}
 
@@ -140,7 +126,7 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 					}
 				}()
 
-				s3link, err := d.QuerySvc.StreamDataToS3(ctx, params.UserDeviceID, params.Start, params.End)
+				s3link, err := d.QuerySvc.StreamDataToS3(ctx, params.UserDeviceID)
 				if err != nil {
 					d.nak(msg, &params)
 					d.log.Err(err).Str("userId", params.UserID).Str("userDeviceID", params.UserDeviceID).Msg("error while fetching data from elasticsearch")

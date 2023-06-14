@@ -1,8 +1,6 @@
 package controllers
 
 import (
-	"time"
-
 	"github.com/DIMO-Network/device-definitions-api/pkg/grpc"
 
 	"strconv"
@@ -13,10 +11,8 @@ import (
 )
 
 type QueryValues struct {
-	Start        time.Time `query:"start" json:"start"`
-	End          time.Time `query:"end" json:"end"`
-	UserID       string    `query:"-" json:"userId"`
-	UserDeviceID string    `query:"-" json:"userDeviceId"`
+	UserID       string `query:"-" json:"userId"`
+	UserDeviceID string `query:"-" json:"userDeviceId"`
 }
 
 func GetUserID(c *fiber.Ctx) string {
