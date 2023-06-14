@@ -3,6 +3,8 @@ package services
 import (
 	"context"
 	"fmt"
+	gocache "github.com/patrickmn/go-cache"
+	"time"
 
 	pb "github.com/DIMO-Network/devices-api/pkg/grpc"
 	"google.golang.org/grpc"
@@ -18,11 +20,13 @@ type DeviceAPIService interface {
 
 // NewDeviceAPIService API wrapper to call device-data-api to get the userDevices associated with a userId over grpc
 func NewDeviceAPIService(devicesConn *grpc.ClientConn) DeviceAPIService {
-	return &deviceAPIService{devicesConn: devicesConn}
+	c := gocache.New(8*time.Hour, 15*time.Minute)
+	return &deviceAPIService{devicesConn: devicesConn, memoryCache: c}
 }
 
 type deviceAPIService struct {
 	devicesConn *grpc.ClientConn
+	memoryCache *gocache.Cache
 }
 
 func (das *deviceAPIService) ListUserDevicesForUser(ctx context.Context, userID string) (*pb.ListUserDevicesForUserResponse, error) {
@@ -49,17 +53,26 @@ func (das *deviceAPIService) UserDeviceBelongsToUserID(ctx context.Context, user
 	return device.UserId == userID, nil
 }
 
+// GetUserDevice gets the userDevice from devices-api, checks in local cache first
 func (das *deviceAPIService) GetUserDevice(ctx context.Context, userDeviceID string) (*pb.UserDevice, error) {
 	if len(userDeviceID) == 0 {
 		return nil, fmt.Errorf("user device id was empty - invalid")
 	}
+	var err error
 	deviceClient := pb.NewUserDeviceServiceClient(das.devicesConn)
 
-	userDevice, err := deviceClient.GetUserDevice(ctx, &pb.GetUserDeviceRequest{
-		Id: userDeviceID,
-	})
-	if err != nil {
-		return nil, err
+	userDevice := &pb.UserDevice{}
+	get, found := das.memoryCache.Get("ud_" + userDeviceID)
+	if found {
+		userDevice = get.(*pb.UserDevice)
+	} else {
+		userDevice, err = deviceClient.GetUserDevice(ctx, &pb.GetUserDeviceRequest{
+			Id: userDeviceID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		das.memoryCache.Set("ud_"+userDeviceID, userDevice, time.Hour*24)
 	}
 
 	return userDevice, nil
@@ -67,12 +80,20 @@ func (das *deviceAPIService) GetUserDevice(ctx context.Context, userDeviceID str
 
 func (das *deviceAPIService) GetUserDeviceByTokenID(ctx context.Context, tokenID int64) (*pb.UserDevice, error) {
 	deviceClient := pb.NewUserDeviceServiceClient(das.devicesConn)
+	var err error
+	userDevice := &pb.UserDevice{}
 
-	userDevice, err := deviceClient.GetUserDeviceByTokenId(ctx, &pb.GetUserDeviceByTokenIdRequest{
-		TokenId: tokenID,
-	})
-	if err != nil {
-		return nil, err
+	get, found := das.memoryCache.Get(fmt.Sprintf("udtoken_%d", tokenID))
+	if found {
+		userDevice = get.(*pb.UserDevice)
+	} else {
+		userDevice, err = deviceClient.GetUserDeviceByTokenId(ctx, &pb.GetUserDeviceByTokenIdRequest{
+			TokenId: tokenID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		das.memoryCache.Set(fmt.Sprintf("udtoken_%d", tokenID), userDevice, time.Hour*24)
 	}
 
 	return userDevice, nil
