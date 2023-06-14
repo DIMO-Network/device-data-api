@@ -75,7 +75,6 @@ func NewDeviceDataController(
 // @Router       /user/device-data/{userDeviceID}/historical [get]
 func (d *DeviceDataController) GetHistoricalRaw(c *fiber.Ctx) error {
 	const dateLayout = "2006-01-02" // date layout support by elastic
-	userID := GetUserID(c)
 	userDeviceID := c.Params("userDeviceID")
 	startDate := c.Query("startDate")
 	if startDate == "" {
@@ -99,11 +98,6 @@ func (d *DeviceDataController) GetHistoricalRaw(c *fiber.Ctx) error {
 	userDevice, err := d.deviceAPI.GetUserDevice(c.Context(), userDeviceID)
 	if err != nil {
 		return err
-	}
-	exists := userDevice.UserId == userID
-
-	if !exists {
-		return c.SendStatus(fiber.StatusBadRequest)
 	}
 
 	return d.getHistory(c, userDevice, startDate, endDate, types.SourceFilter{})
@@ -294,16 +288,7 @@ func removeOdometerIfInvalid(body []byte) []byte {
 // @Security     BearerAuth
 // @Router       /user/device-data/{userDeviceID}/distance-driven [get]
 func (d *DeviceDataController) GetDistanceDriven(c *fiber.Ctx) error {
-	userID := GetUserID(c)
 	userDeviceID := c.Params("userDeviceID")
-
-	exists, err := d.deviceAPI.UserDeviceBelongsToUserID(c.Context(), userID, userDeviceID)
-	if err != nil {
-		return err
-	}
-	if !exists {
-		return fiber.NewError(fiber.StatusNotFound, fmt.Sprintf("No device %s found for user %s", userDeviceID, userID))
-	}
 
 	odoStart, err := d.queryOdometer(c.Context(), sortorder.Asc, userDeviceID)
 	if err != nil {
@@ -356,18 +341,9 @@ type DailyDistanceResp struct {
 // @Security     BearerAuth
 // @Router       /user/device-data/{userDeviceID}/daily-distance [get]
 func (d *DeviceDataController) GetDailyDistance(c *fiber.Ctx) error {
-	userID := GetUserID(c)
 	userDeviceID := c.Params("userDeviceID")
 
 	tz := c.Query("time_zone")
-
-	exists, err := d.deviceAPI.UserDeviceBelongsToUserID(c.Context(), userID, userDeviceID)
-	if err != nil {
-		return err
-	}
-	if !exists {
-		return fiber.NewError(fiber.StatusNotFound, fmt.Sprintf("No device %s found for user %s.", userDeviceID, userID))
-	}
 
 	query := &search.Request{
 		Query: &types.Query{
