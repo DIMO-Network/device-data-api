@@ -96,7 +96,6 @@ func (d *DeviceDataController) GetHistoricalRaw(c *fiber.Ctx) error {
 		}
 	}
 
-	// todo: cache user devices in memory
 	userDevice, err := d.deviceAPI.GetUserDevice(c.Context(), userDeviceID)
 	if err != nil {
 		return err

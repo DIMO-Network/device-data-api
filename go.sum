@@ -3,10 +3,6 @@ github.com/DIMO-Network/device-definitions-api v0.9.9 h1:YTyCL/JhqYAyMQ+qsMRc69R
 github.com/DIMO-Network/device-definitions-api v0.9.9/go.mod h1:BGmmbLedviQxB7TmJ+fRNtz/JMZ6k21RVDtr/INSF9M=
 github.com/DIMO-Network/devices-api v1.13.24 h1:p1fZtnF7/TzPYRQGevknGy8SY3No8Igc1bQ8eoe15Z0=
 github.com/DIMO-Network/devices-api v1.13.24/go.mod h1:rf4Pt4tjucFu1BrlG3masSpwA3vCp4V/LCO0BEseVr8=
-github.com/DIMO-Network/shared v0.9.3 h1:wJjgyg3AxHkztp3TE42S/WZfCmfYXAgdEIKPKygCYmM=
-github.com/DIMO-Network/shared v0.9.3/go.mod h1:Edzbgny+7yh/CKKWKAUbOVT6K+dUWBFAxkYa89kvIxU=
-github.com/DIMO-Network/shared v0.9.5 h1:H2kfY3NFoatMoAmEcUAZgOWGRsp18pexdd4WVtxy8Yk=
-github.com/DIMO-Network/shared v0.9.5/go.mod h1:NtfLKGdUL/47pM4t2WTWiUMDtvLs48py+xcPWdaZzUA=
 github.com/DIMO-Network/shared v0.9.51 h1:ww3lLhNREq9I1gm238bEN+wVmwPx/KftUnxI7gHGOLU=
 github.com/DIMO-Network/shared v0.9.51/go.mod h1:NtfLKGdUL/47pM4t2WTWiUMDtvLs48py+xcPWdaZzUA=
 github.com/DIMO-Network/users-api v0.6.3 h1:pqm9Mb/N+lUn+pXrbH2CAVV/+dz8yhFHJ5vnXr2DQHs=
@@ -106,8 +102,6 @@ github.com/gofiber/swagger v0.1.11/go.mod h1:o8IcaqISe1w5uykdTLRPe6AntWFNwoZDS87
 github.com/gofrs/uuid v3.2.0+incompatible/go.mod h1:b2aQJv3Z4Fp6yNu3cdSllBxTCLRxnplIgP/c0N/04lM=
 github.com/gofrs/uuid v4.3.0+incompatible h1:CaSVZxm5B+7o45rtab4jC2G37WGYX1zQfuU2i6DSvnc=
 github.com/gofrs/uuid v4.3.0+incompatible/go.mod h1:b2aQJv3Z4Fp6yNu3cdSllBxTCLRxnplIgP/c0N/04lM=
-github.com/golang-jwt/jwt/v4 v4.5.0 h1:7cYmW1XlMY7h7ii7UhUyChSgS5wUJEnm9uZVTGqOWzg=
-github.com/golang-jwt/jwt/v4 v4.5.0/go.mod h1:m21LjoU+eqJr34lmDMbreY2eSTRJ1cv77w39/MY0Ch0=
 github.com/golang-jwt/jwt/v5 v5.0.0 h1:1n1XNM9hk7O9mnQoNBGolZvzebBQ7p93ULHRc28XJUE=
 github.com/golang-jwt/jwt/v5 v5.0.0/go.mod h1:pqrtFR0X4osieyHYxtmOUWsAWrfe1Q5UVIyoH402zdk=
 github.com/golang/mock v1.6.0 h1:ErTB+efbowRARo13NNdxyJji2egdxLGQhRaY+DUumQc=
@@ -162,6 +156,8 @@ github.com/nats-io/nkeys v0.4.4/go.mod h1:XUkxdLPTufzlihbamfzQ7mw/VGx6ObUs+0bN5s
 github.com/nats-io/nuid v1.0.1 h1:5iA8DT8V7q8WK2EScv2padNa/rTESc1KdnPw4TC2paw=
 github.com/nats-io/nuid v1.0.1/go.mod h1:19wcPz3Ph3q0Jbyiqsd0kePYG7A95tJPxeL+1OSON2c=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
+github.com/patrickmn/go-cache v2.1.0+incompatible h1:HRMgzkcYKYpi3C8ajMPV8OFXaaRUnok+kx1WdO15EQc=
+github.com/patrickmn/go-cache v2.1.0+incompatible/go.mod h1:3Qf8kWWT7OJRJbdiICTKqZju1ZixQ/KpMGzzAfe6+WQ=
 github.com/philhofer/fwd v1.1.1/go.mod h1:gk3iGcWd9+svBvR0sR+KPcfE+RNWozjowpeBVG3ZVNU=
 github.com/philhofer/fwd v1.1.2 h1:bnDivRJ1EWPjUIRXV5KfORO897HTbpFAQddBdE8t7Gw=
 github.com/philhofer/fwd v1.1.2/go.mod h1:qkPdfjR2SIEbspLqpe1tO4n5yICnr2DY7mqEx2tUTP0=
