@@ -218,7 +218,7 @@ func (ud *userData) uploadPartToS3(ctx context.Context, reader *bytes.Reader, up
 }
 
 func (ud *userData) finishWritingToS3(ctx context.Context, uploadParts []awstypes.CompletedPart) {
-	final, err := ud.storageSvcClient.CompleteMultipartUpload(ctx,
+	_, err := ud.storageSvcClient.CompleteMultipartUpload(ctx,
 		&s3.CompleteMultipartUploadInput{
 			Bucket:   aws.String(ud.AWSBucket),
 			Key:      aws.String(ud.keyName),
