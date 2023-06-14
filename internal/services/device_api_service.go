@@ -3,8 +3,9 @@ package services
 import (
 	"context"
 	"fmt"
-	gocache "github.com/patrickmn/go-cache"
 	"time"
+
+	gocache "github.com/patrickmn/go-cache"
 
 	pb "github.com/DIMO-Network/devices-api/pkg/grpc"
 	"google.golang.org/grpc"
@@ -61,7 +62,7 @@ func (das *deviceAPIService) GetUserDevice(ctx context.Context, userDeviceID str
 	var err error
 	deviceClient := pb.NewUserDeviceServiceClient(das.devicesConn)
 
-	userDevice := &pb.UserDevice{}
+	var userDevice *pb.UserDevice
 	get, found := das.memoryCache.Get("ud_" + userDeviceID)
 	if found {
 		userDevice = get.(*pb.UserDevice)
@@ -81,7 +82,7 @@ func (das *deviceAPIService) GetUserDevice(ctx context.Context, userDeviceID str
 func (das *deviceAPIService) GetUserDeviceByTokenID(ctx context.Context, tokenID int64) (*pb.UserDevice, error) {
 	deviceClient := pb.NewUserDeviceServiceClient(das.devicesConn)
 	var err error
-	userDevice := &pb.UserDevice{}
+	var userDevice *pb.UserDevice
 
 	get, found := das.memoryCache.Get(fmt.Sprintf("udtoken_%d", tokenID))
 	if found {

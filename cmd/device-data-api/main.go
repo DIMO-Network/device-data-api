@@ -8,6 +8,9 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
+
+	"github.com/gofiber/fiber/v2/middleware/cache"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -73,6 +76,14 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 		StackTraceHandler: nil,
 	}))
 	app.Use(cors.New())
+	//cache
+	cacheHandler := cache.New(cache.Config{
+		Next: func(c *fiber.Ctx) bool {
+			return c.Query("refresh") == "true"
+		},
+		Expiration:   2 * time.Minute,
+		CacheControl: true,
+	})
 
 	app.Get("/", healthCheck)
 	app.Get("/v1/swagger/*", swagger.HandlerDefault)
@@ -141,9 +152,9 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 
 	udMw := owner.New(usersClient, deviceAPIService, &logger)
 	udOwner := v1Auth.Group("/user/device-data/:userDeviceID", udMw)
-	udOwner.Get("/historical", deviceDataController.GetHistoricalRaw)
-	udOwner.Get("/distance-driven", deviceDataController.GetDistanceDriven)
-	udOwner.Get("/daily-distance", deviceDataController.GetDailyDistance)
+	udOwner.Get("/historical", cacheHandler, deviceDataController.GetHistoricalRaw)
+	udOwner.Get("/distance-driven", cacheHandler, deviceDataController.GetDistanceDriven)
+	udOwner.Get("/daily-distance", cacheHandler, deviceDataController.GetDailyDistance)
 
 	if settings.Environment != "prod" {
 		dataDownloadController, err := controllers.NewDataDownloadController(settings, &logger, esClient8, deviceAPIService)
