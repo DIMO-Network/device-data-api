@@ -52,7 +52,7 @@ func NewDataDownloadController(settings *config.Settings, log *zerolog.Logger, e
 // @Param        userDeviceID  path   string  true   "Device id" Example(2OQjmqUt9dguQbJt1WImuVfje3W)
 // @Param        start     query  string  false  "Start timestamp in RFC-3339 format" Example(2023-04-14T07:20:50.52Z)
 // @Param        end       query  string  false  "End timestamp in RFC-3339 format" Example(2023-04-14T08:11:33.94Z)
-// @Router       /user/device-data/{userDeviceID}/export/json/email [get]
+// @Router       /user/device-data/{userDeviceID}/export/json/email [post]
 func (d *DataDownloadController) DataDownloadHandler(c *fiber.Ctx) error {
 	userID := GetUserID(c)
 	userDeviceID := c.Params("userDeviceID")

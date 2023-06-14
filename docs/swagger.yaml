@@ -69,7 +69,7 @@ paths:
       tags:
       - device-data
   /user/device-data/{userDeviceID}/export/json/email:
-    get:
+    post:
       description: |-
         Enqueues a data export job for the specified device. A link to download
         a large JSON file of signals will be emailed to the address on file for the

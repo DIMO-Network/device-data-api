@@ -156,20 +156,18 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 	udOwner.Get("/distance-driven", cacheHandler, deviceDataController.GetDistanceDriven)
 	udOwner.Get("/daily-distance", cacheHandler, deviceDataController.GetDailyDistance)
 
-	if settings.Environment != "prod" {
-		dataDownloadController, err := controllers.NewDataDownloadController(settings, &logger, esClient8, deviceAPIService)
-		if err != nil {
-			panic(err)
-		}
-
-		udOwner.Get("/export/json/email", dataDownloadController.DataDownloadHandler)
-		go func() {
-			err = dataDownloadController.DataDownloadConsumer(context.Background())
-			if err != nil {
-				logger.Info().Err(err).Msg("data download consumer error")
-			}
-		}()
+	dataDownloadController, err := controllers.NewDataDownloadController(settings, &logger, esClient8, deviceAPIService)
+	if err != nil {
+		panic(err)
 	}
+
+	udOwner.Post("/export/json/email", dataDownloadController.DataDownloadHandler)
+	go func() {
+		err = dataDownloadController.DataDownloadConsumer(context.Background())
+		if err != nil {
+			logger.Info().Err(err).Msg("data download consumer error")
+		}
+	}()
 
 	logger.Info().Msg("Server started on port " + settings.Port)
 	// Start Server from a different go routine

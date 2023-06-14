@@ -84,7 +84,7 @@
             }
         },
         "/user/device-data/{userDeviceID}/export/json/email": {
-            "get": {
+            "post": {
                 "security": [
                     {
                         "BearerAuth": []
