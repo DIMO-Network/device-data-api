@@ -149,7 +149,7 @@ func (uds *QueryStorageService) newS3Writer(ctx context.Context, query *search.R
 
 	exp := time.Now().Add(24 * time.Hour)
 
-	keyName := fmt.Sprintf("%s/%s", userDeviceID, ksuid.New().String())
+	keyName := fmt.Sprintf("%s/%s.json", userDeviceID, ksuid.New().String())
 	upload, err := uds.storageSvcClient.CreateMultipartUpload(ctx, &s3.CreateMultipartUploadInput{
 		Bucket:  aws.String(uds.AWSBucket),
 		Key:     aws.String(keyName),
