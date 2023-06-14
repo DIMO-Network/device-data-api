@@ -81,16 +81,6 @@ paths:
         name: userDeviceID
         required: true
         type: string
-      - description: Start timestamp in RFC-3339 format
-        example: "2023-04-14T07:20:50.52Z"
-        in: query
-        name: start
-        type: string
-      - description: End timestamp in RFC-3339 format
-        example: "2023-04-14T08:11:33.94Z"
-        in: query
-        name: end
-        type: string
       produces:
       - application/json
       responses:
