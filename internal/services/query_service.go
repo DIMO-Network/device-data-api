@@ -29,6 +29,7 @@ type QueryStorageService struct {
 	ElasticIndex            string
 	NATSDataDownloadSubject string
 	MaxFileSize             int
+	presign                 *s3.PresignClient
 }
 
 type UserData struct {
@@ -38,7 +39,6 @@ type UserData struct {
 }
 
 func NewQueryStorageService(es *elasticsearch.TypedClient, settings *config.Settings, log *zerolog.Logger) (*QueryStorageService, error) {
-
 	ctx := log.WithContext(context.Background())
 
 	resolver := aws.EndpointResolverWithOptionsFunc(
@@ -56,6 +56,7 @@ func NewQueryStorageService(es *elasticsearch.TypedClient, settings *config.Sett
 	}
 
 	s3Client := s3.NewFromConfig(awsconf)
+	presign := s3.NewPresignClient(s3Client)
 
 	return &QueryStorageService{
 		es:                      es,
@@ -64,7 +65,10 @@ func NewQueryStorageService(es *elasticsearch.TypedClient, settings *config.Sett
 		ElasticIndex:            settings.ElasticIndex,
 		NATSDataDownloadSubject: settings.NATSDataDownloadSubject,
 		MaxFileSize:             settings.MaxFileSize,
-		log:                     log}, nil
+		log:                     log,
+		presign:                 presign,
+	}, nil
+
 }
 
 func (uds *QueryStorageService) executeESQuery(q *search.Request) (string, error) {
@@ -138,6 +142,7 @@ type userData struct {
 	downloadLinks    []string
 	query            *search.Request
 	docCount         int
+	presign          *s3.PresignClient
 }
 
 func (uds *QueryStorageService) newS3Writer(ctx context.Context, query *search.Request, bucketName, userDeviceID string, startDate, endDate time.Time) (*userData, error) {
@@ -167,6 +172,7 @@ func (uds *QueryStorageService) newS3Writer(ctx context.Context, query *search.R
 		MaxFileSize:      uds.MaxFileSize,
 		userDeviceID:     userDeviceID,
 		query:            query,
+		presign:          uds.presign,
 	}, nil
 
 }
@@ -212,7 +218,7 @@ func (ud *userData) uploadPartToS3(ctx context.Context, reader *bytes.Reader, up
 }
 
 func (ud *userData) finishWritingToS3(ctx context.Context, uploadParts []awstypes.CompletedPart) {
-	final, err := ud.storageSvcClient.CompleteMultipartUpload(ctx,
+	_, err := ud.storageSvcClient.CompleteMultipartUpload(ctx,
 		&s3.CompleteMultipartUploadInput{
 			Bucket:   aws.String(ud.AWSBucket),
 			Key:      aws.String(ud.keyName),
@@ -228,7 +234,19 @@ func (ud *userData) finishWritingToS3(ctx context.Context, uploadParts []awstype
 		return
 	}
 
-	ud.downloadLinks = append(ud.downloadLinks, *final.Location)
+	pr, err := ud.presign.PresignGetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(ud.AWSBucket),
+		Key:    aws.String(ud.keyName),
+	},
+		func(po *s3.PresignOptions) {
+			po.Expires = 24 * time.Hour
+		},
+	)
+	if err != nil {
+		ud.log.Err(err).Msg("Error generating presign link.")
+	}
+
+	ud.downloadLinks = append(ud.downloadLinks, pr.URL)
 }
 
 func (ud *userData) writeToS3(ctx context.Context, response string) error {
