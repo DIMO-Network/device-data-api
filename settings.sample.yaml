@@ -1,8 +1,19 @@
 ENVIRONMENT: local
 PORT: 3000
 LOG_LEVEL: debug
+DB:
+  USER: dimo
+  PASSWORD: dimo
+  PORT: 5432
+  HOST: localhost
+  NAME: devices_data_api
+  MAX_OPEN_CONNECTIONS: 5
+  MAX_IDLE_CONNECTIONS: 5
 JWT_KEY_SET_URL: https://auth.dimo.zone/keys # prod
 #JWT_KEY_SET_URL: http://127.0.0.1:5556/keys
+
+AUTO_PI_API_TOKEN:
+AUTO_PI_API_URL:
 
 ELASTIC_SEARCH_APP_SEARCH_HOST: https://dimo.ent.us-east-2.aws.elastic-cloud.com
 ELASTIC_SEARCH_APP_SEARCH_TOKEN:
@@ -33,3 +44,7 @@ NATS_STREAM_NAME: DATA-DOWNLOAD
 NATS_DATA_DOWNLOAD_SUBJECT: data-download
 NATS_DURABLE_CONSUMER: data-download-durable
 NATS_ACK_TIMEOUT: 2m
+
+DEVICE_STATUS_TOPIC: topic.device.status
+KAFKA_BROKERS: localhost:9092
+EVENTS_TOPIC: topic.event

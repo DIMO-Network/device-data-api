@@ -1,5 +1,7 @@
 package config
 
+import "github.com/DIMO-Network/shared/db"
+
 // Settings contains the application config
 type Settings struct {
 	Environment                    string `yaml:"ENVIRONMENT"`
@@ -31,8 +33,14 @@ type Settings struct {
 	NATSDurableConsumer            string `yaml:"NATS_DURABLE_CONSUMER"`
 	MaxFileSize                    int    `yaml:"MAX_AWS_FILE_SIZE"`
 
-	EnablePrivileges          bool   `yaml:"ENABLE_PRIVILEGES"`
-	TokenExchangeJWTKeySetURL string `yaml:"TOKEN_EXCHANGE_JWK_KEY_SET_URL"`
-	VehicleNFTAddress         string `yaml:"VEHICLE_NFT_ADDRESS"`
-	DeviceDefinitionsGRPCAddr string `yaml:"DEVICE_DEFINITIONS_GRPC_ADDR"`
+	EnablePrivileges          bool        `yaml:"ENABLE_PRIVILEGES"`
+	TokenExchangeJWTKeySetURL string      `yaml:"TOKEN_EXCHANGE_JWK_KEY_SET_URL"`
+	VehicleNFTAddress         string      `yaml:"VEHICLE_NFT_ADDRESS"`
+	DeviceDefinitionsGRPCAddr string      `yaml:"DEVICE_DEFINITIONS_GRPC_ADDR"`
+	DB                        db.Settings `yaml:"DB"`
+	AutoPiAPIToken            string      `yaml:"AUTO_PI_API_TOKEN"`
+	AutoPiAPIURL              string      `yaml:"AUTO_PI_API_URL"`
+	DeviceStatusTopic         string      `yaml:"DEVICE_STATUS_TOPIC"`
+	KafkaBrokers              string      `yaml:"KAFKA_BROKERS"`
+	EventsTopic               string      `yaml:"EVENTS_TOPIC"`
 }
