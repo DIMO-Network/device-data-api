@@ -1,9 +1,11 @@
 syntax = "proto3";
 
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
 option go_package = "github.com/DIMO-Network/device-data-api/pkg/grpc";
 
-import "google/protobuf/timestamp.proto";
-package devices;
+package grpc;
 
 service UseDeviceDataService {
   rpc GetUserDeviceData(UserDeviceDataRequest) returns (UserDeviceDataResponse);

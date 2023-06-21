@@ -2,7 +2,7 @@
 -- +goose StatementBegin
 SELECT 'up SQL query';
 
-SET search_path = devices_data_api, public;
+SET search_path = device_data_api, public;
 
 CREATE TABLE IF NOT EXISTS user_device_data
 (
@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS user_device_data
 -- +goose StatementBegin
 SELECT 'down SQL query';
 
-SET search_path = devices_data_api, public;
+SET search_path = device_data_api, public;
 DROP TABLE user_device_data;
 
 -- +goose StatementEnd

@@ -3,12 +3,18 @@ package main
 import (
 	"context"
 	"errors"
+
+	"github.com/DIMO-Network/device-data-api/internal/api"
 	"github.com/DIMO-Network/device-data-api/internal/middleware/metrics"
 	"github.com/DIMO-Network/shared/db"
 	"github.com/Shopify/sarama"
 	"github.com/burdiyan/kafkautil"
 	"github.com/google/subcommands"
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/lovoo/goka"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -26,6 +32,7 @@ import (
 	"github.com/DIMO-Network/device-data-api/internal/controllers"
 	"github.com/DIMO-Network/device-data-api/internal/middleware/owner"
 	"github.com/DIMO-Network/device-data-api/internal/services"
+	dddatagrpc "github.com/DIMO-Network/device-data-api/pkg/grpc"
 	"github.com/DIMO-Network/shared"
 	"github.com/DIMO-Network/shared/middleware/privilegetoken"
 	pb "github.com/DIMO-Network/users-api/pkg/grpc"
@@ -86,11 +93,11 @@ func main() {
 		startPrometheus(logger)
 		eventService := services.NewEventService(&logger, &settings, deps.getKafkaProducer())
 		startDeviceStatusConsumer(logger, &settings, pdb, eventService, deps.getDeviceDefinitionService(), deps.getDeviceService())
-		startWebAPI(logger, &settings, deps.getDeviceDefinitionService(), deps.getDeviceService())
+		startWebAPI(logger, &settings, pdb.DBS, deps.getDeviceDefinitionService(), deps.getDeviceService())
 	}
 }
 
-func startWebAPI(logger zerolog.Logger, settings *config.Settings, definitionsAPIService services.DeviceDefinitionsAPIService, deviceAPIService services.DeviceAPIService) {
+func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *db.ReaderWriter, definitionsAPIService services.DeviceDefinitionsAPIService, deviceAPIService services.DeviceAPIService) {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			return ErrorHandler(c, err, logger)
@@ -186,6 +193,8 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, definitionsAP
 		}
 	}()
 
+	go startGRPCServer(settings, dbs, &logger, definitionsAPIService)
+
 	logger.Info().Msg("Server started on port " + settings.Port)
 	// Start Server from a different go routine
 	go func() {
@@ -199,6 +208,29 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, definitionsAP
 	logger.Info().Msg("Gracefully shutting down and running cleanup tasks...")
 	_ = app.Shutdown()
 	// shutdown anything else
+}
+
+func startGRPCServer(settings *config.Settings, dbs func() *db.ReaderWriter, logger *zerolog.Logger, definitionsAPIService services.DeviceDefinitionsAPIService) {
+	lis, err := net.Listen("tcp", ":"+settings.GRPCPort)
+	if err != nil {
+		logger.Fatal().Err(err).Msgf("Couldn't listen on gRPC port %s", settings.GRPCPort)
+	}
+
+	logger.Info().Msgf("Starting gRPC server on port %s", settings.GRPCPort)
+	server := grpc.NewServer(
+		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
+			metrics.GRPCMetricsMiddleware(),
+			grpc_ctxtags.UnaryServerInterceptor(),
+			grpc_prometheus.UnaryServerInterceptor,
+		)),
+		grpc.StreamInterceptor(grpc_prometheus.StreamServerInterceptor),
+	)
+
+	dddatagrpc.RegisterUseDeviceDataServiceServer(server, api.NewUserDeviceData(dbs, logger, definitionsAPIService))
+
+	if err := server.Serve(lis); err != nil {
+		logger.Fatal().Err(err).Msg("gRPC server terminated unexpectedly")
+	}
 }
 
 func startPrometheus(logger zerolog.Logger) {

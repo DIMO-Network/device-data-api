@@ -6,6 +6,7 @@ import "github.com/DIMO-Network/shared/db"
 type Settings struct {
 	Environment                    string `yaml:"ENVIRONMENT"`
 	Port                           string `yaml:"PORT"`
+	GRPCPort                       string `yaml:"GRPC_PORT"`
 	LogLevel                       string `yaml:"LOG_LEVEL"`
 	ServiceName                    string `yaml:"SERVICE_NAME"`
 	JwtKeySetURL                   string `yaml:"JWT_KEY_SET_URL"`

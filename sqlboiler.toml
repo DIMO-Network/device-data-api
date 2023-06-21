@@ -1,9 +1,9 @@
 [psql]
-dbname = "devices_data_api"
+dbname = "device_data_api"
 blacklist = ["migrations"]
 host   = "localhost"
 port   = 5432
 user   = "dimo"
 pass   = "dimo"
-schema = "devices_data_api"
+schema = "device_data_api"
 sslmode= "disable"

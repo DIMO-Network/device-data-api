@@ -1,12 +1,13 @@
 ENVIRONMENT: local
 PORT: 3000
+GRPC_PORT: 8087
 LOG_LEVEL: debug
 DB:
   USER: dimo
   PASSWORD: dimo
   PORT: 5432
   HOST: localhost
-  NAME: devices_data_api
+  NAME: device_data_api
   MAX_OPEN_CONNECTIONS: 5
   MAX_IDLE_CONNECTIONS: 5
 JWT_KEY_SET_URL: https://auth.dimo.zone/keys # prod

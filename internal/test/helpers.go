@@ -26,7 +26,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-const testDbName = "devices_data_api"
+const testDbName = "device_data_api"
 
 // StartContainerDatabase starts postgres container with default test settings, and migrates the db. Caller must terminate container.
 func StartContainerDatabase(ctx context.Context, t *testing.T, migrationsDirRelPath string) (db.Store, testcontainers.Container) {

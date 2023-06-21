@@ -61,7 +61,7 @@ func (p *migrateDBCmd) Execute(_ context.Context, _ *flag.FlagSet, _ ...interfac
 	if err != nil {
 		p.logger.Fatal().Err(err).Msg("could not create schema")
 	}
-	goose.SetTableName("devices_data_api.migrations")
+	goose.SetTableName("device_data_api.migrations")
 	if err := goose.Run(command, db, "migrations"); err != nil {
 		p.logger.Fatal().Msgf("failed to apply go code migrations: %v\n", err)
 	}
