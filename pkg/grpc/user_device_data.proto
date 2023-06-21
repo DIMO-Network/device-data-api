@@ -1,7 +1,6 @@
 syntax = "proto3";
 
 import "google/protobuf/timestamp.proto";
-import "google/protobuf/empty.proto";
 
 option go_package = "github.com/DIMO-Network/device-data-api/pkg/grpc";
 
@@ -13,7 +12,8 @@ service UseDeviceDataService {
 
 message UserDeviceDataRequest {
   string user_device_id = 1;
-  google.protobuf.Timestamp updated_at = 2;
+  string device_definition_id = 2;
+  string device_style_id = 3;
 }
 
 message UserDeviceDataResponse {

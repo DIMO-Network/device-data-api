@@ -2,8 +2,6 @@ package api
 
 import (
 	"context"
-	"github.com/DIMO-Network/device-definitions-api/pkg/grpc"
-	"google.golang.org/protobuf/types/known/timestamppb"
 	"strconv"
 
 	"golang.org/x/exp/slices"
@@ -14,13 +12,15 @@ import (
 
 	"github.com/DIMO-Network/device-data-api/internal/constants"
 	"github.com/DIMO-Network/device-data-api/internal/services"
+	"github.com/DIMO-Network/device-data-api/models"
 	pb "github.com/DIMO-Network/device-data-api/pkg/grpc"
-	"github.com/DIMO-Network/devices-api/models"
+	"github.com/DIMO-Network/device-definitions-api/pkg/grpc"
 	"github.com/DIMO-Network/shared"
 	"github.com/DIMO-Network/shared/db"
 	"github.com/rs/zerolog"
 	"github.com/tidwall/gjson"
 	"github.com/volatiletech/null/v8"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func NewUserDeviceData(dbs func() *db.ReaderWriter, logger *zerolog.Logger, deviceDefSvc services.DeviceDefinitionsAPIService) pb.UseDeviceDataServiceServer {
@@ -35,13 +35,8 @@ type userDeviceData struct {
 }
 
 func (s *userDeviceData) GetUserDeviceData(ctx context.Context, req *pb.UserDeviceDataRequest) (*pb.UserDeviceDataResponse, error) {
-	userDevice, err := models.FindUserDevice(ctx, s.dbs().Reader, req.UserDeviceId)
-	if err != nil {
-		return nil, status.Error(codes.Internal, "Internal error.")
-	}
-
 	deviceData, err := models.UserDeviceData(
-		models.UserDeviceDatumWhere.UserDeviceID.EQ(userDevice.ID),
+		models.UserDeviceDatumWhere.UserDeviceID.EQ(req.UserDeviceId),
 		models.UserDeviceDatumWhere.Signals.IsNotNull(),
 		models.UserDeviceDatumWhere.UpdatedAt.GT(time.Now().Add(-14*24*time.Hour)),
 	).All(ctx, s.dbs().Reader)
@@ -53,8 +48,8 @@ func (s *userDeviceData) GetUserDeviceData(ctx context.Context, req *pb.UserDevi
 		return nil, status.Error(codes.NotFound, "No status updates yet.")
 	}
 
-	ds := prepareDeviceStatusInformation(ctx, s.deviceDefSvc, deviceData, userDevice.DeviceDefinitionID,
-		userDevice.DeviceStyleID, []int64{constants.NonLocationData, constants.CurrentLocation, constants.AllTimeLocation})
+	ds := prepareDeviceStatusInformation(ctx, s.deviceDefSvc, deviceData, req.DeviceDefinitionId,
+		null.StringFrom(req.DeviceStyleId), []int64{constants.NonLocationData, constants.CurrentLocation, constants.AllTimeLocation})
 
 	return ds, nil
 }

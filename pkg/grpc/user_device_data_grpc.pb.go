@@ -35,7 +35,7 @@ func NewUseDeviceDataServiceClient(cc grpc.ClientConnInterface) UseDeviceDataSer
 
 func (c *useDeviceDataServiceClient) GetUserDeviceData(ctx context.Context, in *UserDeviceDataRequest, opts ...grpc.CallOption) (*UserDeviceDataResponse, error) {
 	out := new(UserDeviceDataResponse)
-	err := c.cc.Invoke(ctx, "/devices.UseDeviceDataService/GetUserDeviceData", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/grpc.UseDeviceDataService/GetUserDeviceData", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func _UseDeviceDataService_GetUserDeviceData_Handler(srv interface{}, ctx contex
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/devices.UseDeviceDataService/GetUserDeviceData",
+		FullMethod: "/grpc.UseDeviceDataService/GetUserDeviceData",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(UseDeviceDataServiceServer).GetUserDeviceData(ctx, req.(*UserDeviceDataRequest))
@@ -92,7 +92,7 @@ func _UseDeviceDataService_GetUserDeviceData_Handler(srv interface{}, ctx contex
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var UseDeviceDataService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "devices.UseDeviceDataService",
+	ServiceName: "grpc.UseDeviceDataService",
 	HandlerType: (*UseDeviceDataServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

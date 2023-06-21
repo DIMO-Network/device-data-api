@@ -166,14 +166,23 @@ func (i *DeviceStatusIngestService) processEvent(ctxGk goka.Context, event *Devi
 
 	var datum *models.UserDeviceDatum
 	//TODO:get from db
-	//if len(device.R.UserDeviceData) > 0 {
-	//	// Update the existing record.
-	//	datum = device.R.UserDeviceData[0]
-	//} else {
-	//	// Insert a new record.
-	//	datum = &models.UserDeviceDatum{UserDeviceID: userDeviceID, IntegrationID: integration.Id}
-	//	i.memoryCache.Delete(userDeviceID + "_" + integration.Id)
-	//}
+	deviceData, err := models.UserDeviceData(
+		models.UserDeviceDatumWhere.UserDeviceID.EQ(userDeviceID),
+		models.UserDeviceDatumWhere.Signals.IsNotNull(),
+		models.UserDeviceDatumWhere.UpdatedAt.GT(time.Now().Add(-14*24*time.Hour)),
+	).All(ctx, i.db().Reader)
+	if err != nil {
+		return fmt.Errorf("Internal error: %w", err)
+	}
+
+	if len(deviceData) > 0 {
+		// Update the existing record.
+		datum = deviceData[0]
+	} else {
+		// Insert a new record.
+		datum = &models.UserDeviceDatum{UserDeviceID: userDeviceID, IntegrationID: null.StringFrom(integration.Id)}
+		i.memoryCache.Delete(userDeviceID + "_" + integration.Id)
+	}
 
 	i.processOdometer(datum, newOdometer, device, dd, integration.Id)
 
