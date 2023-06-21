@@ -17,6 +17,14 @@ const (
 	IntegrationStyleWebhook string = "Webhook"
 )
 
+const (
+	NonLocationData int64 = 1
+	Commands        int64 = 2
+	CurrentLocation int64 = 3
+	AllTimeLocation int64 = 4
+	VinCredential   int64 = 5
+)
+
 type RegionEnum string
 
 const (

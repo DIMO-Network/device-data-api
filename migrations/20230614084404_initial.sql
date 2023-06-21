@@ -7,7 +7,6 @@ SET search_path = devices_data_api, public;
 CREATE TABLE IF NOT EXISTS user_device_data
 (
     user_device_id char(27) PRIMARY KEY, -- ksuid
-    data           jsonb,
     error_data           jsonb,
     last_odometer_event_at           timestamptz,
     integration_id char(27),

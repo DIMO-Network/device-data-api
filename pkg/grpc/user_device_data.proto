@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+option go_package = "github.com/DIMO-Network/device-data-api/pkg/grpc";
+
+import "google/protobuf/timestamp.proto";
+package devices;
+
+service UseDeviceDataService {
+  rpc GetUserDeviceData(UserDeviceDataRequest) returns (UserDeviceDataResponse);
+}
+
+message UserDeviceDataRequest {
+  string user_device_id = 1;
+  google.protobuf.Timestamp updated_at = 2;
+}
+
+message UserDeviceDataResponse {
+  bool charging = 1;
+  double fuel_percent_remaining = 2;
+  int64 battery_capacity = 3;
+  double oil_level = 4;
+  double odometer = 5;
+  double latitude = 6;
+  double longitude = 7;
+  double range = 8;
+  double state_of_charge = 9;
+  double charge_limit = 10;
+  google.protobuf.Timestamp record_updated_at = 11;
+  google.protobuf.Timestamp record_created_at = 12;
+  TirePressureResponse tire_pressure = 13;
+  double battery_voltage   = 14;
+  double ambient_temp= 15;
+}
+
+message TirePressureResponse {
+  double front_left  =1;
+  double front_right =2;
+  double back_left   =3;
+  double back_right  =4;
+  string age       =5;
+  string data_age    =6;
+  string request_id  =7;
+  string unit_system =8;
+}

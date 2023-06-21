@@ -32,3 +32,14 @@ swag init -g cmd/device-data-api/main.go --parseDependency --parseInternal --gen
 The `/user/device-data/:userDeviceID/export/json/email` endpoint users NATS to create a queue of requests so that the endpoint can prompty return before processing the user request.
 Suggested Stream Name and Subject can be found in `settings.sample.yaml`.
 If messages are not acknowledged within 5 minutes, they will be resent (this value is also set in settings and can be increased or decreased as needed)
+
+
+## gRPC library
+
+To regenerate grpc code, if you make changes to the .proto files:
+
+```
+protoc --go_out=. --go_opt=paths=source_relative \
+    --go-grpc_out=. --go-grpc_opt=paths=source_relative \
+    pkg/grpc/*.proto
+```
