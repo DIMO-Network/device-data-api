@@ -44,6 +44,10 @@ env:
   NATS_DURABLE_CONSUMER: data-export-task-consumer
   NATS_ACK_TIMEOUT: 2m
   DEVICE_DEFINITIONS_GRPC_ADDR: device-definitions-api-dev:8086
+  DB_PORT: '5432'
+  DB_NAME: device_data_api
+  DB_MAX_OPEN_CONNECTIONS: '10'
+  DB_MAX_IDLE_CONNECTIONS: '3'
 service:
   type: ClusterIP
   ports:
