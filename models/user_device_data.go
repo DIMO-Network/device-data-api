@@ -25,7 +25,6 @@ import (
 // UserDeviceDatum is an object representing the database table.
 type UserDeviceDatum struct {
 	UserDeviceID            string      `boil:"user_device_id" json:"user_device_id" toml:"user_device_id" yaml:"user_device_id"`
-	Data                    null.JSON   `boil:"data" json:"data,omitempty" toml:"data" yaml:"data,omitempty"`
 	ErrorData               null.JSON   `boil:"error_data" json:"error_data,omitempty" toml:"error_data" yaml:"error_data,omitempty"`
 	LastOdometerEventAt     null.Time   `boil:"last_odometer_event_at" json:"last_odometer_event_at,omitempty" toml:"last_odometer_event_at" yaml:"last_odometer_event_at,omitempty"`
 	IntegrationID           null.String `boil:"integration_id" json:"integration_id,omitempty" toml:"integration_id" yaml:"integration_id,omitempty"`
@@ -40,7 +39,6 @@ type UserDeviceDatum struct {
 
 var UserDeviceDatumColumns = struct {
 	UserDeviceID            string
-	Data                    string
 	ErrorData               string
 	LastOdometerEventAt     string
 	IntegrationID           string
@@ -50,7 +48,6 @@ var UserDeviceDatumColumns = struct {
 	UpdatedAt               string
 }{
 	UserDeviceID:            "user_device_id",
-	Data:                    "data",
 	ErrorData:               "error_data",
 	LastOdometerEventAt:     "last_odometer_event_at",
 	IntegrationID:           "integration_id",
@@ -62,7 +59,6 @@ var UserDeviceDatumColumns = struct {
 
 var UserDeviceDatumTableColumns = struct {
 	UserDeviceID            string
-	Data                    string
 	ErrorData               string
 	LastOdometerEventAt     string
 	IntegrationID           string
@@ -72,7 +68,6 @@ var UserDeviceDatumTableColumns = struct {
 	UpdatedAt               string
 }{
 	UserDeviceID:            "user_device_data.user_device_id",
-	Data:                    "user_device_data.data",
 	ErrorData:               "user_device_data.error_data",
 	LastOdometerEventAt:     "user_device_data.last_odometer_event_at",
 	IntegrationID:           "user_device_data.integration_id",
@@ -216,7 +211,6 @@ func (w whereHelpertime_Time) GTE(x time.Time) qm.QueryMod {
 
 var UserDeviceDatumWhere = struct {
 	UserDeviceID            whereHelperstring
-	Data                    whereHelpernull_JSON
 	ErrorData               whereHelpernull_JSON
 	LastOdometerEventAt     whereHelpernull_Time
 	IntegrationID           whereHelpernull_String
@@ -225,15 +219,14 @@ var UserDeviceDatumWhere = struct {
 	CreatedAt               whereHelpertime_Time
 	UpdatedAt               whereHelpertime_Time
 }{
-	UserDeviceID:            whereHelperstring{field: "\"devices_data_api\".\"user_device_data\".\"user_device_id\""},
-	Data:                    whereHelpernull_JSON{field: "\"devices_data_api\".\"user_device_data\".\"data\""},
-	ErrorData:               whereHelpernull_JSON{field: "\"devices_data_api\".\"user_device_data\".\"error_data\""},
-	LastOdometerEventAt:     whereHelpernull_Time{field: "\"devices_data_api\".\"user_device_data\".\"last_odometer_event_at\""},
-	IntegrationID:           whereHelpernull_String{field: "\"devices_data_api\".\"user_device_data\".\"integration_id\""},
-	RealLastOdometerEventAt: whereHelpernull_Time{field: "\"devices_data_api\".\"user_device_data\".\"real_last_odometer_event_at\""},
-	Signals:                 whereHelpernull_JSON{field: "\"devices_data_api\".\"user_device_data\".\"signals\""},
-	CreatedAt:               whereHelpertime_Time{field: "\"devices_data_api\".\"user_device_data\".\"created_at\""},
-	UpdatedAt:               whereHelpertime_Time{field: "\"devices_data_api\".\"user_device_data\".\"updated_at\""},
+	UserDeviceID:            whereHelperstring{field: "\"device_data_api\".\"user_device_data\".\"user_device_id\""},
+	ErrorData:               whereHelpernull_JSON{field: "\"device_data_api\".\"user_device_data\".\"error_data\""},
+	LastOdometerEventAt:     whereHelpernull_Time{field: "\"device_data_api\".\"user_device_data\".\"last_odometer_event_at\""},
+	IntegrationID:           whereHelpernull_String{field: "\"device_data_api\".\"user_device_data\".\"integration_id\""},
+	RealLastOdometerEventAt: whereHelpernull_Time{field: "\"device_data_api\".\"user_device_data\".\"real_last_odometer_event_at\""},
+	Signals:                 whereHelpernull_JSON{field: "\"device_data_api\".\"user_device_data\".\"signals\""},
+	CreatedAt:               whereHelpertime_Time{field: "\"device_data_api\".\"user_device_data\".\"created_at\""},
+	UpdatedAt:               whereHelpertime_Time{field: "\"device_data_api\".\"user_device_data\".\"updated_at\""},
 }
 
 // UserDeviceDatumRels is where relationship names are stored.
@@ -253,9 +246,9 @@ func (*userDeviceDatumR) NewStruct() *userDeviceDatumR {
 type userDeviceDatumL struct{}
 
 var (
-	userDeviceDatumAllColumns            = []string{"user_device_id", "data", "error_data", "last_odometer_event_at", "integration_id", "real_last_odometer_event_at", "signals", "created_at", "updated_at"}
+	userDeviceDatumAllColumns            = []string{"user_device_id", "error_data", "last_odometer_event_at", "integration_id", "real_last_odometer_event_at", "signals", "created_at", "updated_at"}
 	userDeviceDatumColumnsWithoutDefault = []string{"user_device_id"}
-	userDeviceDatumColumnsWithDefault    = []string{"data", "error_data", "last_odometer_event_at", "integration_id", "real_last_odometer_event_at", "signals", "created_at", "updated_at"}
+	userDeviceDatumColumnsWithDefault    = []string{"error_data", "last_odometer_event_at", "integration_id", "real_last_odometer_event_at", "signals", "created_at", "updated_at"}
 	userDeviceDatumPrimaryKeyColumns     = []string{"user_device_id"}
 	userDeviceDatumGeneratedColumns      = []string{}
 )
@@ -540,10 +533,10 @@ func (q userDeviceDatumQuery) Exists(ctx context.Context, exec boil.ContextExecu
 
 // UserDeviceData retrieves all the records using an executor.
 func UserDeviceData(mods ...qm.QueryMod) userDeviceDatumQuery {
-	mods = append(mods, qm.From("\"devices_data_api\".\"user_device_data\""))
+	mods = append(mods, qm.From("\"device_data_api\".\"user_device_data\""))
 	q := NewQuery(mods...)
 	if len(queries.GetSelect(q)) == 0 {
-		queries.SetSelect(q, []string{"\"devices_data_api\".\"user_device_data\".*"})
+		queries.SetSelect(q, []string{"\"device_data_api\".\"user_device_data\".*"})
 	}
 
 	return userDeviceDatumQuery{q}
@@ -559,7 +552,7 @@ func FindUserDeviceDatum(ctx context.Context, exec boil.ContextExecutor, userDev
 		sel = strings.Join(strmangle.IdentQuoteSlice(dialect.LQ, dialect.RQ, selectCols), ",")
 	}
 	query := fmt.Sprintf(
-		"select %s from \"devices_data_api\".\"user_device_data\" where \"user_device_id\"=$1", sel,
+		"select %s from \"device_data_api\".\"user_device_data\" where \"user_device_id\"=$1", sel,
 	)
 
 	q := queries.Raw(query, userDeviceID)
@@ -626,9 +619,9 @@ func (o *UserDeviceDatum) Insert(ctx context.Context, exec boil.ContextExecutor,
 			return err
 		}
 		if len(wl) != 0 {
-			cache.query = fmt.Sprintf("INSERT INTO \"devices_data_api\".\"user_device_data\" (\"%s\") %%sVALUES (%s)%%s", strings.Join(wl, "\",\""), strmangle.Placeholders(dialect.UseIndexPlaceholders, len(wl), 1, 1))
+			cache.query = fmt.Sprintf("INSERT INTO \"device_data_api\".\"user_device_data\" (\"%s\") %%sVALUES (%s)%%s", strings.Join(wl, "\",\""), strmangle.Placeholders(dialect.UseIndexPlaceholders, len(wl), 1, 1))
 		} else {
-			cache.query = "INSERT INTO \"devices_data_api\".\"user_device_data\" %sDEFAULT VALUES%s"
+			cache.query = "INSERT INTO \"device_data_api\".\"user_device_data\" %sDEFAULT VALUES%s"
 		}
 
 		var queryOutput, queryReturning string
@@ -700,7 +693,7 @@ func (o *UserDeviceDatum) Update(ctx context.Context, exec boil.ContextExecutor,
 			return 0, errors.New("models: unable to update user_device_data, could not build whitelist")
 		}
 
-		cache.query = fmt.Sprintf("UPDATE \"devices_data_api\".\"user_device_data\" SET %s WHERE %s",
+		cache.query = fmt.Sprintf("UPDATE \"device_data_api\".\"user_device_data\" SET %s WHERE %s",
 			strmangle.SetParamNames("\"", "\"", 1, wl),
 			strmangle.WhereClause("\"", "\"", len(wl)+1, userDeviceDatumPrimaryKeyColumns),
 		)
@@ -781,7 +774,7 @@ func (o UserDeviceDatumSlice) UpdateAll(ctx context.Context, exec boil.ContextEx
 		args = append(args, pkeyArgs...)
 	}
 
-	sql := fmt.Sprintf("UPDATE \"devices_data_api\".\"user_device_data\" SET %s WHERE %s",
+	sql := fmt.Sprintf("UPDATE \"device_data_api\".\"user_device_data\" SET %s WHERE %s",
 		strmangle.SetParamNames("\"", "\"", 1, colNames),
 		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), len(colNames)+1, userDeviceDatumPrimaryKeyColumns, len(o)))
 
@@ -879,7 +872,7 @@ func (o *UserDeviceDatum) Upsert(ctx context.Context, exec boil.ContextExecutor,
 			conflict = make([]string, len(userDeviceDatumPrimaryKeyColumns))
 			copy(conflict, userDeviceDatumPrimaryKeyColumns)
 		}
-		cache.query = buildUpsertQueryPostgres(dialect, "\"devices_data_api\".\"user_device_data\"", updateOnConflict, ret, update, conflict, insert)
+		cache.query = buildUpsertQueryPostgres(dialect, "\"device_data_api\".\"user_device_data\"", updateOnConflict, ret, update, conflict, insert)
 
 		cache.valueMapping, err = queries.BindMapping(userDeviceDatumType, userDeviceDatumMapping, insert)
 		if err != nil {
@@ -938,7 +931,7 @@ func (o *UserDeviceDatum) Delete(ctx context.Context, exec boil.ContextExecutor)
 	}
 
 	args := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(o)), userDeviceDatumPrimaryKeyMapping)
-	sql := "DELETE FROM \"devices_data_api\".\"user_device_data\" WHERE \"user_device_id\"=$1"
+	sql := "DELETE FROM \"device_data_api\".\"user_device_data\" WHERE \"user_device_id\"=$1"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -1003,7 +996,7 @@ func (o UserDeviceDatumSlice) DeleteAll(ctx context.Context, exec boil.ContextEx
 		args = append(args, pkeyArgs...)
 	}
 
-	sql := "DELETE FROM \"devices_data_api\".\"user_device_data\" WHERE " +
+	sql := "DELETE FROM \"device_data_api\".\"user_device_data\" WHERE " +
 		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), 1, userDeviceDatumPrimaryKeyColumns, len(o))
 
 	if boil.IsDebug(ctx) {
@@ -1058,7 +1051,7 @@ func (o *UserDeviceDatumSlice) ReloadAll(ctx context.Context, exec boil.ContextE
 		args = append(args, pkeyArgs...)
 	}
 
-	sql := "SELECT \"devices_data_api\".\"user_device_data\".* FROM \"devices_data_api\".\"user_device_data\" WHERE " +
+	sql := "SELECT \"device_data_api\".\"user_device_data\".* FROM \"device_data_api\".\"user_device_data\" WHERE " +
 		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), 1, userDeviceDatumPrimaryKeyColumns, len(*o))
 
 	q := queries.Raw(sql, args...)
@@ -1076,7 +1069,7 @@ func (o *UserDeviceDatumSlice) ReloadAll(ctx context.Context, exec boil.ContextE
 // UserDeviceDatumExists checks if the UserDeviceDatum row exists.
 func UserDeviceDatumExists(ctx context.Context, exec boil.ContextExecutor, userDeviceID string) (bool, error) {
 	var exists bool
-	sql := "select exists(select 1 from \"devices_data_api\".\"user_device_data\" where \"user_device_id\"=$1 limit 1)"
+	sql := "select exists(select 1 from \"device_data_api\".\"user_device_data\" where \"user_device_id\"=$1 limit 1)"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
