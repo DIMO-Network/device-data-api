@@ -94,6 +94,8 @@ func main() {
 		eventService := services.NewEventService(&logger, &settings, deps.getKafkaProducer())
 		startDeviceStatusConsumer(logger, &settings, pdb, eventService, deps.getDeviceDefinitionService(), deps.getDeviceService())
 		startWebAPI(logger, &settings, pdb.DBS, deps.getDeviceDefinitionService(), deps.getDeviceService())
+	} else {
+		subcommands.Register(&migrateDBCmd{logger: logger, settings: settings}, "database")
 	}
 }
 
