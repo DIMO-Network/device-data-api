@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	pb "github.com/DIMO-Network/devices-api/pkg/grpc"
 	"strings"
 	"time"
+
+	pb "github.com/DIMO-Network/devices-api/pkg/grpc"
 
 	"github.com/tidwall/gjson"
 
@@ -90,8 +91,8 @@ func (i *DeviceStatusIngestService) processMessage(ctx goka.Context, event *Devi
 var userDeviceDataPrimaryKeyColumns = []string{models.UserDeviceDatumColumns.UserDeviceID, models.UserDeviceDatumColumns.IntegrationID}
 
 // processEvent handles the device data status update so we have a latest snapshot and saves to signals. This should all be refactored to device data api.
-func (i *DeviceStatusIngestService) processEvent(ctxGk goka.Context, event *DeviceStatusEvent) error {
-	ctx := context.Background()
+func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceStatusEvent) error {
+	ctx := context.Background() // todo: will this still work with goka context instead?
 	userDeviceID := event.Subject
 
 	integration, err := i.getIntegrationFromEvent(event)

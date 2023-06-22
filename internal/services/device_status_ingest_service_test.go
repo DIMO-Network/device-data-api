@@ -2,12 +2,13 @@ package services
 
 import (
 	"context"
-	mock_services "github.com/DIMO-Network/device-data-api/internal/services/mocks"
-	pb "github.com/DIMO-Network/devices-api/pkg/grpc"
-	"github.com/golang/mock/gomock"
 	"os"
 	"testing"
 	"time"
+
+	mock_services "github.com/DIMO-Network/device-data-api/internal/services/mocks"
+	pb "github.com/DIMO-Network/devices-api/pkg/grpc"
+	"github.com/golang/mock/gomock"
 
 	"github.com/tidwall/gjson"
 

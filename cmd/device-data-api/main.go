@@ -4,6 +4,14 @@ import (
 	"context"
 	"errors"
 
+	"net"
+	"net/http"
+	"os"
+	"os/signal"
+	"strings"
+	"syscall"
+	"time"
+
 	"github.com/DIMO-Network/device-data-api/internal/api"
 	"github.com/DIMO-Network/device-data-api/internal/middleware/metrics"
 	"github.com/DIMO-Network/shared/db"
@@ -14,13 +22,6 @@ import (
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/lovoo/goka"
-	"net"
-	"net/http"
-	"os"
-	"os/signal"
-	"strings"
-	"syscall"
-	"time"
 
 	"github.com/gofiber/fiber/v2/middleware/cache"
 

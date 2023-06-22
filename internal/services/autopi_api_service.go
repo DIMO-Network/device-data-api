@@ -1,7 +1,6 @@
 package services
 
 import (
-	_ "embed"
 	"encoding/json"
 	"fmt"
 	"time"

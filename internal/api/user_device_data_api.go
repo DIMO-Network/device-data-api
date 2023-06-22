@@ -4,11 +4,12 @@ import (
 	"context"
 	"strconv"
 
+	"sort"
+	"time"
+
 	"golang.org/x/exp/slices"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"sort"
-	"time"
 
 	"github.com/DIMO-Network/device-data-api/internal/constants"
 	"github.com/DIMO-Network/device-data-api/internal/services"

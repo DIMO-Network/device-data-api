@@ -1,9 +1,10 @@
 package metrics
 
 import (
-	"github.com/DIMO-Network/device-data-api/internal/appmetrics"
 	"strconv"
 	"time"
+
+	"github.com/DIMO-Network/device-data-api/internal/appmetrics"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/prometheus/client_golang/prometheus"

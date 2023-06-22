@@ -7,8 +7,9 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	"fmt"
-	"github.com/burdiyan/kafkautil"
 	"strings"
+
+	"github.com/burdiyan/kafkautil"
 
 	"github.com/DIMO-Network/shared/db"
 
