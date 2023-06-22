@@ -80,6 +80,21 @@ func (mr *MockDeviceAPIServiceMockRecorder) ListUserDevicesForUser(ctx, userID i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListUserDevicesForUser", reflect.TypeOf((*MockDeviceAPIService)(nil).ListUserDevicesForUser), ctx, userID)
 }
 
+// UpdateStatus mocks base method.
+func (m *MockDeviceAPIService) UpdateStatus(ctx context.Context, userDeviceID, integrationID, status string) (*grpc.UserDevice, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateStatus", ctx, userDeviceID, integrationID, status)
+	ret0, _ := ret[0].(*grpc.UserDevice)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateStatus indicates an expected call of UpdateStatus.
+func (mr *MockDeviceAPIServiceMockRecorder) UpdateStatus(ctx, userDeviceID, integrationID, status interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateStatus", reflect.TypeOf((*MockDeviceAPIService)(nil).UpdateStatus), ctx, userDeviceID, integrationID, status)
+}
+
 // UserDeviceBelongsToUserID mocks base method.
 func (m *MockDeviceAPIService) UserDeviceBelongsToUserID(ctx context.Context, userID, userDeviceID string) (bool, error) {
 	m.ctrl.T.Helper()

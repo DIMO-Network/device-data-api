@@ -17,6 +17,7 @@ type DeviceAPIService interface {
 	GetUserDevice(ctx context.Context, userDeviceID string) (*pb.UserDevice, error)
 	UserDeviceBelongsToUserID(ctx context.Context, userID, userDeviceID string) (bool, error)
 	GetUserDeviceByTokenID(ctx context.Context, tokenID int64) (*pb.UserDevice, error)
+	UpdateStatus(ctx context.Context, userDeviceID string, integrationID string, status string) (*pb.UserDevice, error)
 }
 
 // NewDeviceAPIService API wrapper to call device-data-api to get the userDevices associated with a userId over grpc
@@ -95,6 +96,24 @@ func (das *deviceAPIService) GetUserDeviceByTokenID(ctx context.Context, tokenID
 			return nil, err
 		}
 		das.memoryCache.Set(fmt.Sprintf("udtoken_%d", tokenID), userDevice, time.Hour*24)
+	}
+
+	return userDevice, nil
+}
+
+func (das *deviceAPIService) UpdateStatus(ctx context.Context, userDeviceID string, integrationID string, status string) (*pb.UserDevice, error) {
+	if len(userDeviceID) == 0 {
+		return nil, fmt.Errorf("user device id was empty - invalid")
+	}
+	deviceClient := pb.NewUserDeviceServiceClient(das.devicesConn)
+
+	userDevice, err := deviceClient.UpdateDeviceIntegrationStatus(ctx, &pb.UpdateDeviceIntegrationStatusRequest{
+		UserDeviceId:  userDeviceID,
+		IntegrationId: integrationID,
+		Status:        status,
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return userDevice, nil

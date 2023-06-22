@@ -3,12 +3,25 @@ package main
 import (
 	"context"
 	"errors"
+
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/DIMO-Network/device-data-api/internal/api"
+	"github.com/DIMO-Network/device-data-api/internal/middleware/metrics"
+	"github.com/DIMO-Network/shared/db"
+	"github.com/Shopify/sarama"
+	"github.com/burdiyan/kafkautil"
+	"github.com/google/subcommands"
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"github.com/lovoo/goka"
 
 	"github.com/gofiber/fiber/v2/middleware/cache"
 
@@ -20,6 +33,7 @@ import (
 	"github.com/DIMO-Network/device-data-api/internal/controllers"
 	"github.com/DIMO-Network/device-data-api/internal/middleware/owner"
 	"github.com/DIMO-Network/device-data-api/internal/services"
+	dddatagrpc "github.com/DIMO-Network/device-data-api/pkg/grpc"
 	"github.com/DIMO-Network/shared"
 	"github.com/DIMO-Network/shared/middleware/privilegetoken"
 	pb "github.com/DIMO-Network/users-api/pkg/grpc"
@@ -41,6 +55,8 @@ import (
 // @in                          header
 // @name                        Authorization
 func main() {
+
+	ctx := context.Background()
 	logger := zerolog.New(os.Stdout).With().
 		Timestamp().
 		Str("app", "device-data-api").
@@ -56,12 +72,35 @@ func main() {
 	}
 	zerolog.SetGlobalLevel(level)
 
+	pdb := db.NewDbConnectionFromSettings(ctx, &settings.DB, true)
+	// check db ready, this is not ideal btw, the db connection handler would be nicer if it did this.
+	totalTime := 0
+	for !pdb.IsReady() {
+		if totalTime > 30 {
+			logger.Fatal().Msg("could not connect to postgres after 30 seconds")
+		}
+		time.Sleep(time.Second)
+		totalTime++
+	}
+
+	deps := newDependencyContainer(&settings, logger, pdb.DBS)
+
+	subcommands.Register(subcommands.HelpCommand(), "")
+	subcommands.Register(subcommands.FlagsCommand(), "")
+	subcommands.Register(subcommands.CommandsCommand(), "")
+
 	// start the actual stuff
-	startPrometheus(logger)
-	startWebAPI(logger, &settings)
+	if len(os.Args) == 1 {
+		startPrometheus(logger)
+		eventService := services.NewEventService(&logger, &settings, deps.getKafkaProducer())
+		startDeviceStatusConsumer(logger, &settings, pdb, eventService, deps.getDeviceDefinitionService(), deps.getDeviceService())
+		startWebAPI(logger, &settings, pdb.DBS, deps.getDeviceDefinitionService(), deps.getDeviceService())
+	} else {
+		subcommands.Register(&migrateDBCmd{logger: logger, settings: settings}, "database")
+	}
 }
 
-func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
+func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *db.ReaderWriter, definitionsAPIService services.DeviceDefinitionsAPIService, deviceAPIService services.DeviceAPIService) {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			return ErrorHandler(c, err, logger)
@@ -69,6 +108,8 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 		DisableStartupMessage: true,
 		ReadBufferSize:        16000,
 	})
+
+	app.Use(metrics.HTTPMetricsMiddleware)
 
 	app.Use(recover.New(recover.Config{
 		Next:              nil,
@@ -105,26 +146,12 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Error constructing Elasticsearch client.")
 	}
-	// establish grpc connections
-	definitionsConn, err := grpc.Dial(settings.DeviceDefinitionsGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		logger.Fatal().Err(err).Msg("failed to dial device definitions grpc")
-	}
-	defer definitionsConn.Close()
-	devicesConn, err := grpc.Dial(settings.DevicesAPIGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		logger.Fatal().Err(err).Msg("failed to dial devices grpc")
-	}
-	defer devicesConn.Close()
 
 	usersConn, err := grpc.Dial(settings.UsersAPIGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		logger.Fatal().Err(err).Msgf("Failed to dial users-api at %s", settings.UsersAPIGRPCAddr)
 	}
 	defer usersConn.Close()
-
-	deviceAPIService := services.NewDeviceAPIService(devicesConn)
-	definitionsAPIService := services.NewDeviceDefinitionsAPIService(definitionsConn)
 	usersClient := pb.NewUserServiceClient(usersConn)
 
 	deviceDataController := controllers.NewDeviceDataController(settings, &logger, deviceAPIService, esClient8, definitionsAPIService)
@@ -169,6 +196,8 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 		}
 	}()
 
+	go startGRPCServer(settings, dbs, &logger, definitionsAPIService)
+
 	logger.Info().Msg("Server started on port " + settings.Port)
 	// Start Server from a different go routine
 	go func() {
@@ -184,6 +213,29 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings) {
 	// shutdown anything else
 }
 
+func startGRPCServer(settings *config.Settings, dbs func() *db.ReaderWriter, logger *zerolog.Logger, definitionsAPIService services.DeviceDefinitionsAPIService) {
+	lis, err := net.Listen("tcp", ":"+settings.GRPCPort)
+	if err != nil {
+		logger.Fatal().Err(err).Msgf("Couldn't listen on gRPC port %s", settings.GRPCPort)
+	}
+
+	logger.Info().Msgf("Starting gRPC server on port %s", settings.GRPCPort)
+	server := grpc.NewServer(
+		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
+			metrics.GRPCMetricsMiddleware(),
+			grpc_ctxtags.UnaryServerInterceptor(),
+			grpc_prometheus.UnaryServerInterceptor,
+		)),
+		grpc.StreamInterceptor(grpc_prometheus.StreamServerInterceptor),
+	)
+
+	dddatagrpc.RegisterUseDeviceDataServiceServer(server, api.NewUserDeviceData(dbs, logger, definitionsAPIService))
+
+	if err := server.Serve(lis); err != nil {
+		logger.Fatal().Err(err).Msg("gRPC server terminated unexpectedly")
+	}
+}
+
 func startPrometheus(logger zerolog.Logger) {
 	http.Handle("/metrics", promhttp.Handler())
 	go func() {
@@ -193,6 +245,38 @@ func startPrometheus(logger zerolog.Logger) {
 		}
 	}()
 	logger.Info().Msg("prometheus metrics at :8888/metrics")
+}
+
+func startDeviceStatusConsumer(logger zerolog.Logger, settings *config.Settings, pdb db.Store, eventService services.EventService,
+	ddSvc services.DeviceDefinitionsAPIService, deviceSvc services.DeviceAPIService) {
+
+	autoPISvc := services.NewAutoPiAPIService(settings, pdb.DBS)
+	ingestSvc := services.NewDeviceStatusIngestService(pdb.DBS, &logger, eventService, ddSvc, autoPISvc, deviceSvc)
+
+	sc := goka.DefaultConfig()
+	sc.Version = sarama.V2_8_1_0
+	goka.ReplaceGlobalConfig(sc)
+
+	group := goka.DefineGroup("devices-data-consumer",
+		goka.Input(goka.Stream(settings.DeviceStatusTopic), new(shared.JSONCodec[services.DeviceStatusEvent]), ingestSvc.ProcessDeviceStatusMessages),
+	)
+
+	processor, err := goka.NewProcessor(strings.Split(settings.KafkaBrokers, ","),
+		group,
+		goka.WithHasher(kafkautil.MurmurHasher),
+	)
+	if err != nil {
+		logger.Fatal().Err(err).Msg("Could not start device status processor")
+	}
+
+	go func() {
+		err = processor.Run(context.Background())
+		if err != nil {
+			logger.Fatal().Err(err).Msg("could not run device status processor")
+		}
+	}()
+
+	logger.Info().Msg("Device status update consumer started")
 }
 
 // ErrorHandler custom handler to log recovered errors using our logger and return json instead of string
