@@ -23,6 +23,7 @@ WORKDIR /
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=build /etc/passwd /etc/passwd
 COPY --from=build /go/src/github.com/DIMO-Network/device-data-api/target/bin/device-data-api .
+COPY --from=build /go/src/github.com/DIMO-Network/device-data-api/migrations /migrations
 
 USER dimo
 
