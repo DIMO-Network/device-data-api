@@ -19,6 +19,7 @@ env:
   USERS_API_GRPC_ADDR: users-api-prod:8086
   AWS_BUCKET_NAME: dimo-network-device-data-export-prod
   NATS_URL: nats-prod:4222
+  KAFKA_BROKERS: kafka-prod-dimo-kafka-kafka-brokers:9092
 ingress:
   enabled: true
   className: nginx

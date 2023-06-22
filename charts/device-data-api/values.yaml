@@ -48,6 +48,9 @@ env:
   DB_NAME: device_data_api
   DB_MAX_OPEN_CONNECTIONS: '10'
   DB_MAX_IDLE_CONNECTIONS: '3'
+  KAFKA_BROKERS: kafka-dev-dimo-kafka-kafka-brokers:9092
+  DEVICE_STATUS_TOPIC: topic.device.status
+  EVENTS_TOPIC: topic.event
 service:
   type: ClusterIP
   ports:
