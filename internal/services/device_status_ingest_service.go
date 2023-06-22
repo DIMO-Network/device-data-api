@@ -45,7 +45,7 @@ func NewDeviceStatusIngestService(db func() *db.ReaderWriter, log *zerolog.Logge
 	// Cache the list of integrations.
 	integrations, err := ddSvc.GetIntegrations(context.Background())
 	if err != nil {
-		log.Fatal().Err(err).Msg("Couldn't retrieve global integration list.")
+		log.Fatal().Err(err).Str("func", "NewDeviceStatusIngestService").Msg("Couldn't retrieve global integration list.")
 	}
 	c := gocache.New(30*time.Minute, 60*time.Minute) // band-aid on top of band-aids
 

@@ -62,7 +62,8 @@ func createKafkaProducer(settings *config.Settings) (sarama.SyncProducer, error)
 func (dc *dependencyContainer) getDeviceDefinitionService() services.DeviceDefinitionsAPIService {
 	definitionsConn, err := grpc.Dial(dc.settings.DeviceDefinitionsGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		dc.logger.Fatal().Err(err).Msg("failed to dial device definitions grpc")
+		dc.logger.Fatal().Err(err).Str("definitions-api-grpc-addr", dc.settings.DeviceDefinitionsGRPCAddr).
+			Msg("failed to dial device definitions grpc")
 	}
 	defer definitionsConn.Close()
 	dc.ddSvc = services.NewDeviceDefinitionsAPIService(definitionsConn)
