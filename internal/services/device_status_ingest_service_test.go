@@ -121,15 +121,19 @@ func TestAutoPiStatus(t *testing.T) {
 	err := ingest.processEvent(ctxGk, input)
 	require.NoError(t, err)
 
+	// get updated dat1 from db
+	updatedData, err := models.FindUserDeviceDatum(ctx, pdb.DBS().Reader, userDeviceID)
+	require.NoError(t, err)
+
 	// validate signals were updated, or not updated, as expected
 	assert.Equal("xx", gjson.GetBytes(dat1.Signals.JSON, "signal_name_version_1.timestamp").Str, "signal 1 ts should not change and be present")
 	assert.Equal(23.4, gjson.GetBytes(dat1.Signals.JSON, "signal_name_version_1.value").Num, "signal 1 value should not change and be present")
 	// assume UTC tz
-	assert.Equal(input.Time.Format("2006-01-02T15:04:05Z"), gjson.GetBytes(dat1.Signals.JSON, "odometer.timestamp").Str, "odometer ts should be updated from latest event")
-	assert.Equal(45.22, gjson.GetBytes(dat1.Signals.JSON, "odometer.value").Num, "odometer value should be updated from latest event")
+	assert.Equal(input.Time.Format("2006-01-02T15:04:05Z"), gjson.GetBytes(updatedData.Signals.JSON, "odometer.timestamp").Str, "odometer ts should be updated from latest event")
+	assert.Equal(45.22, gjson.GetBytes(updatedData.Signals.JSON, "odometer.value").Num, "odometer value should be updated from latest event")
 
-	assert.Equal(input.Time.Format("2006-01-02T15:04:05Z"), gjson.GetBytes(dat1.Signals.JSON, "signal_name_version_2.timestamp").Str, "signal 2 ts should be updated from latest event")
-	assert.Equal(12.3, gjson.GetBytes(dat1.Signals.JSON, "signal_name_version_2.value").Num, "signal 2 value should be updated from latest event")
+	assert.Equal(input.Time.Format("2006-01-02T15:04:05Z"), gjson.GetBytes(updatedData.Signals.JSON, "signal_name_version_2.timestamp").Str, "signal 2 ts should be updated from latest event")
+	assert.Equal(12.3, gjson.GetBytes(updatedData.Signals.JSON, "signal_name_version_2.value").Num, "signal 2 value should be updated from latest event")
 }
 
 type testAutoPISvc struct {
