@@ -44,7 +44,7 @@ func TestAutoPiStatus(t *testing.T) {
 		Buffer: make([]*Event, 0),
 	}
 	deviceDefSvc := mock_services.NewMockDeviceDefinitionsAPIService(mockCtrl)
-	autoPISvc := testAutoPISvc{}
+	autoPISvc := mock_services.NewMockAutoPiAPIService(mockCtrl)
 	deviceSvc := mock_services.NewMockDeviceAPIService(mockCtrl)
 
 	logger := zerolog.New(os.Stdout).With().Timestamp().Logger()
@@ -134,67 +134,4 @@ func TestAutoPiStatus(t *testing.T) {
 
 	assert.Equal(input.Time.Format("2006-01-02T15:04:05Z"), gjson.GetBytes(updatedData.Signals.JSON, "signal_name_version_2.timestamp").Str, "signal 2 ts should be updated from latest event")
 	assert.Equal(12.3, gjson.GetBytes(updatedData.Signals.JSON, "signal_name_version_2.value").Num, "signal 2 value should be updated from latest event")
-}
-
-type testAutoPISvc struct {
-}
-
-// nolint
-func (t testAutoPISvc) UpdateState(deviceID string, state string) error {
-	//TODO implement me
-	return nil
-}
-
-type testDeviceDefinitionSvc struct {
-}
-
-// nolint
-func (t testDeviceDefinitionSvc) GetDeviceDefinition(ctx context.Context, id string) (*ddgrpc.GetDeviceDefinitionItemResponse, error) {
-	//TODO implement me
-	return &ddgrpc.GetDeviceDefinitionItemResponse{}, nil
-}
-
-// nolint
-func (t testDeviceDefinitionSvc) GetIntegrations(ctx context.Context) ([]*ddgrpc.Integration, error) {
-	//TODO implement me
-	return nil, nil
-}
-
-// nolint
-func (t testDeviceDefinitionSvc) GetDeviceDefinitionsByIDs(ctx context.Context, ids []string) ([]*ddgrpc.GetDeviceDefinitionItemResponse, error) {
-	//TODO implement me
-	return nil, nil
-}
-
-type testDeviceSvc struct {
-}
-
-// nolint
-func (t testDeviceSvc) ListUserDevicesForUser(ctx context.Context, userID string) (*pb.ListUserDevicesForUserResponse, error) {
-	//TODO implement me
-	return nil, nil
-}
-
-// nolint
-func (t testDeviceSvc) GetUserDevice(ctx context.Context, userDeviceID string) (*pb.UserDevice, error) {
-	//TODO implement me
-	return nil, nil
-}
-
-// nolint
-func (t testDeviceSvc) UserDeviceBelongsToUserID(ctx context.Context, userID, userDeviceID string) (bool, error) {
-	//TODO implement me
-	return true, nil
-}
-
-// nolint
-func (t testDeviceSvc) GetUserDeviceByTokenID(ctx context.Context, tokenID int64) (*pb.UserDevice, error) {
-	//TODO implement me
-	return nil, nil
-}
-
-// nolint
-func (t testDeviceSvc) UpdateStatus(ctx context.Context, userDeviceID string, integrationID string, status string) (*pb.UserDevice, error) {
-	//TODO implement me
-	return nil, nil
 }
