@@ -92,9 +92,16 @@ func main() {
 	// start the actual stuff
 	if len(os.Args) == 1 {
 		startPrometheus(logger)
+		deviceDefsSvc, deviceDefsConn := deps.getDeviceDefinitionService()
+		defer deviceDefsConn.Close()
+		devicesSvc, devicesConn := deps.getDeviceService()
+		defer devicesConn.Close()
+
 		eventService := services.NewEventService(&logger, &settings, deps.getKafkaProducer())
-		startDeviceStatusConsumer(logger, &settings, pdb, eventService, deps.getDeviceDefinitionService(), deps.getDeviceService())
-		startWebAPI(logger, &settings, pdb.DBS, deps.getDeviceDefinitionService(), deps.getDeviceService())
+
+		startDeviceStatusConsumer(logger, &settings, pdb, eventService, deviceDefsSvc, devicesSvc)
+		go startGRPCServer(&settings, pdb.DBS, &logger, deviceDefsSvc)
+		startWebAPI(logger, &settings, pdb.DBS, deviceDefsSvc, devicesSvc)
 	} else {
 		subcommands.Register(&migrateDBCmd{logger: logger, settings: settings}, "database")
 	}
@@ -195,8 +202,6 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 			logger.Info().Err(err).Msg("data download consumer error")
 		}
 	}()
-
-	go startGRPCServer(settings, dbs, &logger, definitionsAPIService)
 
 	logger.Info().Msg("Server started on port " + settings.Port)
 	// Start Server from a different go routine
