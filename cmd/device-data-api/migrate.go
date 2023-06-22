@@ -35,9 +35,10 @@ func (p *migrateDBCmd) SetFlags(f *flag.FlagSet) {
 }
 
 func (p *migrateDBCmd) Execute(_ context.Context, _ *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+	const schemaName = "device_data_api"
 	var db *sql.DB
 	// setup database
-	db, err := sql.Open("postgres", p.settings.DB.BuildConnectionString(true))
+	db, err := sql.Open("postgres", p.settings.DB.BuildConnectionString(false))
 	defer func() {
 		if err := db.Close(); err != nil {
 			p.logger.Fatal().Msgf("goose: failed to close DB: %v\n", err)
@@ -56,8 +57,8 @@ func (p *migrateDBCmd) Execute(_ context.Context, _ *flag.FlagSet, _ ...interfac
 	}
 	fmt.Printf("migrate command received is: %s \n", command)
 
-	// todo manually run sql to create devices_api schema
-	_, err = db.Exec("CREATE SCHEMA IF NOT EXISTS devices_api;")
+	// manually run sql to create devices_api schema - this is needed so we can set the migrations table ahead of time
+	_, err = db.Exec(fmt.Sprintf("CREATE SCHEMA IF NOT EXISTS %s;", schemaName))
 	if err != nil {
 		p.logger.Fatal().Err(err).Msg("could not create schema")
 	}

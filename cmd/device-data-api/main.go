@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"flag"
 
 	"net"
 	"net/http"
@@ -104,6 +105,9 @@ func main() {
 		startWebAPI(logger, &settings, pdb.DBS, deviceDefsSvc, devicesSvc)
 	} else {
 		subcommands.Register(&migrateDBCmd{logger: logger, settings: settings}, "database")
+
+		flag.Parse()
+		os.Exit(int(subcommands.Execute(ctx)))
 	}
 }
 
