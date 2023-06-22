@@ -39,7 +39,7 @@ spec:
       initContainers:
         - name: migrate
           securityContext:
-            {{ - toYaml .Values.securityContext | nindent 12 }}
+            {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           command: [ 'sh', '-c', "/device-data-api migrate" ]
           envFrom:
