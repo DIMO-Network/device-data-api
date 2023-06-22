@@ -284,7 +284,7 @@ func BuildDeviceDefinitionGRPC(deviceDefinitionID string, mk string, model strin
 	return []*ddgrpc.GetDeviceDefinitionItemResponse{rp}
 }
 
-// BuildIntegrationGRPC depending on integration vendor, defines an integration object with typical settings. Smartcar refresh limit default is 100 seconds.
+// BuildIntegrationDefaultGRPC depending on integration vendor, defines an integration object with typical settings. Smartcar refresh limit default is 100 seconds.
 func BuildIntegrationDefaultGRPC(integrationVendor string, autoPiDefaultTemplateID int, bevTemplateID int, includeAutoPiPowertrainTemplate bool) *ddgrpc.Integration {
 	var integration *ddgrpc.Integration
 	switch integrationVendor {

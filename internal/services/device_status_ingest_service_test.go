@@ -2,7 +2,9 @@ package services
 
 import (
 	"context"
+	mock_services "github.com/DIMO-Network/device-data-api/internal/services/mocks"
 	pb "github.com/DIMO-Network/devices-api/pkg/grpc"
+	"github.com/golang/mock/gomock"
 	"os"
 	"testing"
 	"time"
@@ -33,14 +35,17 @@ const migrationsDirRelPath = "../../migrations"
 
 // TestAutoPiStatus tests that the signals column is getting updated correctly merging any existing data and setting timestamps
 func TestAutoPiStatus(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
 	assert := assert.New(t)
 
 	mes := &testEventService{
 		Buffer: make([]*Event, 0),
 	}
-	deviceDefSvc := testDeviceDefinitionSvc{}
+	deviceDefSvc := mock_services.NewMockDeviceDefinitionsAPIService(mockCtrl)
 	autoPISvc := testAutoPISvc{}
-	deviceSvc := testDeviceSvc{}
+	deviceSvc := mock_services.NewMockDeviceAPIService(mockCtrl)
 
 	logger := zerolog.New(os.Stdout).With().Timestamp().Logger()
 	ctx := context.Background()
@@ -50,16 +55,54 @@ func TestAutoPiStatus(t *testing.T) {
 			t.Fatal(err)
 		}
 	}()
+	userDeviceID := ksuid.New().String()
+	deviceDefinitionID := ksuid.New().String()
+	vin := "4T3R6RFVXMU023395"
+	apInt := test.BuildIntegrationDefaultGRPC("AutoPi", 10, 10, true)
+	deviceDefSvc.EXPECT().GetIntegrations(gomock.Any()).Times(2).Return([]*ddgrpc.Integration{apInt}, nil)
+	deviceSvc.EXPECT().GetUserDevice(gomock.Any(), userDeviceID).Times(1).Return(&pb.UserDevice{
+		Id:     userDeviceID,
+		UserId: ksuid.New().String(),
+		Integrations: []*pb.UserDeviceIntegration{
+			{
+				Id:         "2RZIQAmcSNHt0X6OhqEDFE1Wj0X",
+				Status:     "Active",
+				ExternalId: "",
+			},
+		},
+		Vin:                &vin,
+		DeviceDefinitionId: deviceDefinitionID,
+		VinConfirmed:       true,
+	}, nil)
+	deviceDefSvc.EXPECT().GetDeviceDefinitionsByIDs(gomock.Any(), []string{deviceDefinitionID}).Return([]*ddgrpc.GetDeviceDefinitionItemResponse{
+		{
+			DeviceDefinitionId: deviceDefinitionID,
+			Name:               "Malibu",
+			Verified:           true,
+			Type: &ddgrpc.DeviceType{
+				Type:      "Vehicle",
+				Make:      "Chevrolet",
+				Model:     "Malibu",
+				Year:      2012,
+				MakeSlug:  "chevrolet",
+				ModelSlug: "malibu",
+			},
+			Make: &ddgrpc.DeviceMake{
+				Id:       ksuid.New().String(),
+				Name:     "Chevrolet",
+				NameSlug: "chevrolet",
+			},
+		},
+	}, nil)
 
 	// Only making use the last parameter.
-	ddID := ksuid.New().String()
 	integs, _ := deviceDefSvc.GetIntegrations(ctx)
 	integrationID := integs[0].Id
 
 	ingest := NewDeviceStatusIngestService(pdb.DBS, &logger, mes, deviceDefSvc, autoPISvc, deviceSvc)
 
 	dat1 := models.UserDeviceDatum{
-		UserDeviceID:        ddID,
+		UserDeviceID:        userDeviceID,
 		Signals:             null.JSONFrom([]byte(`{"signal_name_version_1": {"timestamp": "xx", "value": 23.4}}`)),
 		LastOdometerEventAt: null.TimeFrom(time.Now().Add(-10 * time.Second)),
 		IntegrationID:       null.StringFrom(integrationID),
@@ -68,7 +111,7 @@ func TestAutoPiStatus(t *testing.T) {
 	input := &DeviceStatusEvent{
 		Source:      "dimo/integration/" + integrationID,
 		Specversion: "1.0",
-		Subject:     ddID,
+		Subject:     userDeviceID,
 		Type:        deviceStatusEventType,
 		Time:        time.Now(),
 		Data:        []byte(`{"odometer": 45.22, "signal_name_version_2": 12.3}`),
