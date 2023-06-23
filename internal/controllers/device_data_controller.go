@@ -7,9 +7,6 @@ import (
 	"fmt"
 	"github.com/DIMO-Network/device-data-api/models"
 	"github.com/DIMO-Network/shared/db"
-	"github.com/ericlagergren/decimal"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
-	pgtypes "github.com/volatiletech/sqlboiler/v4/types"
 	"io"
 	"math/big"
 	"strconv"
@@ -361,26 +358,27 @@ func (d *DeviceDataController) GetVehicleStatus(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Couldn't parse token id %q.", tis))
 	}
 
-	tid := pgtypes.NewNullDecimal(new(decimal.Big).SetBigMantScale(ti, 0))
-	nft, err := models.VehicleNFTS(
-		models.VehicleNFTWhere.TokenID.EQ(tid),
-		qm.Load(models.VehicleNFTRels.UserDevice),
-	).One(c.Context(), d.dbs().Reader)
+	//tid := pgtypes.NewNullDecimal(new(decimal.Big).SetBigMantScale(ti, 0))
+	userDeviceNFT, err := d.deviceAPI.GetUserDeviceByTokenID(c.Context(), ti.Int64())
+	if err != nil {
+		d.log.Err(err).Msg("grpc error retrieving NFT metadata.")
+		return err
+	}
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return fiber.NewError(fiber.StatusNotFound, "NFT not found.")
 		}
-		d.log.Err(err).Msg("Database error retrieving NFT metadata.")
+		d.log.Err(err).Str("token_id", tis).Msg("Database error retrieving NFT metadata or NFT not found")
 		return err
 	}
 
-	if nft.R.UserDevice == nil {
+	if userDeviceNFT == nil {
 		return fiber.NewError(fiber.StatusNotFound, "NFT not found.")
 	}
 
 	deviceData, err := models.UserDeviceData(
-		models.UserDeviceDatumWhere.UserDeviceID.EQ(nft.R.UserDevice.ID),
+		models.UserDeviceDatumWhere.UserDeviceID.EQ(userDeviceNFT.Id),
 		models.UserDeviceDatumWhere.Signals.IsNotNull(),
 		models.UserDeviceDatumWhere.UpdatedAt.GT(time.Now().Add(-14*24*time.Hour)),
 	).All(c.Context(), d.dbs().Reader)
@@ -391,8 +389,8 @@ func (d *DeviceDataController) GetVehicleStatus(c *fiber.Ctx) error {
 		return err
 	}
 
-	ds := PrepareDeviceStatusInformation(c.Context(), d.definitionsAPI, deviceData, nft.R.UserDevice.DeviceDefinitionID,
-		nft.R.UserDevice.DeviceStyleID, privileges)
+	ds := PrepareDeviceStatusInformation(c.Context(), d.definitionsAPI, deviceData, userDeviceNFT.DeviceDefinitionId,
+		userDeviceNFT.DeviceStyleId, privileges)
 
 	return c.JSON(ds)
 }
