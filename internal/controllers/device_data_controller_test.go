@@ -5,6 +5,11 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
+	"testing"
+	"time"
+
 	"github.com/DIMO-Network/device-data-api/internal/config"
 	"github.com/DIMO-Network/device-data-api/internal/constants"
 	"github.com/DIMO-Network/device-data-api/internal/test"
@@ -13,10 +18,6 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
-	"io"
-	"os"
-	"testing"
-	"time"
 
 	mock_services "github.com/DIMO-Network/device-data-api/internal/services/mocks"
 	ddgrpc "github.com/DIMO-Network/device-definitions-api/pkg/grpc"

@@ -5,12 +5,13 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/DIMO-Network/device-data-api/models"
-	"github.com/DIMO-Network/shared/db"
 	"io"
 	"math/big"
 	"strconv"
 	"time"
+
+	"github.com/DIMO-Network/device-data-api/models"
+	"github.com/DIMO-Network/shared/db"
 
 	"github.com/DIMO-Network/shared"
 

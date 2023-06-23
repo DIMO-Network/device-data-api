@@ -2,6 +2,11 @@ package main
 
 import (
 	"context"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
 	"github.com/DIMO-Network/device-data-api/internal/config"
 	"github.com/DIMO-Network/device-data-api/internal/controllers"
 	"github.com/DIMO-Network/device-data-api/internal/middleware/metrics"
@@ -21,10 +26,6 @@ import (
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 )
 
 func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *db.ReaderWriter, definitionsAPIService services.DeviceDefinitionsAPIService, deviceAPIService services.DeviceAPIService) {

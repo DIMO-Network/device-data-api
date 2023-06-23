@@ -3,14 +3,15 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"sort"
+	"time"
+
 	"github.com/DIMO-Network/device-data-api/internal/services"
 	"github.com/DIMO-Network/device-data-api/models"
 	"github.com/DIMO-Network/shared"
 	smartcar "github.com/smartcar/go-sdk"
 	"github.com/tidwall/gjson"
 	"golang.org/x/exp/slices"
-	"sort"
-	"time"
 )
 
 func PrepareDeviceStatusInformation(ctx context.Context, ddSvc services.DeviceDefinitionsAPIService, deviceData models.UserDeviceDatumSlice, deviceDefinitionID string, deviceStyleID *string, privilegeIDs []int64) DeviceSnapshot {
