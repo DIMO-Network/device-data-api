@@ -307,7 +307,7 @@ func (d *DeviceDataController) GetDistanceDriven(c *fiber.Ctx) error {
 // GetUserDeviceStatus godoc
 // @Description Returns the latest status update for the device. May return 404 if the
 // @Description user does not have a device with the ID, or if no status updates have come. Note this endpoint also exists under nft_controllers
-// @Tags        user-devices
+// @Tags        device-data
 // @Produce     json
 // @Param       user_device_id path     string true "user device ID"
 // @Success     200            {object} controllers.DeviceSnapshot
@@ -342,7 +342,7 @@ func (d *DeviceDataController) GetUserDeviceStatus(c *fiber.Ctx) error {
 
 // GetVehicleStatus godoc
 // @Description Returns the latest status update for the vehicle with a given token id.
-// @Tags        permission
+// @Tags        device-data
 // @Param       tokenId path int true "token id"
 // @Produce     json
 // @Success     200 {object} controllers.DeviceSnapshot
