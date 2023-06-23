@@ -154,13 +154,13 @@ func calculateRange(ctx context.Context, ddSvc services.DeviceDefinitionsAPIServ
 		return nil, fmt.Errorf("fuelPercentRemaining lt 0.01 so cannot calculate range")
 	}
 
-	dd, err := ddSvc.GetDeviceDefinitionsByIDs(ctx, []string{deviceDefinitionID})
+	dd, err := ddSvc.GetDeviceDefinitionByID(ctx, deviceDefinitionID)
 
 	if err != nil {
 		return nil, shared.GrpcErrorToFiber(err, "deviceDefSvc error getting definition id: "+deviceDefinitionID)
 	}
 
-	rangeData := GetActualDeviceDefinitionMetadataValues(dd[0], deviceStyleID)
+	rangeData := GetActualDeviceDefinitionMetadataValues(dd, deviceStyleID)
 
 	// calculate, convert to Km
 	if rangeData.FuelTankCapGal > 0 && rangeData.Mpg > 0 {

@@ -18,15 +18,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tidwall/sjson"
-
 	mock_services "github.com/DIMO-Network/device-data-api/internal/services/mocks"
-	pb "github.com/DIMO-Network/device-definitions-api/pkg/grpc"
+	ddgrpc "github.com/DIMO-Network/device-definitions-api/pkg/grpc"
+	dagrpc "github.com/DIMO-Network/devices-api/pkg/grpc"
 	"github.com/golang/mock/gomock"
 	"github.com/segmentio/ksuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
 )
 
 func TestDeviceDataController_addRangeIfNotExists(t *testing.T) {
@@ -34,14 +34,14 @@ func TestDeviceDataController_addRangeIfNotExists(t *testing.T) {
 	deviceDefSvc := mock_services.NewMockDeviceDefinitionsAPIService(controller)
 	ddID := ksuid.New().String()
 
-	deviceDefSvc.EXPECT().GetDeviceDefinition(gomock.Any(), ddID).Times(1).Return(&pb.GetDeviceDefinitionItemResponse{
+	deviceDefSvc.EXPECT().GetDeviceDefinitionByID(gomock.Any(), ddID).Times(1).Return(&ddgrpc.GetDeviceDefinitionItemResponse{
 		DeviceDefinitionId: ddID,
 		Name:               "test car",
 		Type:               nil,
 		Verified:           true,
 		Make:               nil,
 		DeviceStyles:       nil,
-		DeviceAttributes: []*pb.DeviceTypeAttribute{
+		DeviceAttributes: []*ddgrpc.DeviceTypeAttribute{
 			{
 				Name:  "mpg",
 				Value: "30",
@@ -77,7 +77,7 @@ func TestDeviceDataController_addRangeIfNotExists_NoChangeIfRangeExists(t *testi
 	deviceDefSvc := mock_services.NewMockDeviceDefinitionsAPIService(controller)
 	ddID := ksuid.New().String()
 
-	deviceDefSvc.EXPECT().GetDeviceDefinition(gomock.Any(), ddID).Times(0)
+	deviceDefSvc.EXPECT().GetDeviceDefinitionByID(gomock.Any(), ddID).Times(0)
 
 	// if range exists anywhere in the body, do not add range anywhere
 	bodySetRange, err2 := sjson.Set(elasticDeviceData, "hits.hits.0._source.data.range", 100.50)
@@ -143,6 +143,12 @@ func TestUserDevicesController_GetUserDeviceStatus(t *testing.T) {
 		udID := ksuid.New().String()
 		const unitID = "431d2e89-46f1-6884-6226-5d1ad20c84d9"
 		const deviceID = "device123"
+		deviceSvc.EXPECT().GetUserDevice(gomock.Any(), udID).Times(1).Return(dagrpc.UserDevice{
+			Id:                 udID,
+			DeviceDefinitionId: dd[0].DeviceDefinitionId,
+			UserId:             testUserID,
+		})
+		deviceDefSvc.EXPECT().GetDeviceDefinitionByID(gomock.Any(), dd[0].DeviceDefinitionId).Times(1).Return(dd[0], nil)
 		// SC data setup to  older
 		smartCarData := models.UserDeviceDatum{
 			UserDeviceID: udID,
@@ -269,6 +275,7 @@ func TestUserDevicesController_calculateRange(t *testing.T) {
 
 	ctx := context.Background()
 	deviceDefSvc := mock_services.NewMockDeviceDefinitionsAPIService(mockCtrl)
+	deviceSvc := mock_services.NewMockDeviceAPIService(mockCtrl)
 
 	logger := zerolog.New(os.Stdout).With().
 		Timestamp().
@@ -276,8 +283,8 @@ func TestUserDevicesController_calculateRange(t *testing.T) {
 		Logger()
 
 	ddID := ksuid.New().String()
-	styleID := null.StringFrom(ksuid.New().String())
-	attrs := []*grpc.DeviceTypeAttribute{
+	styleID := ksuid.New().String()
+	attrs := []*ddgrpc.DeviceTypeAttribute{
 		{
 			Name:  "fuel_tank_capacity_gal",
 			Value: "15",
@@ -287,14 +294,21 @@ func TestUserDevicesController_calculateRange(t *testing.T) {
 			Value: "20",
 		},
 	}
-	deviceDefSvc.EXPECT().GetDeviceDefinitionByID(gomock.Any(), ddID).Times(1).Return(&grpc.GetDeviceDefinitionItemResponse{
+	deviceDefSvc.EXPECT().GetDeviceDefinitionByID(gomock.Any(), ddID).Times(1).Return(&ddgrpc.GetDeviceDefinitionItemResponse{
 		DeviceDefinitionId: ddID,
 		Verified:           true,
 		DeviceAttributes:   attrs,
 	}, nil)
 
-	_ = NewDeviceDataController(&config.Settings{Port: "3000"}, nil, &logger, deviceDefSvc, nil, &fakeEventService{}, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	rge, err := calculateRange(ctx, deviceDefSvc, ddID, styleID, .7)
+	pdb, container := test.StartContainerDatabase(ctx, t, migrationsDirRelPath)
+	defer func() {
+		ctx := context.Background()
+		if err := container.Terminate(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}()
+	_ = NewDeviceDataController(&config.Settings{Port: "3000"}, &logger, deviceSvc, nil, deviceDefSvc, pdb.DBS)
+	rge, err := calculateRange(ctx, deviceDefSvc, ddID, &styleID, .7)
 	require.NoError(t, err)
 	require.NotNil(t, rge)
 	assert.Equal(t, 337.9614, *rge)

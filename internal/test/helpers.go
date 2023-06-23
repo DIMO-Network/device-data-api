@@ -2,6 +2,7 @@ package test
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"testing"
 
@@ -104,6 +105,15 @@ $$ LANGUAGE plpgsql;
 	}
 
 	return pdb, pgContainer
+}
+
+// TruncateTables truncates tables for the test db, useful to run as teardown at end of each DB dependent test.
+func TruncateTables(db *sql.DB, t *testing.T) {
+	_, err := db.Exec(`SELECT truncate_tables();`)
+	if err != nil {
+		fmt.Println("truncating tables failed.")
+		t.Fatal(err)
+	}
 }
 
 func handleContainerStartErr(ctx context.Context, err error, container testcontainers.Container, t *testing.T) (db.Store, testcontainers.Container) {

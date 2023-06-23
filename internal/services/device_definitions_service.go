@@ -13,7 +13,7 @@ import (
 
 //go:generate mockgen -source device_definitions_service.go -destination mocks/device_definitions_service_mock.go
 type DeviceDefinitionsAPIService interface {
-	GetDeviceDefinition(ctx context.Context, id string) (*pb.GetDeviceDefinitionItemResponse, error)
+	GetDeviceDefinitionByID(ctx context.Context, id string) (*pb.GetDeviceDefinitionItemResponse, error)
 	GetIntegrations(ctx context.Context) ([]*pb.Integration, error)
 	GetDeviceDefinitionsByIDs(ctx context.Context, ids []string) ([]*pb.GetDeviceDefinitionItemResponse, error)
 }
@@ -59,7 +59,7 @@ func (dda *deviceDefinitionsAPIService) GetIntegrations(ctx context.Context) ([]
 	return definitions.GetIntegrations(), nil
 }
 
-func (dda *deviceDefinitionsAPIService) GetDeviceDefinition(ctx context.Context, id string) (*pb.GetDeviceDefinitionItemResponse, error) {
+func (dda *deviceDefinitionsAPIService) GetDeviceDefinitionByID(ctx context.Context, id string) (*pb.GetDeviceDefinitionItemResponse, error) {
 	if len(id) == 0 {
 		return nil, fmt.Errorf("device definition id was empty - invalid")
 	}
