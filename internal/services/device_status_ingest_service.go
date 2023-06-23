@@ -120,16 +120,14 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 		return fmt.Errorf("can't find API integration for device %s and integration %s", userDeviceID, integration.Id)
 	}
 
-	deviceDefinitionResponse, err := i.deviceDefSvc.GetDeviceDefinitionsByIDs(ctx, []string{device.DeviceDefinitionId})
+	deviceDefinitionResponse, err := i.deviceDefSvc.GetDeviceDefinitionByID(ctx, device.DeviceDefinitionId)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("deviceDefSvc error getting definition id: %s", device.DeviceDefinitionId))
 	}
 
-	if len(deviceDefinitionResponse) == 0 {
+	if deviceDefinitionResponse == nil {
 		return fiber.NewError(fiber.StatusNotFound, fmt.Sprintf("device definition with id %s not found", device.DeviceDefinitionId))
 	}
-
-	dd := deviceDefinitionResponse[0]
 
 	// update status to Active if not already set
 	apiIntegration := device.Integrations[0]
@@ -181,11 +179,11 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 		datum = deviceData[0]
 	} else {
 		// Insert a new record.
-		datum = &models.UserDeviceDatum{UserDeviceID: userDeviceID, IntegrationID: null.StringFrom(integration.Id)}
+		datum = &models.UserDeviceDatum{UserDeviceID: userDeviceID, IntegrationID: integration.Id}
 		i.memoryCache.Delete(userDeviceID + "_" + integration.Id)
 	}
 
-	i.processOdometer(datum, newOdometer, device, dd, integration.Id)
+	i.processOdometer(datum, newOdometer, device, deviceDefinitionResponse, integration.Id)
 
 	// Not every update has every signal. Merge the new into the old.
 	compositeData := make(map[string]any)

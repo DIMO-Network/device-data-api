@@ -75,24 +75,22 @@ func TestAutoPiStatus(t *testing.T) {
 		DeviceDefinitionId: deviceDefinitionID,
 		VinConfirmed:       true,
 	}, nil)
-	deviceDefSvc.EXPECT().GetDeviceDefinitionsByIDs(gomock.Any(), []string{deviceDefinitionID}).Return([]*ddgrpc.GetDeviceDefinitionItemResponse{
-		{
-			DeviceDefinitionId: deviceDefinitionID,
-			Name:               "Malibu",
-			Verified:           true,
-			Type: &ddgrpc.DeviceType{
-				Type:      "Vehicle",
-				Make:      "Chevrolet",
-				Model:     "Malibu",
-				Year:      2012,
-				MakeSlug:  "chevrolet",
-				ModelSlug: "malibu",
-			},
-			Make: &ddgrpc.DeviceMake{
-				Id:       ksuid.New().String(),
-				Name:     "Chevrolet",
-				NameSlug: "chevrolet",
-			},
+	deviceDefSvc.EXPECT().GetDeviceDefinitionByID(gomock.Any(), deviceDefinitionID).Return(&ddgrpc.GetDeviceDefinitionItemResponse{
+		DeviceDefinitionId: deviceDefinitionID,
+		Name:               "Malibu",
+		Verified:           true,
+		Type: &ddgrpc.DeviceType{
+			Type:      "Vehicle",
+			Make:      "Chevrolet",
+			Model:     "Malibu",
+			Year:      2012,
+			MakeSlug:  "chevrolet",
+			ModelSlug: "malibu",
+		},
+		Make: &ddgrpc.DeviceMake{
+			Id:       ksuid.New().String(),
+			Name:     "Chevrolet",
+			NameSlug: "chevrolet",
 		},
 	}, nil)
 
@@ -106,7 +104,7 @@ func TestAutoPiStatus(t *testing.T) {
 		UserDeviceID:        userDeviceID,
 		Signals:             null.JSONFrom([]byte(`{"signal_name_version_1": {"timestamp": "xx", "value": 23.4}}`)),
 		LastOdometerEventAt: null.TimeFrom(time.Now().Add(-10 * time.Second)),
-		IntegrationID:       null.StringFrom(integrationID),
+		IntegrationID:       integrationID,
 	}
 
 	input := &DeviceStatusEvent{
@@ -123,7 +121,7 @@ func TestAutoPiStatus(t *testing.T) {
 	require.NoError(t, err)
 
 	// get updated dat1 from db
-	updatedData, err := models.FindUserDeviceDatum(ctx, pdb.DBS().Reader, userDeviceID)
+	updatedData, err := models.FindUserDeviceDatum(ctx, pdb.DBS().Reader, userDeviceID, integrationID)
 	require.NoError(t, err)
 
 	// validate signals were updated, or not updated, as expected
