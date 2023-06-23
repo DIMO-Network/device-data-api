@@ -7,7 +7,6 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/volatiletech/null/v8"
 )
 
 type QueryValues struct {
@@ -38,15 +37,15 @@ type DeviceDefinitionRange struct {
 	MpgHwy         float64 `json:"mpg_highway"`
 }
 
-func GetActualDeviceDefinitionMetadataValues(dd *grpc.GetDeviceDefinitionItemResponse, deviceStyleID null.String) *DeviceDefinitionRange {
+func GetActualDeviceDefinitionMetadataValues(dd *grpc.GetDeviceDefinitionItemResponse, deviceStyleID *string) *DeviceDefinitionRange {
 
 	var fuelTankCapGal, mpg, mpgHwy float64 = 0, 0, 0
 
 	var metadata []*grpc.DeviceTypeAttribute
 
-	if !deviceStyleID.IsZero() {
+	if deviceStyleID != nil {
 		for _, style := range dd.DeviceStyles {
-			if style.Id == deviceStyleID.String {
+			if style.Id == *deviceStyleID {
 				metadata = style.DeviceAttributes
 				break
 			}

@@ -81,7 +81,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 	defer usersConn.Close()
 	usersClient := pb.NewUserServiceClient(usersConn)
 
-	deviceDataController := controllers.NewDeviceDataController(settings, &logger, deviceAPIService, esClient8, definitionsAPIService)
+	deviceDataController := controllers.NewDeviceDataController(settings, &logger, deviceAPIService, esClient8, definitionsAPIService, dbs)
 
 	logger.Info().Str("jwkUrl", settings.TokenExchangeJWTKeySetURL).Str("vehicleAddr", settings.VehicleNFTAddress).Msg("Privileges enabled.")
 	privilegeAuth := jwtware.New(jwtware.Config{
@@ -99,13 +99,15 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 	})
 	vehicleAddr := common.HexToAddress(settings.VehicleNFTAddress)
 
-	// Probably want constants for 1 and 4 here.
+	// token based routes
 	vToken.Get("/history", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.AllTimeLocation}), deviceDataController.GetHistoricalRawPermissioned)
+	vToken.Get("/status", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.CurrentLocation, controllers.AllTimeLocation}), deviceDataController.GetVehicleStatus)
 
 	v1Auth := app.Group("/v1", jwtAuth)
 
 	udMw := owner.New(usersClient, deviceAPIService, &logger)
 	udOwner := v1Auth.Group("/user/device-data/:userDeviceID", udMw)
+	udOwner.Get("/status", deviceDataController.GetUserDeviceStatus)
 	udOwner.Get("/historical", cacheHandler, deviceDataController.GetHistoricalRaw)
 	udOwner.Get("/distance-driven", cacheHandler, deviceDataController.GetDistanceDriven)
 	udOwner.Get("/daily-distance", cacheHandler, deviceDataController.GetDailyDistance)

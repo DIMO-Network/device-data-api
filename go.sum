@@ -70,6 +70,8 @@ github.com/DIMO-Network/devices-api v1.16.4 h1:CgBzvYzVQlfDZDwNu9ZIiuv1aoyev1MgK
 github.com/DIMO-Network/devices-api v1.16.4/go.mod h1:UwcGKS3vV4jYFd1APn9ZGEWHLh9Q4SVjZBL8yrbntiQ=
 github.com/DIMO-Network/shared v0.9.52 h1:+SJ4br+a0zb3uuqsUUpxWwI/p7xHw4QLw80FpUmjcb0=
 github.com/DIMO-Network/shared v0.9.52/go.mod h1:NtfLKGdUL/47pM4t2WTWiUMDtvLs48py+xcPWdaZzUA=
+github.com/DIMO-Network/shared v0.9.53 h1:26u+1jjBiyCkDYC/1CRmKsyKNQ/ZHCPS9J+aIP+1clw=
+github.com/DIMO-Network/shared v0.9.53/go.mod h1:NtfLKGdUL/47pM4t2WTWiUMDtvLs48py+xcPWdaZzUA=
 github.com/DIMO-Network/users-api v0.6.3 h1:pqm9Mb/N+lUn+pXrbH2CAVV/+dz8yhFHJ5vnXr2DQHs=
 github.com/DIMO-Network/users-api v0.6.3/go.mod h1:aIZ41w04/Vfb8xqxA4UeNT0N/CoyPEjeGWRuLa98OEo=
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=

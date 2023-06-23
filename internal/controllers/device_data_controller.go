@@ -2,18 +2,22 @@ package controllers
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/DIMO-Network/device-data-api/models"
+	"github.com/DIMO-Network/shared/db"
+	"github.com/ericlagergren/decimal"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	pgtypes "github.com/volatiletech/sqlboiler/v4/types"
 	"io"
+	"math/big"
 	"strconv"
 	"time"
 
 	"github.com/DIMO-Network/shared"
 
 	"github.com/DIMO-Network/devices-api/pkg/grpc"
-
-	"github.com/tidwall/sjson"
-	"github.com/volatiletech/null/v8"
 
 	"github.com/DIMO-Network/device-data-api/internal/config"
 	"github.com/DIMO-Network/device-data-api/internal/services"
@@ -28,6 +32,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
 	"golang.org/x/exp/slices"
 )
 
@@ -37,6 +42,7 @@ type DeviceDataController struct {
 	deviceAPI      services.DeviceAPIService
 	es8Client      *es8.TypedClient
 	definitionsAPI services.DeviceDefinitionsAPIService
+	dbs            func() *db.ReaderWriter
 }
 
 const (
@@ -47,19 +53,14 @@ const (
 )
 
 // NewDeviceDataController constructor
-func NewDeviceDataController(
-	settings *config.Settings,
-	logger *zerolog.Logger,
-	deviceAPIService services.DeviceAPIService,
-	es8Client *es8.TypedClient,
-	definitionsAPIService services.DeviceDefinitionsAPIService,
-) DeviceDataController {
+func NewDeviceDataController(settings *config.Settings, logger *zerolog.Logger, deviceAPIService services.DeviceAPIService, es8Client *es8.TypedClient, definitionsAPIService services.DeviceDefinitionsAPIService, dbs func() *db.ReaderWriter) DeviceDataController {
 	return DeviceDataController{
 		Settings:       settings,
 		log:            logger,
 		deviceAPI:      deviceAPIService,
 		es8Client:      es8Client,
 		definitionsAPI: definitionsAPIService,
+		dbs:            dbs,
 	}
 }
 
@@ -118,7 +119,7 @@ func addRangeIfNotExists(ctx context.Context, deviceDefSvc services.DeviceDefini
 		return body, errors.Wrapf(err, "could not get device definition by id: %s", deviceDefinitionID)
 	}
 	// extract the range values from definition, already done in devices-api, copy that code or move to shared
-	rangeData := GetActualDeviceDefinitionMetadataValues(definition, null.StringFromPtr(deviceStyleID))
+	rangeData := GetActualDeviceDefinitionMetadataValues(definition, deviceStyleID)
 
 	resultData := gjson.GetBytes(body, "hits.hits.#._source.data")
 	for i, r := range resultData.Array() {
@@ -303,6 +304,97 @@ func (d *DeviceDataController) GetDistanceDriven(c *fiber.Ctx) error {
 		"distanceDriven": odoEnd - odoStart,
 		"units":          "kilometers",
 	})
+}
+
+// GetUserDeviceStatus godoc
+// @Description Returns the latest status update for the device. May return 404 if the
+// @Description user does not have a device with the ID, or if no status updates have come. Note this endpoint also exists under nft_controllers
+// @Tags        user-devices
+// @Produce     json
+// @Param       user_device_id path     string true "user device ID"
+// @Success     200            {object} controllers.DeviceSnapshot
+// @Security    BearerAuth
+// @Router      /user/devices/{userDeviceID}/status [get]
+func (d *DeviceDataController) GetUserDeviceStatus(c *fiber.Ctx) error {
+	userDeviceID := c.Params("userDeviceID")
+
+	userDevice, err := d.deviceAPI.GetUserDevice(c.Context(), userDeviceID)
+	if err != nil {
+		return err
+	}
+
+	deviceData, err := models.UserDeviceData(
+		models.UserDeviceDatumWhere.UserDeviceID.EQ(userDevice.Id),
+		models.UserDeviceDatumWhere.Signals.IsNotNull(),
+		models.UserDeviceDatumWhere.UpdatedAt.GT(time.Now().Add(-14*24*time.Hour)),
+	).All(c.Context(), d.dbs().Reader)
+	if err != nil {
+		return err
+	}
+
+	if len(deviceData) == 0 {
+		return fiber.NewError(fiber.StatusNotFound, "No status updates yet.")
+	}
+
+	ds := PrepareDeviceStatusInformation(c.Context(), d.definitionsAPI, deviceData, userDevice.DeviceDefinitionId,
+		userDevice.DeviceStyleId, []int64{NonLocationData, CurrentLocation, AllTimeLocation})
+
+	return c.JSON(ds)
+}
+
+// GetVehicleStatus godoc
+// @Description Returns the latest status update for the vehicle with a given token id.
+// @Tags        permission
+// @Param       tokenId path int true "token id"
+// @Produce     json
+// @Success     200 {object} controllers.DeviceSnapshot
+// @Failure     404
+// @Router      /vehicle/{tokenId}/status [get]
+func (d *DeviceDataController) GetVehicleStatus(c *fiber.Ctx) error {
+	tis := c.Params("tokenID")
+	claims := c.Locals("tokenClaims").(pr.CustomClaims)
+
+	privileges := claims.PrivilegeIDs
+
+	ti, ok := new(big.Int).SetString(tis, 10)
+	if !ok {
+		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Couldn't parse token id %q.", tis))
+	}
+
+	tid := pgtypes.NewNullDecimal(new(decimal.Big).SetBigMantScale(ti, 0))
+	nft, err := models.VehicleNFTS(
+		models.VehicleNFTWhere.TokenID.EQ(tid),
+		qm.Load(models.VehicleNFTRels.UserDevice),
+	).One(c.Context(), d.dbs().Reader)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fiber.NewError(fiber.StatusNotFound, "NFT not found.")
+		}
+		d.log.Err(err).Msg("Database error retrieving NFT metadata.")
+		return err
+	}
+
+	if nft.R.UserDevice == nil {
+		return fiber.NewError(fiber.StatusNotFound, "NFT not found.")
+	}
+
+	deviceData, err := models.UserDeviceData(
+		models.UserDeviceDatumWhere.UserDeviceID.EQ(nft.R.UserDevice.ID),
+		models.UserDeviceDatumWhere.Signals.IsNotNull(),
+		models.UserDeviceDatumWhere.UpdatedAt.GT(time.Now().Add(-14*24*time.Hour)),
+	).All(c.Context(), d.dbs().Reader)
+	if errors.Is(err, sql.ErrNoRows) || len(deviceData) == 0 {
+		return fiber.NewError(fiber.StatusNotFound, "no status updates yet")
+	}
+	if err != nil {
+		return err
+	}
+
+	ds := PrepareDeviceStatusInformation(c.Context(), d.definitionsAPI, deviceData, nft.R.UserDevice.DeviceDefinitionID,
+		nft.R.UserDevice.DeviceStyleID, privileges)
+
+	return c.JSON(ds)
 }
 
 type odomValue struct {

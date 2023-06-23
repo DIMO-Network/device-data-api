@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/DIMO-Network/device-definitions-api v1.0.7
 	github.com/DIMO-Network/devices-api v1.16.4
-	github.com/DIMO-Network/shared v0.9.52
+	github.com/DIMO-Network/shared v0.9.53
 	github.com/Shopify/sarama v1.38.1
 	github.com/aws/aws-sdk-go-v2 v1.17.8
 	github.com/aws/aws-sdk-go-v2/config v1.18.21
