@@ -30,6 +30,7 @@ require (
 	github.com/prometheus/client_golang v1.15.1
 	github.com/rs/zerolog v1.29.1
 	github.com/segmentio/ksuid v1.0.4
+	github.com/smartcar/go-sdk v1.4.0
 	github.com/stretchr/testify v1.8.2
 	github.com/swaggo/swag v1.16.1
 	github.com/testcontainers/testcontainers-go v0.19.0
@@ -91,6 +92,7 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.18 // indirect
 	github.com/mattn/go-runewidth v0.0.14 // indirect
+	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/moby/patternmatcher v0.5.0 // indirect
 	github.com/moby/sys/sequential v0.5.0 // indirect
 	github.com/moby/term v0.0.0-20221205130635-1aeaba878587 // indirect

@@ -311,7 +311,7 @@ func (d *DeviceDataController) GetDistanceDriven(c *fiber.Ctx) error {
 // @Param       user_device_id path     string true "user device ID"
 // @Success     200            {object} controllers.DeviceSnapshot
 // @Security    BearerAuth
-// @Router      /user/devices/{userDeviceID}/status [get]
+// @Router      /user/device-data/{userDeviceID}/status [get]
 func (d *DeviceDataController) GetUserDeviceStatus(c *fiber.Ctx) error {
 	userDeviceID := c.Params("userDeviceID")
 
