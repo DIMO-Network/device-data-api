@@ -141,14 +141,11 @@ func TestUserDevicesController_GetUserDeviceStatus(t *testing.T) {
 		smartCarInt := test.BuildIntegrationGRPC(constants.SmartCarVendor, 0, 0)
 		dd := test.BuildDeviceDefinitionGRPC(ksuid.New().String(), "Ford", "Mach E", 2020, autoPiInteg)
 		udID := ksuid.New().String()
-		const unitID = "431d2e89-46f1-6884-6226-5d1ad20c84d9"
-		const deviceID = "device123"
-		deviceSvc.EXPECT().GetUserDevice(gomock.Any(), udID).Times(1).Return(dagrpc.UserDevice{
+		deviceSvc.EXPECT().GetUserDevice(gomock.Any(), udID).Times(1).Return(&dagrpc.UserDevice{
 			Id:                 udID,
 			DeviceDefinitionId: dd[0].DeviceDefinitionId,
 			UserId:             testUserID,
-		})
-		deviceDefSvc.EXPECT().GetDeviceDefinitionByID(gomock.Any(), dd[0].DeviceDefinitionId).Times(1).Return(dd[0], nil)
+		}, nil)
 		// SC data setup to  older
 		smartCarData := models.UserDeviceDatum{
 			UserDeviceID: udID,

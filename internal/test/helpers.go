@@ -109,7 +109,7 @@ $$ LANGUAGE plpgsql;
 
 // TruncateTables truncates tables for the test db, useful to run as teardown at end of each DB dependent test.
 func TruncateTables(db *sql.DB, t *testing.T) {
-	_, err := db.Exec(`SELECT truncate_tables();`)
+	_, err := db.Exec(`SELECT devices_api.truncate_tables();`)
 	if err != nil {
 		fmt.Println("truncating tables failed.")
 		t.Fatal(err)
