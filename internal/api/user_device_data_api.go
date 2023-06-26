@@ -55,6 +55,10 @@ func (s *userDeviceData) GetUserDeviceData(ctx context.Context, req *pb.UserDevi
 	return ds, nil
 }
 
+func (s *userDeviceData) GetSignals(ctx context.Context, req *pb.SignalRequest) (*pb.SignalResponse, error) {
+	return nil, nil
+}
+
 func prepareDeviceStatusInformation(ctx context.Context, ddSvc services.DeviceDefinitionsAPIService, deviceData models.UserDeviceDatumSlice, deviceDefinitionID string, deviceStyleID null.String, privilegeIDs []int64) *pb.UserDeviceDataResponse {
 	ds := pb.UserDeviceDataResponse{}
 

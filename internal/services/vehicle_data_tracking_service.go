@@ -57,7 +57,7 @@ func (v *vehicleDataTrackingService) GenerateVehicleDataTracking(ctx context.Con
 	}
 
 	var data map[string]interface{}
-	err := json.Unmarshal([]byte("jsonData"), &data)
+	err := json.Unmarshal(userDeviceData.Signals.JSON, &data)
 	if err != nil {
 		return nil
 	}
