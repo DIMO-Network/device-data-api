@@ -233,7 +233,10 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 	}
 
 	//todo: move to kakfa subscription
-	i.vehicleDataTrackingSvc.GenerateVehicleDataTracking(ctx, *datum, *deviceDefinitionResponse, *apiIntegration)
+	err = i.vehicleDataTrackingSvc.GenerateVehicleDataTracking(ctx, *datum, *deviceDefinitionResponse, *apiIntegration)
+	if err != nil {
+		return fmt.Errorf("error upserting datum: %w", err)
+	}
 
 	return nil
 }
