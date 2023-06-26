@@ -85,6 +85,7 @@ func (v *vehicleDataTrackingService) GenerateVehicleDataTracking(ctx context.Con
 			eventTracking, err := models.FindVehicleSignalsTrackingEventsMissingProperty(ctx, v.db().Writer, integration.Id, deviceDefinition.Make.Id, value)
 			if err == nil {
 				eventTracking.Count++
+				eventTracking.CreatedAt = time.Now()
 				_, err = eventTracking.Update(ctx, v.db().Writer, boil.Infer())
 				if err != nil {
 					v.log.Fatal()
@@ -113,6 +114,7 @@ func (v *vehicleDataTrackingService) GenerateVehicleDataTracking(ctx context.Con
 			eventTracking, err := models.FindVehicleSignalsTrackingEventsMissingProperty(ctx, v.db().Writer, integration.Id, deviceDefinition.Make.Id, value)
 			if err == nil {
 				eventTracking.Count++
+				eventTracking.CreatedAt = time.Now()
 				_, err = eventTracking.Update(ctx, v.db().Writer, boil.Infer())
 				if err != nil {
 					v.log.Fatal()
