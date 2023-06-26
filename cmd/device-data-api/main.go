@@ -133,7 +133,7 @@ func startDeviceStatusConsumer(logger zerolog.Logger, settings *config.Settings,
 	ddSvc services.DeviceDefinitionsAPIService, deviceSvc services.DeviceAPIService) {
 
 	autoPISvc := services.NewAutoPiAPIService(settings, pdb.DBS)
-	vehicleDataTrackingSvc := services.NewVehicleDataTrackingService(pdb.DBS, &logger, ddSvc, deviceSvc)
+	vehicleDataTrackingSvc := services.NewVehicleDataTrackingService(pdb.DBS, &logger)
 	ingestSvc := services.NewDeviceStatusIngestService(pdb.DBS, &logger, eventService, ddSvc, autoPISvc, deviceSvc, vehicleDataTrackingSvc)
 
 	sc := goka.DefaultConfig()

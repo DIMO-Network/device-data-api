@@ -98,13 +98,14 @@ func TestAutoPiStatus(t *testing.T) {
 	integs, _ := deviceDefSvc.GetIntegrations(ctx)
 	integrationID := integs[0].Id
 
-	ingest := NewDeviceStatusIngestService(pdb.DBS, &logger, mes, deviceDefSvc, autoPISvc, deviceSvc)
+	vehicleDataTrackingSvc := NewVehicleDataTrackingService(pdb.DBS, &logger)
+	ingest := NewDeviceStatusIngestService(pdb.DBS, &logger, mes, deviceDefSvc, autoPISvc, deviceSvc, vehicleDataTrackingSvc)
 
 	dat1 := models.UserDeviceDatum{
 		UserDeviceID:        userDeviceID,
 		Signals:             null.JSONFrom([]byte(`{"signal_name_version_1": {"timestamp": "xx", "value": 23.4}}`)),
 		LastOdometerEventAt: null.TimeFrom(time.Now().Add(-10 * time.Second)),
-		IntegrationID:       integrationID,
+		IntegrationID:       null.StringFrom(integrationID),
 	}
 
 	input := &DeviceStatusEvent{

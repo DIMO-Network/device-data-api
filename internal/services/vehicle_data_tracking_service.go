@@ -20,30 +20,24 @@ import (
 
 //go:generate mockgen -source vehicle_data_tracking_service.go -destination mocks/vehicle_data_tracking_service_mock.go
 type VehicleDataTrackingService interface {
-	GenerateVehicleDataTracking(ctx context.Context, userDeviceData models.UserDeviceDatum, userDevice pb.UserDevice, deviceDefinition ddgrpc.GetDeviceDefinitionItemResponse, integration pb.UserDeviceIntegration) error
+	GenerateVehicleDataTracking(ctx context.Context, userDeviceData models.UserDeviceDatum, deviceDefinition ddgrpc.GetDeviceDefinitionItemResponse, integration pb.UserDeviceIntegration) error
 }
 
 func NewVehicleDataTrackingService(db func() *db.ReaderWriter,
-	log *zerolog.Logger,
-	ddSvc DeviceDefinitionsAPIService,
-	deviceSvc DeviceAPIService) VehicleDataTrackingService {
+	log *zerolog.Logger) VehicleDataTrackingService {
 	return &vehicleDataTrackingService{
-		db:           db,
-		log:          log,
-		deviceDefSvc: ddSvc,
-		deviceSvc:    deviceSvc,
+		db:  db,
+		log: log,
 	}
 }
 
 type vehicleDataTrackingService struct {
-	db           func() *db.ReaderWriter
-	log          *zerolog.Logger
-	deviceDefSvc DeviceDefinitionsAPIService
-	deviceSvc    DeviceAPIService
-	memoryCache  *gocache.Cache
+	db          func() *db.ReaderWriter
+	log         *zerolog.Logger
+	memoryCache *gocache.Cache
 }
 
-func (v *vehicleDataTrackingService) GenerateVehicleDataTracking(ctx context.Context, userDeviceData models.UserDeviceDatum, userDevice pb.UserDevice, deviceDefinition ddgrpc.GetDeviceDefinitionItemResponse, integration pb.UserDeviceIntegration) error {
+func (v *vehicleDataTrackingService) GenerateVehicleDataTracking(ctx context.Context, userDeviceData models.UserDeviceDatum, deviceDefinition ddgrpc.GetDeviceDefinitionItemResponse, integration pb.UserDeviceIntegration) error {
 
 	const CacheKey = "VehicleDataTrackingProperties"
 	get, found := v.memoryCache.Get(CacheKey)

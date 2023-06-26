@@ -233,7 +233,7 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 	}
 
 	//todo: move to kakfa subscription
-	i.vehicleDataTrackingSvc.GenerateVehicleDataTracking(ctx, *datum, *device, *deviceDefinitionResponse, *apiIntegration)
+	i.vehicleDataTrackingSvc.GenerateVehicleDataTracking(ctx, *datum, *deviceDefinitionResponse, *apiIntegration)
 
 	return nil
 }
