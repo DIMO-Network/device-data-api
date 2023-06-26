@@ -31,17 +31,18 @@ const (
 )
 
 type DeviceStatusIngestService struct {
-	db           func() *db.ReaderWriter
-	log          *zerolog.Logger
-	eventService EventService
-	deviceDefSvc DeviceDefinitionsAPIService
-	integrations []*grpc.Integration
-	autoPiSvc    AutoPiAPIService
-	deviceSvc    DeviceAPIService
-	memoryCache  *gocache.Cache
+	db                     func() *db.ReaderWriter
+	log                    *zerolog.Logger
+	eventService           EventService
+	deviceDefSvc           DeviceDefinitionsAPIService
+	integrations           []*grpc.Integration
+	autoPiSvc              AutoPiAPIService
+	deviceSvc              DeviceAPIService
+	vehicleDataTrackingSvc VehicleDataTrackingService
+	memoryCache            *gocache.Cache
 }
 
-func NewDeviceStatusIngestService(db func() *db.ReaderWriter, log *zerolog.Logger, eventService EventService, ddSvc DeviceDefinitionsAPIService, autoPiSvc AutoPiAPIService, deviceSvc DeviceAPIService) *DeviceStatusIngestService {
+func NewDeviceStatusIngestService(db func() *db.ReaderWriter, log *zerolog.Logger, eventService EventService, ddSvc DeviceDefinitionsAPIService, autoPiSvc AutoPiAPIService, deviceSvc DeviceAPIService, vehicleDataTrackingSvc VehicleDataTrackingService) *DeviceStatusIngestService {
 	// Cache the list of integrations.
 	integrations, err := ddSvc.GetIntegrations(context.Background())
 	if err != nil {
@@ -50,14 +51,15 @@ func NewDeviceStatusIngestService(db func() *db.ReaderWriter, log *zerolog.Logge
 	c := gocache.New(30*time.Minute, 60*time.Minute) // band-aid on top of band-aids
 
 	return &DeviceStatusIngestService{
-		db:           db,
-		log:          log,
-		deviceDefSvc: ddSvc,
-		eventService: eventService,
-		integrations: integrations,
-		autoPiSvc:    autoPiSvc,
-		deviceSvc:    deviceSvc,
-		memoryCache:  c,
+		db:                     db,
+		log:                    log,
+		deviceDefSvc:           ddSvc,
+		eventService:           eventService,
+		integrations:           integrations,
+		autoPiSvc:              autoPiSvc,
+		deviceSvc:              deviceSvc,
+		memoryCache:            c,
+		vehicleDataTrackingSvc: vehicleDataTrackingSvc,
 	}
 }
 
@@ -179,7 +181,7 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 		datum = deviceData[0]
 	} else {
 		// Insert a new record.
-		datum = &models.UserDeviceDatum{UserDeviceID: userDeviceID, IntegrationID: integration.Id}
+		datum = &models.UserDeviceDatum{UserDeviceID: userDeviceID, IntegrationID: null.StringFrom(integration.Id)}
 		i.memoryCache.Delete(userDeviceID + "_" + integration.Id)
 	}
 
@@ -229,6 +231,9 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 	case constants.AutoPiVendor:
 		appmetrics.AutoPiIngestSuccessOps.Inc()
 	}
+
+	//todo: move to kakfa subscription
+	i.vehicleDataTrackingSvc.GenerateVehicleDataTracking(ctx, *datum, *device, *deviceDefinitionResponse, *apiIntegration)
 
 	return nil
 }

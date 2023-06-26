@@ -24,13 +24,12 @@ import (
 
 // VehicleDataTrackingEventsMissingProperty is an object representing the database table.
 type VehicleDataTrackingEventsMissingProperty struct {
-	EventID       string      `boil:"event_id" json:"event_id" toml:"event_id" yaml:"event_id"`
-	IntegrationID null.String `boil:"integration_id" json:"integration_id,omitempty" toml:"integration_id" yaml:"integration_id,omitempty"`
-	DeviceMakeID  null.String `boil:"device_make_id" json:"device_make_id,omitempty" toml:"device_make_id" yaml:"device_make_id,omitempty"`
+	IntegrationID string      `boil:"integration_id" json:"integration_id" toml:"integration_id" yaml:"integration_id"`
+	DeviceMakeID  string      `boil:"device_make_id" json:"device_make_id" toml:"device_make_id" yaml:"device_make_id"`
+	PropertyID    string      `boil:"property_id" json:"property_id" toml:"property_id" yaml:"property_id"`
 	Model         string      `boil:"model" json:"model" toml:"model" yaml:"model"`
-	Year          int16       `boil:"year" json:"year" toml:"year" yaml:"year"`
+	Year          int         `boil:"year" json:"year" toml:"year" yaml:"year"`
 	Description   null.String `boil:"description" json:"description,omitempty" toml:"description" yaml:"description,omitempty"`
-	Property      null.String `boil:"property" json:"property,omitempty" toml:"property" yaml:"property,omitempty"`
 	Count         int         `boil:"count" json:"count" toml:"count" yaml:"count"`
 	CreatedAt     time.Time   `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 
@@ -39,73 +38,46 @@ type VehicleDataTrackingEventsMissingProperty struct {
 }
 
 var VehicleDataTrackingEventsMissingPropertyColumns = struct {
-	EventID       string
 	IntegrationID string
 	DeviceMakeID  string
+	PropertyID    string
 	Model         string
 	Year          string
 	Description   string
-	Property      string
 	Count         string
 	CreatedAt     string
 }{
-	EventID:       "event_id",
 	IntegrationID: "integration_id",
 	DeviceMakeID:  "device_make_id",
+	PropertyID:    "property_id",
 	Model:         "model",
 	Year:          "year",
 	Description:   "description",
-	Property:      "property",
 	Count:         "count",
 	CreatedAt:     "created_at",
 }
 
 var VehicleDataTrackingEventsMissingPropertyTableColumns = struct {
-	EventID       string
 	IntegrationID string
 	DeviceMakeID  string
+	PropertyID    string
 	Model         string
 	Year          string
 	Description   string
-	Property      string
 	Count         string
 	CreatedAt     string
 }{
-	EventID:       "vehicle_data_tracking_events_missing_properties.event_id",
 	IntegrationID: "vehicle_data_tracking_events_missing_properties.integration_id",
 	DeviceMakeID:  "vehicle_data_tracking_events_missing_properties.device_make_id",
+	PropertyID:    "vehicle_data_tracking_events_missing_properties.property_id",
 	Model:         "vehicle_data_tracking_events_missing_properties.model",
 	Year:          "vehicle_data_tracking_events_missing_properties.year",
 	Description:   "vehicle_data_tracking_events_missing_properties.description",
-	Property:      "vehicle_data_tracking_events_missing_properties.property",
 	Count:         "vehicle_data_tracking_events_missing_properties.count",
 	CreatedAt:     "vehicle_data_tracking_events_missing_properties.created_at",
 }
 
 // Generated where
-
-type whereHelperint16 struct{ field string }
-
-func (w whereHelperint16) EQ(x int16) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.EQ, x) }
-func (w whereHelperint16) NEQ(x int16) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.NEQ, x) }
-func (w whereHelperint16) LT(x int16) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.LT, x) }
-func (w whereHelperint16) LTE(x int16) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.LTE, x) }
-func (w whereHelperint16) GT(x int16) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.GT, x) }
-func (w whereHelperint16) GTE(x int16) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.GTE, x) }
-func (w whereHelperint16) IN(slice []int16) qm.QueryMod {
-	values := make([]interface{}, 0, len(slice))
-	for _, value := range slice {
-		values = append(values, value)
-	}
-	return qm.WhereIn(fmt.Sprintf("%s IN ?", w.field), values...)
-}
-func (w whereHelperint16) NIN(slice []int16) qm.QueryMod {
-	values := make([]interface{}, 0, len(slice))
-	for _, value := range slice {
-		values = append(values, value)
-	}
-	return qm.WhereNotIn(fmt.Sprintf("%s NOT IN ?", w.field), values...)
-}
 
 type whereHelperint struct{ field string }
 
@@ -131,23 +103,21 @@ func (w whereHelperint) NIN(slice []int) qm.QueryMod {
 }
 
 var VehicleDataTrackingEventsMissingPropertyWhere = struct {
-	EventID       whereHelperstring
-	IntegrationID whereHelpernull_String
-	DeviceMakeID  whereHelpernull_String
+	IntegrationID whereHelperstring
+	DeviceMakeID  whereHelperstring
+	PropertyID    whereHelperstring
 	Model         whereHelperstring
-	Year          whereHelperint16
+	Year          whereHelperint
 	Description   whereHelpernull_String
-	Property      whereHelpernull_String
 	Count         whereHelperint
 	CreatedAt     whereHelpertime_Time
 }{
-	EventID:       whereHelperstring{field: "\"device_data_api\".\"vehicle_data_tracking_events_missing_properties\".\"event_id\""},
-	IntegrationID: whereHelpernull_String{field: "\"device_data_api\".\"vehicle_data_tracking_events_missing_properties\".\"integration_id\""},
-	DeviceMakeID:  whereHelpernull_String{field: "\"device_data_api\".\"vehicle_data_tracking_events_missing_properties\".\"device_make_id\""},
+	IntegrationID: whereHelperstring{field: "\"device_data_api\".\"vehicle_data_tracking_events_missing_properties\".\"integration_id\""},
+	DeviceMakeID:  whereHelperstring{field: "\"device_data_api\".\"vehicle_data_tracking_events_missing_properties\".\"device_make_id\""},
+	PropertyID:    whereHelperstring{field: "\"device_data_api\".\"vehicle_data_tracking_events_missing_properties\".\"property_id\""},
 	Model:         whereHelperstring{field: "\"device_data_api\".\"vehicle_data_tracking_events_missing_properties\".\"model\""},
-	Year:          whereHelperint16{field: "\"device_data_api\".\"vehicle_data_tracking_events_missing_properties\".\"year\""},
+	Year:          whereHelperint{field: "\"device_data_api\".\"vehicle_data_tracking_events_missing_properties\".\"year\""},
 	Description:   whereHelpernull_String{field: "\"device_data_api\".\"vehicle_data_tracking_events_missing_properties\".\"description\""},
-	Property:      whereHelpernull_String{field: "\"device_data_api\".\"vehicle_data_tracking_events_missing_properties\".\"property\""},
 	Count:         whereHelperint{field: "\"device_data_api\".\"vehicle_data_tracking_events_missing_properties\".\"count\""},
 	CreatedAt:     whereHelpertime_Time{field: "\"device_data_api\".\"vehicle_data_tracking_events_missing_properties\".\"created_at\""},
 }
@@ -169,10 +139,10 @@ func (*vehicleDataTrackingEventsMissingPropertyR) NewStruct() *vehicleDataTracki
 type vehicleDataTrackingEventsMissingPropertyL struct{}
 
 var (
-	vehicleDataTrackingEventsMissingPropertyAllColumns            = []string{"event_id", "integration_id", "device_make_id", "model", "year", "description", "property", "count", "created_at"}
-	vehicleDataTrackingEventsMissingPropertyColumnsWithoutDefault = []string{"event_id", "model", "year", "count"}
-	vehicleDataTrackingEventsMissingPropertyColumnsWithDefault    = []string{"integration_id", "device_make_id", "description", "property", "created_at"}
-	vehicleDataTrackingEventsMissingPropertyPrimaryKeyColumns     = []string{"event_id"}
+	vehicleDataTrackingEventsMissingPropertyAllColumns            = []string{"integration_id", "device_make_id", "property_id", "model", "year", "description", "count", "created_at"}
+	vehicleDataTrackingEventsMissingPropertyColumnsWithoutDefault = []string{"integration_id", "device_make_id", "property_id", "model", "year", "count"}
+	vehicleDataTrackingEventsMissingPropertyColumnsWithDefault    = []string{"description", "created_at"}
+	vehicleDataTrackingEventsMissingPropertyPrimaryKeyColumns     = []string{"integration_id", "device_make_id", "property_id"}
 	vehicleDataTrackingEventsMissingPropertyGeneratedColumns      = []string{}
 )
 
@@ -467,7 +437,7 @@ func VehicleDataTrackingEventsMissingProperties(mods ...qm.QueryMod) vehicleData
 
 // FindVehicleDataTrackingEventsMissingProperty retrieves a single record by ID with an executor.
 // If selectCols is empty Find will return all columns.
-func FindVehicleDataTrackingEventsMissingProperty(ctx context.Context, exec boil.ContextExecutor, eventID string, selectCols ...string) (*VehicleDataTrackingEventsMissingProperty, error) {
+func FindVehicleDataTrackingEventsMissingProperty(ctx context.Context, exec boil.ContextExecutor, integrationID string, deviceMakeID string, propertyID string, selectCols ...string) (*VehicleDataTrackingEventsMissingProperty, error) {
 	vehicleDataTrackingEventsMissingPropertyObj := &VehicleDataTrackingEventsMissingProperty{}
 
 	sel := "*"
@@ -475,10 +445,10 @@ func FindVehicleDataTrackingEventsMissingProperty(ctx context.Context, exec boil
 		sel = strings.Join(strmangle.IdentQuoteSlice(dialect.LQ, dialect.RQ, selectCols), ",")
 	}
 	query := fmt.Sprintf(
-		"select %s from \"device_data_api\".\"vehicle_data_tracking_events_missing_properties\" where \"event_id\"=$1", sel,
+		"select %s from \"device_data_api\".\"vehicle_data_tracking_events_missing_properties\" where \"integration_id\"=$1 AND \"device_make_id\"=$2 AND \"property_id\"=$3", sel,
 	)
 
-	q := queries.Raw(query, eventID)
+	q := queries.Raw(query, integrationID, deviceMakeID, propertyID)
 
 	err := q.Bind(ctx, exec, vehicleDataTrackingEventsMissingPropertyObj)
 	if err != nil {
@@ -844,7 +814,7 @@ func (o *VehicleDataTrackingEventsMissingProperty) Delete(ctx context.Context, e
 	}
 
 	args := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(o)), vehicleDataTrackingEventsMissingPropertyPrimaryKeyMapping)
-	sql := "DELETE FROM \"device_data_api\".\"vehicle_data_tracking_events_missing_properties\" WHERE \"event_id\"=$1"
+	sql := "DELETE FROM \"device_data_api\".\"vehicle_data_tracking_events_missing_properties\" WHERE \"integration_id\"=$1 AND \"device_make_id\"=$2 AND \"property_id\"=$3"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -941,7 +911,7 @@ func (o VehicleDataTrackingEventsMissingPropertySlice) DeleteAll(ctx context.Con
 // Reload refetches the object from the database
 // using the primary keys with an executor.
 func (o *VehicleDataTrackingEventsMissingProperty) Reload(ctx context.Context, exec boil.ContextExecutor) error {
-	ret, err := FindVehicleDataTrackingEventsMissingProperty(ctx, exec, o.EventID)
+	ret, err := FindVehicleDataTrackingEventsMissingProperty(ctx, exec, o.IntegrationID, o.DeviceMakeID, o.PropertyID)
 	if err != nil {
 		return err
 	}
@@ -980,16 +950,16 @@ func (o *VehicleDataTrackingEventsMissingPropertySlice) ReloadAll(ctx context.Co
 }
 
 // VehicleDataTrackingEventsMissingPropertyExists checks if the VehicleDataTrackingEventsMissingProperty row exists.
-func VehicleDataTrackingEventsMissingPropertyExists(ctx context.Context, exec boil.ContextExecutor, eventID string) (bool, error) {
+func VehicleDataTrackingEventsMissingPropertyExists(ctx context.Context, exec boil.ContextExecutor, integrationID string, deviceMakeID string, propertyID string) (bool, error) {
 	var exists bool
-	sql := "select exists(select 1 from \"device_data_api\".\"vehicle_data_tracking_events_missing_properties\" where \"event_id\"=$1 limit 1)"
+	sql := "select exists(select 1 from \"device_data_api\".\"vehicle_data_tracking_events_missing_properties\" where \"integration_id\"=$1 AND \"device_make_id\"=$2 AND \"property_id\"=$3 limit 1)"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
 		fmt.Fprintln(writer, sql)
-		fmt.Fprintln(writer, eventID)
+		fmt.Fprintln(writer, integrationID, deviceMakeID, propertyID)
 	}
-	row := exec.QueryRowContext(ctx, sql, eventID)
+	row := exec.QueryRowContext(ctx, sql, integrationID, deviceMakeID, propertyID)
 
 	err := row.Scan(&exists)
 	if err != nil {

@@ -48,29 +48,29 @@ VALUES ('maf', 'maf'),
 
 CREATE TABLE IF NOT EXISTS vehicle_data_tracking_events_properties
 (
-    event_id char(27) PRIMARY KEY,
     integration_id char(27),
     device_make_id character(27) ,
+    property_id char(27) null,
     model character varying(100) NOT NULL,
-    year smallint NOT NULL,
+    year int NOT NULL,
     description varchar(500) null,
-    property varchar(500) null,
     count int not null,
-    created_at     timestamptz not null default current_timestamp
-    );
+    created_at     timestamptz not null default current_timestamp,
+    primary key (integration_id, device_make_id, property_id)
+);
 
 CREATE TABLE IF NOT EXISTS vehicle_data_tracking_events_missing_properties
 (
-    event_id char(27) PRIMARY KEY,
     integration_id char(27),
     device_make_id character(27) ,
+    property_id char(27) null,
     model character varying(100) NOT NULL,
-    year smallint NOT NULL,
+    year int NOT NULL,
     description varchar(500) null,
-    property varchar(500) null,
     count int not null,
-    created_at     timestamptz not null default current_timestamp
-    );
+    created_at     timestamptz not null default current_timestamp,
+    primary key (integration_id, device_make_id, property_id)
+);
 
 -- +goose StatementEnd
 
