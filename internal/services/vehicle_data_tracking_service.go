@@ -46,7 +46,7 @@ func (v *vehicleDataTrackingService) GenerateVehicleDataTracking(ctx context.Con
 	if found {
 		eventAvailableProperties = get.(map[string]string)
 	} else {
-		availableProperties, err := models.VehicleDataTrackingProperties().All(ctx, v.db().Reader)
+		availableProperties, err := models.VehicleSignalsTrackingProperties().All(ctx, v.db().Reader)
 		if err != nil {
 			return err
 		}
@@ -64,7 +64,7 @@ func (v *vehicleDataTrackingService) GenerateVehicleDataTracking(ctx context.Con
 
 	for key, value := range eventAvailableProperties {
 		if _, ok := data[key]; ok {
-			eventProperties := &models.VehicleDataTrackingEventsProperty{
+			eventProperties := &models.VehicleSignalsTrackingEventsProperty{
 				IntegrationID: integration.Id,
 				DeviceMakeID:  deviceDefinition.Make.Id,
 				PropertyID:    value,
@@ -75,14 +75,14 @@ func (v *vehicleDataTrackingService) GenerateVehicleDataTracking(ctx context.Con
 
 			if err := eventProperties.Upsert(ctx,
 				v.db().Writer, true,
-				[]string{models.VehicleDataTrackingEventsPropertyColumns.IntegrationID,
-					models.VehicleDataTrackingEventsPropertyColumns.DeviceMakeID,
-					models.VehicleDataTrackingEventsPropertyColumns.PropertyID},
+				[]string{models.VehicleSignalsTrackingEventsPropertyColumns.IntegrationID,
+					models.VehicleSignalsTrackingEventsPropertyColumns.DeviceMakeID,
+					models.VehicleSignalsTrackingEventsPropertyColumns.PropertyID},
 				boil.Infer(), boil.Infer()); err != nil {
 				return fmt.Errorf("error upserting VehicleDataTrackingEventsProperty: %w", err)
 			}
 
-			eventTracking, err := models.FindVehicleDataTrackingEventsMissingProperty(ctx, v.db().Writer, integration.Id, deviceDefinition.Make.Id, value)
+			eventTracking, err := models.FindVehicleSignalsTrackingEventsMissingProperty(ctx, v.db().Writer, integration.Id, deviceDefinition.Make.Id, value)
 			if err == nil {
 				eventTracking.Count++
 				_, err = eventTracking.Update(ctx, v.db().Writer, boil.Infer())
@@ -92,7 +92,7 @@ func (v *vehicleDataTrackingService) GenerateVehicleDataTracking(ctx context.Con
 			}
 
 		} else {
-			eventMissingProperties := models.VehicleDataTrackingEventsMissingProperty{
+			eventMissingProperties := models.VehicleSignalsTrackingEventsMissingProperty{
 				IntegrationID: integration.Id,
 				DeviceMakeID:  deviceDefinition.Make.Id,
 				PropertyID:    value,
@@ -103,14 +103,14 @@ func (v *vehicleDataTrackingService) GenerateVehicleDataTracking(ctx context.Con
 
 			if err := eventMissingProperties.Upsert(ctx,
 				v.db().Writer, true,
-				[]string{models.VehicleDataTrackingEventsMissingPropertyColumns.IntegrationID,
-					models.VehicleDataTrackingEventsMissingPropertyColumns.DeviceMakeID,
-					models.VehicleDataTrackingEventsMissingPropertyColumns.PropertyID},
+				[]string{models.VehicleSignalsTrackingEventsMissingPropertyColumns.IntegrationID,
+					models.VehicleSignalsTrackingEventsMissingPropertyColumns.DeviceMakeID,
+					models.VehicleSignalsTrackingEventsMissingPropertyColumns.PropertyID},
 				boil.Infer(), boil.Infer()); err != nil {
 				return fmt.Errorf("error upserting eventMissingProperties: %w", err)
 			}
 
-			eventTracking, err := models.FindVehicleDataTrackingEventsMissingProperty(ctx, v.db().Writer, integration.Id, deviceDefinition.Make.Id, value)
+			eventTracking, err := models.FindVehicleSignalsTrackingEventsMissingProperty(ctx, v.db().Writer, integration.Id, deviceDefinition.Make.Id, value)
 			if err == nil {
 				eventTracking.Count++
 				_, err = eventTracking.Update(ctx, v.db().Writer, boil.Infer())

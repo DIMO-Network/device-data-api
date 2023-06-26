@@ -4,13 +4,13 @@
 package models
 
 var TableNames = struct {
-	UserDeviceData                             string
-	VehicleDataTrackingEventsMissingProperties string
-	VehicleDataTrackingEventsProperties        string
-	VehicleDataTrackingProperties              string
+	UserDeviceData                                string
+	VehicleSignalsTrackingEventsMissingProperties string
+	VehicleSignalsTrackingEventsProperties        string
+	VehicleSignalsTrackingProperties              string
 }{
 	UserDeviceData: "user_device_data",
-	VehicleDataTrackingEventsMissingProperties: "vehicle_data_tracking_events_missing_properties",
-	VehicleDataTrackingEventsProperties:        "vehicle_data_tracking_events_properties",
-	VehicleDataTrackingProperties:              "vehicle_data_tracking_properties",
+	VehicleSignalsTrackingEventsMissingProperties: "vehicle_signals_tracking_events_missing_properties",
+	VehicleSignalsTrackingEventsProperties:        "vehicle_signals_tracking_events_properties",
+	VehicleSignalsTrackingProperties:              "vehicle_signals_tracking_properties",
 }
