@@ -3,13 +3,15 @@ package services
 import (
 	"context"
 
+	ddgrpc "github.com/DIMO-Network/device-definitions-api/pkg/grpc"
+	pb "github.com/DIMO-Network/devices-api/pkg/grpc"
 	"github.com/DIMO-Network/shared/db"
 	"github.com/rs/zerolog"
 )
 
 //go:generate mockgen -source vehicle_data_tracking_service.go -destination mocks/vehicle_data_tracking_service_mock.go
 type VehicleDataTrackingService interface {
-	GenerateVehicleDataTracking(ctx context.Context) error
+	GenerateVehicleDataTracking(ctx context.Context, userDevice pb.UserDevice, deviceDefinition ddgrpc.GetDeviceDefinitionItemResponse, integration pb.UserDeviceIntegration) error
 }
 
 func NewVehicleDataTrackingService(db func() *db.ReaderWriter,
@@ -31,6 +33,6 @@ type vehicleDataTrackingService struct {
 	deviceSvc    DeviceAPIService
 }
 
-func (v *vehicleDataTrackingService) GenerateVehicleDataTracking(ctx context.Context) error {
+func (v *vehicleDataTrackingService) GenerateVehicleDataTracking(ctx context.Context, userDevice pb.UserDevice, deviceDefinition ddgrpc.GetDeviceDefinitionItemResponse, integration pb.UserDeviceIntegration) error {
 	return nil
 }
