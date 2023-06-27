@@ -55,7 +55,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 	})
 
 	app.Get("/", healthCheck)
-	app.Get("/v1/docs/*", swagger.HandlerDefault)
+	app.Get("/v1/swagger/*", swagger.HandlerDefault)
 
 	// secured paths
 	jwtAuth := jwtware.New(jwtware.Config{
