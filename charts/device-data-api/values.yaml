@@ -20,6 +20,9 @@ securityContext:
   capabilities:
     drop:
       - all
+cronJob:
+  enabled: false
+  schedule: 0 0 * * 0
 env:
   ENVIRONMENT: dev
   PORT: '8080'

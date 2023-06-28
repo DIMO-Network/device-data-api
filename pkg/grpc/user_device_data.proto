@@ -12,8 +12,7 @@ service UseDeviceDataService {
 }
 
 message SignalRequest {
-  google.protobuf.Timestamp date_from = 1;
-  google.protobuf.Timestamp date_to = 2;
+  string date = 1;
 }
 
 message SignalResponse {
@@ -22,8 +21,8 @@ message SignalResponse {
 
 message SignalItemResponse {
   string property = 1;
-  double value = 2;
-  double  missing_value = 3;
+  int32 value = 2;
+  int32  missing_value = 3;
 }
 
 message UserDeviceDataRequest {

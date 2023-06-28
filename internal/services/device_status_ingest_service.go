@@ -31,18 +31,17 @@ const (
 )
 
 type DeviceStatusIngestService struct {
-	db                     func() *db.ReaderWriter
-	log                    *zerolog.Logger
-	eventService           EventService
-	deviceDefSvc           DeviceDefinitionsAPIService
-	integrations           []*grpc.Integration
-	autoPiSvc              AutoPiAPIService
-	deviceSvc              DeviceAPIService
-	vehicleDataTrackingSvc VehicleDataTrackingService
-	memoryCache            *gocache.Cache
+	db           func() *db.ReaderWriter
+	log          *zerolog.Logger
+	eventService EventService
+	deviceDefSvc DeviceDefinitionsAPIService
+	integrations []*grpc.Integration
+	autoPiSvc    AutoPiAPIService
+	deviceSvc    DeviceAPIService
+	memoryCache  *gocache.Cache
 }
 
-func NewDeviceStatusIngestService(db func() *db.ReaderWriter, log *zerolog.Logger, eventService EventService, ddSvc DeviceDefinitionsAPIService, autoPiSvc AutoPiAPIService, deviceSvc DeviceAPIService, vehicleDataTrackingSvc VehicleDataTrackingService) *DeviceStatusIngestService {
+func NewDeviceStatusIngestService(db func() *db.ReaderWriter, log *zerolog.Logger, eventService EventService, ddSvc DeviceDefinitionsAPIService, autoPiSvc AutoPiAPIService, deviceSvc DeviceAPIService) *DeviceStatusIngestService {
 	// Cache the list of integrations.
 	integrations, err := ddSvc.GetIntegrations(context.Background())
 	if err != nil {
@@ -51,15 +50,14 @@ func NewDeviceStatusIngestService(db func() *db.ReaderWriter, log *zerolog.Logge
 	c := gocache.New(30*time.Minute, 60*time.Minute) // band-aid on top of band-aids
 
 	return &DeviceStatusIngestService{
-		db:                     db,
-		log:                    log,
-		deviceDefSvc:           ddSvc,
-		eventService:           eventService,
-		integrations:           integrations,
-		autoPiSvc:              autoPiSvc,
-		deviceSvc:              deviceSvc,
-		memoryCache:            c,
-		vehicleDataTrackingSvc: vehicleDataTrackingSvc,
+		db:           db,
+		log:          log,
+		deviceDefSvc: ddSvc,
+		eventService: eventService,
+		integrations: integrations,
+		autoPiSvc:    autoPiSvc,
+		deviceSvc:    deviceSvc,
+		memoryCache:  c,
 	}
 }
 
@@ -230,12 +228,6 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 		appmetrics.SmartcarIngestSuccessOps.Inc()
 	case constants.AutoPiVendor:
 		appmetrics.AutoPiIngestSuccessOps.Inc()
-	}
-
-	//todo: move to kakfa subscription
-	err = i.vehicleDataTrackingSvc.GenerateVehicleDataTracking(ctx, *datum, *deviceDefinitionResponse, *apiIntegration)
-	if err != nil {
-		return fmt.Errorf("error upserting datum: %w", err)
 	}
 
 	return nil

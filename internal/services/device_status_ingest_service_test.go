@@ -98,8 +98,7 @@ func TestAutoPiStatus(t *testing.T) {
 	integs, _ := deviceDefSvc.GetIntegrations(ctx)
 	integrationID := integs[0].Id
 
-	vehicleDataTrackingSvc := NewVehicleDataTrackingService(pdb.DBS, &logger)
-	ingest := NewDeviceStatusIngestService(pdb.DBS, &logger, mes, deviceDefSvc, autoPISvc, deviceSvc, vehicleDataTrackingSvc)
+	ingest := NewDeviceStatusIngestService(pdb.DBS, &logger, mes, deviceDefSvc, autoPISvc, deviceSvc)
 
 	dat1 := models.UserDeviceDatum{
 		UserDeviceID:        userDeviceID,

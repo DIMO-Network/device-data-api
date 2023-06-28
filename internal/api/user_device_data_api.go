@@ -56,7 +56,25 @@ func (s *userDeviceData) GetUserDeviceData(ctx context.Context, req *pb.UserDevi
 }
 
 func (s *userDeviceData) GetSignals(ctx context.Context, req *pb.SignalRequest) (*pb.SignalResponse, error) {
-	return nil, nil
+	events, err := models.ReportVehicleSignalsEventsProperties(
+		models.ReportVehicleSignalsEventsPropertyWhere.DateID.EQ(req.Date),
+	).All(ctx, s.dbs().Reader)
+
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Internal error.")
+	}
+
+	result := &pb.SignalResponse{}
+
+	for _, event := range events {
+		result.Items = append(result.Items, &pb.SignalItemResponse{
+			Property:     event.PropertyID,
+			Value:        int32(event.Count),
+			MissingValue: 0,
+		})
+	}
+
+	return result, nil
 }
 
 func prepareDeviceStatusInformation(ctx context.Context, ddSvc services.DeviceDefinitionsAPIService, deviceData models.UserDeviceDatumSlice, deviceDefinitionID string, deviceStyleID null.String, privilegeIDs []int64) *pb.UserDeviceDataResponse {

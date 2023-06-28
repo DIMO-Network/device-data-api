@@ -4,7 +4,7 @@ SELECT 'up SQL query';
 
 SET search_path = device_data_api, public;
 
-CREATE TABLE IF NOT EXISTS vehicle_signals_tracking_properties
+CREATE TABLE IF NOT EXISTS vehicle_signals_available_properties
 (
     id char(27) PRIMARY KEY,
     name varchar(200) not null,
@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS vehicle_signals_tracking_properties
     updated_at     timestamptz not null default current_timestamp
     );
 
-INSERT INTO vehicle_signals_tracking_properties(Id, name)
+INSERT INTO vehicle_signals_available_properties(Id, name)
 VALUES ('maf', 'maf'),
        ('vin', 'vin'),
        ('speed', 'speed'),
@@ -44,31 +44,19 @@ VALUES ('maf', 'maf'),
        ('ambientTemp', 'ambientTemp'),
        ('range', 'range');
 
-
-CREATE TABLE IF NOT EXISTS vehicle_signals_tracking_events_properties
+CREATE TABLE IF NOT EXISTS report_vehicle_signals_events_properties
 (
+    date_id char(27),
     integration_id char(27),
     device_make_id character(27) ,
     property_id char(27) null,
     model character varying(100) NOT NULL,
     year int NOT NULL,
-    description varchar(500) null,
+    device_definition_id character(27) NOT NULL,
+    device_make text COLLATE pg_catalog."default" NOT NULL,
     count int not null,
     created_at     timestamptz not null default current_timestamp,
-    primary key (integration_id, device_make_id, property_id)
-    );
-
-CREATE TABLE IF NOT EXISTS vehicle_signals_tracking_events_missing_properties
-(
-    integration_id char(27),
-    device_make_id character(27) ,
-    property_id char(27) null,
-    model character varying(100) NOT NULL,
-    year int NOT NULL,
-    description varchar(500) null,
-    count int not null,
-    created_at     timestamptz not null default current_timestamp,
-    primary key (integration_id, device_make_id, property_id)
+    primary key (date_id, integration_id, device_make_id, property_id, model, year)
     );
 
 -- +goose StatementEnd
@@ -78,7 +66,6 @@ CREATE TABLE IF NOT EXISTS vehicle_signals_tracking_events_missing_properties
 SELECT 'down SQL query';
 
 SET search_path = device_data_api, public;
-DROP TABLE vehicle_signals_tracking_properties;
-DROP TABLE vehicle_signals_tracking_events_properties;
-DROP TABLE vehicle_signals_tracking_events_missing_properties;
+DROP TABLE vehicle_signals_available_properties;
+DROP TABLE report_vehicle_signals_events_properties;
 -- +goose StatementEnd
