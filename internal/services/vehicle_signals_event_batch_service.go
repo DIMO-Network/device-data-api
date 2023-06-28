@@ -4,8 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	pb "github.com/DIMO-Network/devices-api/pkg/grpc"
+
 	"time"
+
+	pb "github.com/DIMO-Network/devices-api/pkg/grpc"
 
 	models "github.com/DIMO-Network/device-data-api/models"
 	"github.com/DIMO-Network/shared/db"

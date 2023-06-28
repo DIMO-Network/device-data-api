@@ -22,6 +22,8 @@ import (
 	"github.com/tidwall/gjson"
 	"github.com/volatiletech/null/v8"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
 func NewUserDeviceData(dbs func() *db.ReaderWriter, logger *zerolog.Logger, deviceDefSvc services.DeviceDefinitionsAPIService) pb.UseDeviceDataServiceServer {
@@ -56,9 +58,26 @@ func (s *userDeviceData) GetUserDeviceData(ctx context.Context, req *pb.UserDevi
 }
 
 func (s *userDeviceData) GetSignals(ctx context.Context, req *pb.SignalRequest) (*pb.SignalResponse, error) {
-	events, err := models.ReportVehicleSignalsEventsProperties(
-		models.ReportVehicleSignalsEventsPropertyWhere.DateID.EQ(req.Date),
-	).All(ctx, s.dbs().Reader)
+
+	fromDate := req.FromDate.AsTime().Format("20060102")
+	toDate := req.ToDate.AsTime().Format("20060102")
+
+	query := qm.Where(
+		models.ReportVehicleSignalsEventsPropertyColumns.IntegrationID+" = ?",
+		req.IntegrationId,
+		qm.WhereIn(models.ReportVehicleSignalsEventsPropertyColumns.DateID, []string{fromDate, toDate}),
+	)
+
+	events, err := models.ReportVehicleSignalsEventsProperties(query).All(ctx, s.dbs().Reader)
+
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Internal error.")
+	}
+
+	count, err := models.UserDeviceData(
+		qm.Where("updated_at > ? AND updated_at < ?", req.FromDate, req.ToDate),
+		qm.Where("integration_id = ?", req.IntegrationId),
+	).Count(ctx, s.dbs().Reader)
 
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Internal error.")
@@ -69,8 +88,8 @@ func (s *userDeviceData) GetSignals(ctx context.Context, req *pb.SignalRequest) 
 	for _, event := range events {
 		result.Items = append(result.Items, &pb.SignalItemResponse{
 			Property:     event.PropertyID,
-			Value:        int32(event.Count),
-			MissingValue: 0,
+			RequestCount: int32(event.Count),
+			TotalCount:   int32(count),
 		})
 	}
 
