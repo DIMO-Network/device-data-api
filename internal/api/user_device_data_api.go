@@ -62,34 +62,43 @@ func (s *userDeviceData) GetSignals(ctx context.Context, req *pb.SignalRequest) 
 	fromDate := req.FromDate.AsTime().Format("20060102")
 	toDate := req.ToDate.AsTime().Format("20060102")
 
-	query := qm.Where(
+	queryEventProperty := qm.Where(
 		models.ReportVehicleSignalsEventsPropertyColumns.IntegrationID+" = ?",
 		req.IntegrationId,
 		qm.WhereIn(models.ReportVehicleSignalsEventsPropertyColumns.DateID, []string{fromDate, toDate}),
 	)
 
-	events, err := models.ReportVehicleSignalsEventsProperties(query).All(ctx, s.dbs().Reader)
+	eventProperties, err := models.ReportVehicleSignalsEventsProperties(queryEventProperty).All(ctx, s.dbs().Reader)
 
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Internal error.")
 	}
 
-	count, err := models.UserDeviceData(
-		qm.Where("updated_at > ? AND updated_at < ?", req.FromDate, req.ToDate),
-		qm.Where("integration_id = ?", req.IntegrationId),
-	).Count(ctx, s.dbs().Reader)
+	queryEvent := qm.Where(
+		models.ReportVehicleSignalsEventColumns.IntegrationID+" = ?",
+		req.IntegrationId,
+		qm.WhereIn(models.ReportVehicleSignalsEventColumns.DateID, []string{fromDate, toDate}),
+	)
+
+	events, err := models.ReportVehicleSignalsEvents(queryEvent).All(ctx, s.dbs().Reader)
 
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Internal error.")
 	}
 
 	result := &pb.SignalResponse{}
-
 	for _, event := range events {
+		requestCount := 0
+		for _, eventProperty := range eventProperties {
+			if eventProperty.PropertyID == event.PropertyID {
+				requestCount = eventProperty.Count
+				break
+			}
+		}
 		result.Items = append(result.Items, &pb.SignalItemResponse{
 			Property:     event.PropertyID,
-			RequestCount: int32(event.Count),
-			TotalCount:   int32(count),
+			RequestCount: int32(requestCount),
+			TotalCount:   int32(event.Count),
 		})
 	}
 

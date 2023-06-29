@@ -59,6 +59,22 @@ CREATE TABLE IF NOT EXISTS report_vehicle_signals_events_properties
     primary key (date_id, integration_id, device_make_id, property_id, model, year)
     );
 
+
+CREATE TABLE IF NOT EXISTS report_vehicle_signals_events
+(
+    date_id char(27),
+    integration_id char(27),
+    device_make_id character(27) ,
+    property_id char(27) null,
+    model character varying(100) NOT NULL,
+    year int NOT NULL,
+    device_definition_id character(27) NOT NULL,
+    device_make text COLLATE pg_catalog."default" NOT NULL,
+    count int not null,
+    created_at     timestamptz not null default current_timestamp,
+    primary key (date_id, integration_id, device_make_id, property_id, model, year)
+    );
+
 -- +goose StatementEnd
 
 -- +goose Down
@@ -68,4 +84,6 @@ SELECT 'down SQL query';
 SET search_path = device_data_api, public;
 DROP TABLE vehicle_signals_available_properties;
 DROP TABLE report_vehicle_signals_events_properties;
+DROP TABLE report_vehicle_signals_events;
+
 -- +goose StatementEnd
