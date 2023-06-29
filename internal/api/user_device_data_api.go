@@ -22,6 +22,8 @@ import (
 	"github.com/tidwall/gjson"
 	"github.com/volatiletech/null/v8"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
 func NewUserDeviceData(dbs func() *db.ReaderWriter, logger *zerolog.Logger, deviceDefSvc services.DeviceDefinitionsAPIService) pb.UseDeviceDataServiceServer {
@@ -53,6 +55,54 @@ func (s *userDeviceData) GetUserDeviceData(ctx context.Context, req *pb.UserDevi
 		null.StringFrom(req.DeviceStyleId), []int64{constants.NonLocationData, constants.CurrentLocation, constants.AllTimeLocation})
 
 	return ds, nil
+}
+
+func (s *userDeviceData) GetSignals(ctx context.Context, req *pb.SignalRequest) (*pb.SignalResponse, error) {
+
+	fromDate := req.FromDate.AsTime().Format("20060102")
+	toDate := req.ToDate.AsTime().Format("20060102")
+
+	queryEventProperty := qm.Where(
+		models.ReportVehicleSignalsEventsPropertyColumns.IntegrationID+" = ?",
+		req.IntegrationId,
+		qm.WhereIn(models.ReportVehicleSignalsEventsPropertyColumns.DateID, []string{fromDate, toDate}),
+	)
+
+	eventProperties, err := models.ReportVehicleSignalsEventsProperties(queryEventProperty).All(ctx, s.dbs().Reader)
+
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Internal error.")
+	}
+
+	queryEvent := qm.Where(
+		models.ReportVehicleSignalsEventColumns.IntegrationID+" = ?",
+		req.IntegrationId,
+		qm.WhereIn(models.ReportVehicleSignalsEventColumns.DateID, []string{fromDate, toDate}),
+	)
+
+	events, err := models.ReportVehicleSignalsEvents(queryEvent).All(ctx, s.dbs().Reader)
+
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Internal error.")
+	}
+
+	result := &pb.SignalResponse{}
+	for _, event := range events {
+		requestCount := 0
+		for _, eventProperty := range eventProperties {
+			if eventProperty.PropertyID == event.PropertyID {
+				requestCount = eventProperty.Count
+				break
+			}
+		}
+		result.Items = append(result.Items, &pb.SignalItemResponse{
+			Property:     event.PropertyID,
+			RequestCount: int32(requestCount),
+			TotalCount:   int32(event.Count),
+		})
+	}
+
+	return result, nil
 }
 
 func prepareDeviceStatusInformation(ctx context.Context, ddSvc services.DeviceDefinitionsAPIService, deviceData models.UserDeviceDatumSlice, deviceDefinitionID string, deviceStyleID null.String, privilegeIDs []int64) *pb.UserDeviceDataResponse {

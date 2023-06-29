@@ -23,6 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type UseDeviceDataServiceClient interface {
 	GetUserDeviceData(ctx context.Context, in *UserDeviceDataRequest, opts ...grpc.CallOption) (*UserDeviceDataResponse, error)
+	GetSignals(ctx context.Context, in *SignalRequest, opts ...grpc.CallOption) (*SignalResponse, error)
 }
 
 type useDeviceDataServiceClient struct {
@@ -42,11 +43,21 @@ func (c *useDeviceDataServiceClient) GetUserDeviceData(ctx context.Context, in *
 	return out, nil
 }
 
+func (c *useDeviceDataServiceClient) GetSignals(ctx context.Context, in *SignalRequest, opts ...grpc.CallOption) (*SignalResponse, error) {
+	out := new(SignalResponse)
+	err := c.cc.Invoke(ctx, "/grpc.UseDeviceDataService/GetSignals", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UseDeviceDataServiceServer is the server API for UseDeviceDataService service.
 // All implementations must embed UnimplementedUseDeviceDataServiceServer
 // for forward compatibility
 type UseDeviceDataServiceServer interface {
 	GetUserDeviceData(context.Context, *UserDeviceDataRequest) (*UserDeviceDataResponse, error)
+	GetSignals(context.Context, *SignalRequest) (*SignalResponse, error)
 	mustEmbedUnimplementedUseDeviceDataServiceServer()
 }
 
@@ -56,6 +67,9 @@ type UnimplementedUseDeviceDataServiceServer struct {
 
 func (UnimplementedUseDeviceDataServiceServer) GetUserDeviceData(context.Context, *UserDeviceDataRequest) (*UserDeviceDataResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUserDeviceData not implemented")
+}
+func (UnimplementedUseDeviceDataServiceServer) GetSignals(context.Context, *SignalRequest) (*SignalResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSignals not implemented")
 }
 func (UnimplementedUseDeviceDataServiceServer) mustEmbedUnimplementedUseDeviceDataServiceServer() {}
 
@@ -88,6 +102,24 @@ func _UseDeviceDataService_GetUserDeviceData_Handler(srv interface{}, ctx contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UseDeviceDataService_GetSignals_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SignalRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UseDeviceDataServiceServer).GetSignals(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/grpc.UseDeviceDataService/GetSignals",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UseDeviceDataServiceServer).GetSignals(ctx, req.(*SignalRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UseDeviceDataService_ServiceDesc is the grpc.ServiceDesc for UseDeviceDataService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -98,6 +130,10 @@ var UseDeviceDataService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetUserDeviceData",
 			Handler:    _UseDeviceDataService_GetUserDeviceData_Handler,
+		},
+		{
+			MethodName: "GetSignals",
+			Handler:    _UseDeviceDataService_GetSignals_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

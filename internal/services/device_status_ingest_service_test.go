@@ -104,7 +104,7 @@ func TestAutoPiStatus(t *testing.T) {
 		UserDeviceID:        userDeviceID,
 		Signals:             null.JSONFrom([]byte(`{"signal_name_version_1": {"timestamp": "xx", "value": 23.4}}`)),
 		LastOdometerEventAt: null.TimeFrom(time.Now().Add(-10 * time.Second)),
-		IntegrationID:       integrationID,
+		IntegrationID:       null.StringFrom(integrationID),
 	}
 
 	input := &DeviceStatusEvent{

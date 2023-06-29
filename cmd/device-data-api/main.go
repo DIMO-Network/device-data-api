@@ -74,14 +74,14 @@ func main() {
 	subcommands.Register(subcommands.FlagsCommand(), "")
 	subcommands.Register(subcommands.CommandsCommand(), "")
 
+	deviceDefsSvc, deviceDefsConn := deps.getDeviceDefinitionService()
+	defer deviceDefsConn.Close()
+	devicesSvc, devicesConn := deps.getDeviceService()
+	defer devicesConn.Close()
+
 	// start the actual stuff
 	if len(os.Args) == 1 {
 		startPrometheus(logger)
-		deviceDefsSvc, deviceDefsConn := deps.getDeviceDefinitionService()
-		defer deviceDefsConn.Close()
-		devicesSvc, devicesConn := deps.getDeviceService()
-		defer devicesConn.Close()
-
 		eventService := services.NewEventService(&logger, &settings, deps.getKafkaProducer())
 
 		startDeviceStatusConsumer(logger, &settings, pdb, eventService, deviceDefsSvc, devicesSvc)
@@ -89,6 +89,7 @@ func main() {
 		startWebAPI(logger, &settings, pdb.DBS, deviceDefsSvc, devicesSvc)
 	} else {
 		subcommands.Register(&migrateDBCmd{logger: logger, settings: settings}, "database")
+		subcommands.Register(&vehicleSignalsEventBatchServiceCmd{db: pdb.DBS, logger: logger, deviceDefSvc: deviceDefsSvc, deviceSvc: devicesSvc}, "events")
 
 		flag.Parse()
 		os.Exit(int(subcommands.Execute(ctx)))

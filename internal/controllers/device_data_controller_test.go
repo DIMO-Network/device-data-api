@@ -161,7 +161,7 @@ func TestUserDevicesController_GetUserDeviceStatus(t *testing.T) {
 			CreatedAt:           time.Now().Add(time.Minute * -5),
 			UpdatedAt:           time.Now().Add(time.Minute * -5),
 			LastOdometerEventAt: null.TimeFrom(time.Now().Add(time.Minute * -5)),
-			IntegrationID:       smartCarInt.Id,
+			IntegrationID:       null.StringFrom(smartCarInt.Id),
 		}
 		err := smartCarData.Insert(ctx, pdb.DBS().Writer, boil.Infer())
 		assert.NoError(t, err)
@@ -172,7 +172,7 @@ func TestUserDevicesController_GetUserDeviceStatus(t *testing.T) {
 				"longitude": { "value": -117.91, "timestamp": "2023-04-27T15:57:37Z" } }`)),
 			CreatedAt:     time.Now().Add(time.Minute * -1),
 			UpdatedAt:     time.Now().Add(time.Minute * -1),
-			IntegrationID: autoPiInteg.Id,
+			IntegrationID: null.StringFrom(autoPiInteg.Id),
 		}
 		err = autoPiData.Insert(ctx, pdb.DBS().Writer, boil.Infer())
 		assert.NoError(t, err)
@@ -212,7 +212,7 @@ func Test_sortBySignalValueDesc(t *testing.T) {
   }}`)),
 			CreatedAt:     time.Now(),
 			UpdatedAt:     time.Now(),
-			IntegrationID: "123",
+			IntegrationID: null.StringFrom("123"),
 		},
 		&models.UserDeviceDatum{
 			UserDeviceID: "123",
@@ -222,7 +222,7 @@ func Test_sortBySignalValueDesc(t *testing.T) {
   }}`)),
 			CreatedAt:     time.Now(),
 			UpdatedAt:     time.Now(),
-			IntegrationID: "345",
+			IntegrationID: null.StringFrom("345"),
 		},
 	}
 	// validate setup is ok
@@ -244,7 +244,7 @@ func Test_sortBySignalTimestampDesc(t *testing.T) {
   }}`)),
 			CreatedAt:     time.Now(),
 			UpdatedAt:     time.Now(),
-			IntegrationID: "123",
+			IntegrationID: null.StringFrom("123"),
 		},
 		&models.UserDeviceDatum{
 			UserDeviceID: "123",
@@ -254,7 +254,7 @@ func Test_sortBySignalTimestampDesc(t *testing.T) {
   }}`)),
 			CreatedAt:     time.Now(),
 			UpdatedAt:     time.Now(),
-			IntegrationID: "345",
+			IntegrationID: null.StringFrom("345"),
 		},
 	}
 	// validate setup is ok

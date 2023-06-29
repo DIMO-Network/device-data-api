@@ -8,6 +8,23 @@ package grpc;
 
 service UseDeviceDataService {
   rpc GetUserDeviceData(UserDeviceDataRequest) returns (UserDeviceDataResponse);
+  rpc GetSignals(SignalRequest) returns (SignalResponse);
+}
+
+message SignalRequest {
+  string integration_id = 1;
+  google.protobuf.Timestamp from_date = 2;
+  google.protobuf.Timestamp to_date = 3;
+}
+
+message SignalResponse {
+  repeated SignalItemResponse items = 1;
+}
+
+message SignalItemResponse {
+  string property = 1;
+  int32 total_count = 2;
+  int32 request_count = 3;
 }
 
 message UserDeviceDataRequest {
