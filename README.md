@@ -36,7 +36,7 @@ If messages are not acknowledged within 5 minutes, they will be resent (this val
 
 ## gRPC library
 
-To regenerate grpc code, if you make changes to the .proto files:
+To regenerate gRPC code, if you make changes to the .proto files:
 
 ```
 protoc --go_out=. --go_opt=paths=source_relative \
