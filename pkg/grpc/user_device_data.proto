@@ -6,7 +6,7 @@ option go_package = "github.com/DIMO-Network/device-data-api/pkg/grpc";
 
 package grpc;
 
-service UseDeviceDataService {
+service UserDeviceDataService {
   rpc GetUserDeviceData(UserDeviceDataRequest) returns (UserDeviceDataResponse);
   rpc GetSignals(SignalRequest) returns (SignalResponse);
 }
