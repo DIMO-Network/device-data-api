@@ -10,8 +10,8 @@ DB:
   NAME: device_data_api
   MAX_OPEN_CONNECTIONS: 5
   MAX_IDLE_CONNECTIONS: 5
-JWT_KEY_SET_URL: https://auth.dimo.zone/keys # prod
-#JWT_KEY_SET_URL: http://127.0.0.1:5556/keys
+JWT_KEY_SET_URL: https://auth.dev.dimo.zone/keys # dev
+#JWT_KEY_SET_URL: http://127.0.0.1:5556/keys # local
 
 AUTO_PI_API_TOKEN:
 AUTO_PI_API_URL:
