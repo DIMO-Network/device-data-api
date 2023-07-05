@@ -26,12 +26,12 @@ import (
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
-func NewUserDeviceData(dbs func() *db.ReaderWriter, logger *zerolog.Logger, deviceDefSvc services.DeviceDefinitionsAPIService) pb.UseDeviceDataServiceServer {
+func NewUserDeviceData(dbs func() *db.ReaderWriter, logger *zerolog.Logger, deviceDefSvc services.DeviceDefinitionsAPIService) pb.UserDeviceDataServiceServer {
 	return &userDeviceData{dbs: dbs, logger: logger, deviceDefSvc: deviceDefSvc}
 }
 
 type userDeviceData struct {
-	pb.UseDeviceDataServiceServer
+	pb.UserDeviceDataServiceServer
 	dbs          func() *db.ReaderWriter
 	logger       *zerolog.Logger
 	deviceDefSvc services.DeviceDefinitionsAPIService
