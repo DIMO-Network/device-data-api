@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/device-data-api.iml" filepath="$PROJECT_DIR$/.idea/device-data-api.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../vehicle-signal-decoding/.idea/vehicle-signal-decoding.iml" filepath="$PROJECT_DIR$/../vehicle-signal-decoding/.idea/vehicle-signal-decoding.iml" />
     </modules>
   </component>
 </project>
