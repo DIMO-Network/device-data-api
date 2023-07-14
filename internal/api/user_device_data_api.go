@@ -2,6 +2,8 @@ package api
 
 import (
 	"context"
+	"database/sql"
+	"github.com/pkg/errors"
 	"strconv"
 
 	"sort"
@@ -43,7 +45,7 @@ func (s *userDeviceData) GetUserDeviceData(ctx context.Context, req *pb.UserDevi
 		models.UserDeviceDatumWhere.Signals.IsNotNull(),
 		models.UserDeviceDatumWhere.UpdatedAt.GT(time.Now().Add(-14*24*time.Hour)),
 	).All(ctx, s.dbs().Reader)
-	if err != nil {
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, status.Error(codes.Internal, "Internal error.")
 	}
 

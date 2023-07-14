@@ -34,6 +34,7 @@ func (p *vehicleSignalsEventBatchServiceCmd) SetFlags(f *flag.FlagSet) {
 }
 
 func (p *vehicleSignalsEventBatchServiceCmd) Execute(ctx context.Context, _ *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+	p.logger.Info().Msg("running batch report for vehicle signals")
 	batchSrv := services.NewVehicleSignalsEventBatchService(p.db, &p.logger, p.deviceDefSvc, p.deviceSvc)
 	err := batchSrv.GenerateVehicleDataTracking(ctx)
 	if err != nil {

@@ -62,19 +62,21 @@ func (v *vehicleSignalsEventBatchService) GenerateVehicleDataTracking(ctx contex
 	}
 
 	now := time.Now()
-	yesterday := now.AddDate(0, 0, -1)
+	yesterday := now.AddDate(0, 0, -7)
 
 	fromTime := time.Date(yesterday.Year(), yesterday.Month(), yesterday.Day(), 0, 0, 0, 0, yesterday.Location())
-	toTime := time.Date(yesterday.Year(), yesterday.Month(), yesterday.Day(), 23, 59, 59, 0, yesterday.Location())
+	//toTime := time.Date(yesterday.Year(), yesterday.Month(), yesterday.Day(), 23, 59, 59, 0, yesterday.Location())
 
 	deviceDataEvents, err := models.UserDeviceData(
 		models.UserDeviceDatumWhere.Signals.IsNotNull(),
 		models.UserDeviceDatumWhere.UpdatedAt.GTE(fromTime),
-		models.UserDeviceDatumWhere.UpdatedAt.LTE(toTime),
+		//models.UserDeviceDatumWhere.UpdatedAt.LTE(toTime),
 	).All(ctx, v.db().Reader)
 	if err != nil {
 		return err
 	}
+
+	v.log.Info().Msgf("found total of valid userDeviceData records: %d", len(deviceDataEvents))
 
 	dateKey := fromTime.Format("20060102")
 
@@ -90,6 +92,7 @@ func (v *vehicleSignalsEventBatchService) GenerateVehicleDataTracking(ctx contex
 				v.log.Err(err).Msgf("failed to find device %s", item.UserDeviceID)
 				continue
 			}
+			v.log.Info().Msgf("found UD: \n %+v", device)
 			// Validate integration Id
 			v.memoryCache.Set(item.UserDeviceID+"_"+item.IntegrationID.String, device, 30*time.Minute)
 		}
