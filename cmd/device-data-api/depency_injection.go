@@ -22,9 +22,9 @@ type dependencyContainer struct {
 	kafkaProducer sarama.SyncProducer
 	settings      *config.Settings
 	logger        *zerolog.Logger
-	ddSvc         services.DeviceDefinitionsAPIService
-	deviceSvc     services.DeviceAPIService
-	dbs           func() *db.ReaderWriter
+	//ddSvc         services.DeviceDefinitionsAPIService
+	//deviceSvc     services.DeviceAPIService
+	dbs func() *db.ReaderWriter
 }
 
 func newDependencyContainer(settings *config.Settings, logger zerolog.Logger, dbs func() *db.ReaderWriter) dependencyContainer {
@@ -65,8 +65,8 @@ func (dc *dependencyContainer) getDeviceDefinitionService() (services.DeviceDefi
 		dc.logger.Fatal().Err(err).Str("definitions-api-grpc-addr", dc.settings.DeviceDefinitionsGRPCAddr).
 			Msg("failed to dial device definitions grpc")
 	}
-	dc.ddSvc = services.NewDeviceDefinitionsAPIService(definitionsConn)
-	return dc.ddSvc, definitionsConn
+	ddSvc := services.NewDeviceDefinitionsAPIService(definitionsConn)
+	return ddSvc, definitionsConn
 }
 
 func (dc *dependencyContainer) getDeviceService() (services.DeviceAPIService, *grpc.ClientConn) {
@@ -74,6 +74,6 @@ func (dc *dependencyContainer) getDeviceService() (services.DeviceAPIService, *g
 	if err != nil {
 		dc.logger.Fatal().Err(err).Msg("failed to dial devices grpc")
 	}
-	dc.deviceSvc = services.NewDeviceAPIService(devicesConn)
-	return dc.deviceSvc, devicesConn
+	deviceSvc := services.NewDeviceAPIService(devicesConn)
+	return deviceSvc, devicesConn
 }

@@ -86,6 +86,7 @@ func (v *vehicleSignalsEventBatchService) GenerateVehicleDataTracking(ctx contex
 			device = get.(*pb.UserDevice)
 		} else {
 			// todo problem is here - does not get back the device.DeviceDefinitionId
+			// problem is with v.deviceSvc not being instantiated correctly
 			device, err := v.deviceSvc.GetUserDevice(ctx, item.UserDeviceID)
 			if err != nil {
 				v.log.Err(err).Msgf("failed to find device %s", item.UserDeviceID)
