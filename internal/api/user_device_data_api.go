@@ -3,8 +3,9 @@ package api
 import (
 	"context"
 	"database/sql"
-	"github.com/pkg/errors"
 	"strconv"
+
+	"github.com/pkg/errors"
 
 	"sort"
 	"time"
@@ -54,7 +55,7 @@ func (s *userDeviceData) GetUserDeviceData(ctx context.Context, req *pb.UserDevi
 	}
 
 	ds := prepareDeviceStatusInformation(ctx, s.deviceDefSvc, deviceData, req.DeviceDefinitionId,
-		null.StringFrom(req.DeviceStyleId), []int64{constants.NonLocationData, constants.CurrentLocation, constants.AllTimeLocation})
+		null.StringFrom(req.DeviceStyleId), req.PrivilegeIds) // up to caller to pass in correct privileges
 
 	return ds, nil
 }

@@ -31,6 +31,7 @@ message UserDeviceDataRequest {
   string user_device_id = 1;
   string device_definition_id = 2;
   string device_style_id = 3;
+  repeated int64 privilege_ids = 4;
 }
 
 message UserDeviceDataResponse {
