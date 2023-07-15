@@ -5,13 +5,14 @@ import (
 	"errors"
 	"flag"
 
+	"github.com/DIMO-Network/device-data-api/internal/rpc"
+
 	"net"
 	"net/http"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/DIMO-Network/device-data-api/internal/api"
 	"github.com/DIMO-Network/device-data-api/internal/middleware/metrics"
 	"github.com/DIMO-Network/shared/db"
 	"github.com/Shopify/sarama"
@@ -112,7 +113,7 @@ func startGRPCServer(settings *config.Settings, dbs func() *db.ReaderWriter, log
 		grpc.StreamInterceptor(grpc_prometheus.StreamServerInterceptor),
 	)
 
-	dddatagrpc.RegisterUserDeviceDataServiceServer(server, api.NewUserDeviceData(dbs, logger, definitionsAPIService))
+	dddatagrpc.RegisterUserDeviceDataServiceServer(server, rpc.NewUserDeviceData(dbs, logger, definitionsAPIService))
 
 	if err := server.Serve(lis); err != nil {
 		logger.Fatal().Err(err).Msg("gRPC server terminated unexpectedly")

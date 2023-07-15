@@ -29,6 +29,16 @@ Check settings and make sure make sense for your setup. You may need to be runni
 Run migrations:
 `go run ./cmd/device-data-api migrate`
 
+### Microservice dependencies
+
+This project depends on other microservices: 
+- devices-api 
+- device-definitions-api
+- users-api
+- dex-roles-rights
+
+To run it locally best bet is https://github.com/DIMO-Network/cluster-local
+
 ### Authenticating
 
 One of the variables set in `settings.yaml` is `JWT_KEY_SET_URL`. By default this is set to `http://127.0.0.1:5556/dex/keys`. To make use of this, clone the DIMO Dex fork:
@@ -59,6 +69,7 @@ The `/user/device-data/:userDeviceID/export/json/email` endpoint users NATS to c
 Suggested Stream Name and Subject can be found in `settings.sample.yaml`.
 If messages are not acknowledged within 5 minutes, they will be resent (this value is also set in settings and can be increased or decreased as needed)
 
+`brew install nats-streaming-server` although this does not seem to work locally with our setup as it always returns No Responders error.
 
 ## gRPC library
 
