@@ -81,10 +81,6 @@ func (v *vehicleSignalsEventBatchService) GenerateVehicleDataTracking(ctx contex
 
 	for _, item := range deviceDataEvents {
 
-		if item.UserDeviceID != "2N6nMGUdOHtmZ8GouD7E2e69sV7" {
-			continue
-		}
-
 		device := &pb.UserDevice{}
 		cachedUD, foundCached := v.memoryCache.Get(item.UserDeviceID + "_" + item.IntegrationID)
 		if foundCached {
