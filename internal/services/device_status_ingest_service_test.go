@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"github.com/volatiletech/sqlboiler/v4/boil"
 	"os"
 	"testing"
 	"time"
@@ -104,8 +105,10 @@ func TestAutoPiStatus(t *testing.T) {
 		UserDeviceID:        userDeviceID,
 		Signals:             null.JSONFrom([]byte(`{"signal_name_version_1": {"timestamp": "xx", "value": 23.4}}`)),
 		LastOdometerEventAt: null.TimeFrom(time.Now().Add(-10 * time.Second)),
-		IntegrationID:       null.StringFrom(integrationID),
+		IntegrationID:       integrationID,
 	}
+	err := dat1.Insert(ctx, pdb.DBS().Writer, boil.Infer())
+	require.NoError(t, err)
 
 	input := &DeviceStatusEvent{
 		Source:      "dimo/integration/" + integrationID,
@@ -117,7 +120,7 @@ func TestAutoPiStatus(t *testing.T) {
 	}
 
 	var ctxGk goka.Context
-	err := ingest.processEvent(ctxGk, input)
+	err = ingest.processEvent(ctxGk, input)
 	require.NoError(t, err)
 
 	// get updated dat1 from db
