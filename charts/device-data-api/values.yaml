@@ -26,6 +26,7 @@ cronJob:
 env:
   ENVIRONMENT: dev
   PORT: '8080'
+  GRPC_PORT: '8086'
   LOG_LEVEL: info
   SERVICE_NAME: device-data-api
   JWT_KEY_SET_URL: https://auth.dev.dimo.zone/keys
