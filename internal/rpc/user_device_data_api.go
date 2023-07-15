@@ -66,24 +66,24 @@ func (s *userDeviceData) GetSignals(ctx context.Context, req *pb.SignalRequest) 
 	toDate := req.ToDate.AsTime().Format("20060102")
 
 	queryEventProperty := qm.Where(
-		models.ReportVehicleSignalsEventsPropertyColumns.IntegrationID+" = ?",
+		models.ReportVehicleSignalsEventsTrackingColumns.IntegrationID+" = ?",
 		req.IntegrationId,
-		qm.WhereIn(models.ReportVehicleSignalsEventsPropertyColumns.DateID, []string{fromDate, toDate}),
+		qm.WhereIn(models.ReportVehicleSignalsEventsTrackingColumns.DateID, []string{fromDate, toDate}),
 	)
 
-	eventProperties, err := models.ReportVehicleSignalsEventsProperties(queryEventProperty).All(ctx, s.dbs().Reader)
+	eventProperties, err := models.ReportVehicleSignalsEventsTrackings(queryEventProperty).All(ctx, s.dbs().Reader)
 
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Internal error.")
 	}
 
 	queryEvent := qm.Where(
-		models.ReportVehicleSignalsEventColumns.IntegrationID+" = ?",
+		models.ReportVehicleSignalsEventsAllColumns.IntegrationID+" = ?",
 		req.IntegrationId,
-		qm.WhereIn(models.ReportVehicleSignalsEventColumns.DateID, []string{fromDate, toDate}),
+		qm.WhereIn(models.ReportVehicleSignalsEventsAllColumns.DateID, []string{fromDate, toDate}),
 	)
 
-	events, err := models.ReportVehicleSignalsEvents(queryEvent).All(ctx, s.dbs().Reader)
+	events, err := models.ReportVehicleSignalsEventsAlls(queryEvent).All(ctx, s.dbs().Reader)
 
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Internal error.")
