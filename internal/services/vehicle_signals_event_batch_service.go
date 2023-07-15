@@ -83,7 +83,7 @@ func (v *vehicleSignalsEventBatchService) GenerateVehicleDataTracking(ctx contex
 	for _, item := range deviceDataEvents {
 
 		device := &pb.UserDevice{}
-		cachedUD, foundCached := v.memoryCache.Get(item.UserDeviceID + "_" + item.IntegrationID.String)
+		cachedUD, foundCached := v.memoryCache.Get(item.UserDeviceID + "_" + item.IntegrationID)
 		if foundCached {
 			device = cachedUD.(*pb.UserDevice)
 		} else {
@@ -94,7 +94,7 @@ func (v *vehicleSignalsEventBatchService) GenerateVehicleDataTracking(ctx contex
 			}
 			v.log.Info().Msgf("found UD: \n %+v", device)
 			// Validate integration Id
-			v.memoryCache.Set(item.UserDeviceID+"_"+item.IntegrationID.String, device, 30*time.Minute)
+			v.memoryCache.Set(item.UserDeviceID+"_"+item.IntegrationID, device, 30*time.Minute)
 		}
 
 		v.log.Info().Msgf("DeviceID %s, UserDeviceID %s, DeviceDefinitionId %s, FromCache %v", device.Id, item.UserDeviceID, device.DeviceDefinitionId, found)
@@ -118,7 +118,7 @@ func (v *vehicleSignalsEventBatchService) GenerateVehicleDataTracking(ctx contex
 
 		for key, value := range eventAvailableProperties {
 
-			integrationID := item.IntegrationID.String
+			integrationID := item.IntegrationID
 			deviceMakeID := deviceDefinition.Make.Id
 			model := deviceDefinition.Type.Model
 			year := int(deviceDefinition.Type.Year)
@@ -142,7 +142,7 @@ func (v *vehicleSignalsEventBatchService) GenerateVehicleDataTracking(ctx contex
 			if event == nil {
 				event = &models.ReportVehicleSignalsEvent{
 					DateID:             dateKey,
-					IntegrationID:      item.IntegrationID.String,
+					IntegrationID:      item.IntegrationID,
 					DeviceMakeID:       deviceDefinition.Make.Id,
 					PropertyID:         value,
 					Year:               int(deviceDefinition.Type.Year),
@@ -188,7 +188,7 @@ func (v *vehicleSignalsEventBatchService) GenerateVehicleDataTracking(ctx contex
 				if eventProperties == nil {
 					eventProperties = &models.ReportVehicleSignalsEventsProperty{
 						DateID:             dateKey,
-						IntegrationID:      item.IntegrationID.String,
+						IntegrationID:      item.IntegrationID,
 						DeviceMakeID:       deviceDefinition.Make.Id,
 						PropertyID:         value,
 						Year:               int(deviceDefinition.Type.Year),

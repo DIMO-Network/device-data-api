@@ -164,7 +164,7 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 	}
 
 	var datum *models.UserDeviceDatum
-	//TODO:get from db
+
 	deviceData, err := models.UserDeviceData(
 		models.UserDeviceDatumWhere.UserDeviceID.EQ(userDeviceID),
 		models.UserDeviceDatumWhere.Signals.IsNotNull(),
@@ -179,7 +179,7 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 		datum = deviceData[0]
 	} else {
 		// Insert a new record.
-		datum = &models.UserDeviceDatum{UserDeviceID: userDeviceID, IntegrationID: null.StringFrom(integration.Id)}
+		datum = &models.UserDeviceDatum{UserDeviceID: userDeviceID, IntegrationID: integration.Id}
 		i.memoryCache.Delete(userDeviceID + "_" + integration.Id)
 	}
 
