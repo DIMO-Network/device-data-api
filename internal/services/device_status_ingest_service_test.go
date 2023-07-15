@@ -2,10 +2,11 @@ package services
 
 import (
 	"context"
-	"github.com/volatiletech/sqlboiler/v4/boil"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/volatiletech/sqlboiler/v4/boil"
 
 	mock_services "github.com/DIMO-Network/device-data-api/internal/services/mocks"
 	pb "github.com/DIMO-Network/devices-api/pkg/grpc"
