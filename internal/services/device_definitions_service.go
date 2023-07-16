@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -89,4 +90,61 @@ func (dda *deviceDefinitionsAPIService) GetDeviceStyle(ctx context.Context, id s
 	}
 
 	return def, nil
+}
+
+func GetActualDeviceDefinitionMetadataValues(dd *pb.GetDeviceDefinitionItemResponse, deviceStyleID *string) *DeviceDefinitionRange {
+
+	var fuelTankCapGal, mpg, mpgHwy float64 = 0, 0, 0
+
+	var metadata []*pb.DeviceTypeAttribute
+
+	if deviceStyleID != nil {
+		for _, style := range dd.DeviceStyles {
+			if style.Id == *deviceStyleID {
+				metadata = style.DeviceAttributes
+				break
+			}
+		}
+	}
+
+	if len(metadata) == 0 && dd != nil && dd.DeviceAttributes != nil {
+		metadata = dd.DeviceAttributes
+	}
+
+	for _, attr := range metadata {
+		switch DeviceAttributeType(attr.Name) {
+		case FuelTankCapacityGal:
+			if v, err := strconv.ParseFloat(attr.Value, 32); err == nil {
+				fuelTankCapGal = v
+			}
+		case MPG:
+			if v, err := strconv.ParseFloat(attr.Value, 32); err == nil {
+				mpg = v
+			}
+		case MpgHighway:
+			if v, err := strconv.ParseFloat(attr.Value, 32); err == nil {
+				mpgHwy = v
+			}
+		}
+	}
+
+	return &DeviceDefinitionRange{
+		FuelTankCapGal: fuelTankCapGal,
+		Mpg:            mpg,
+		MpgHwy:         mpgHwy,
+	}
+}
+
+type DeviceAttributeType string
+
+const (
+	MPG                 DeviceAttributeType = "mpg"
+	FuelTankCapacityGal DeviceAttributeType = "fuel_tank_capacity_gal"
+	MpgHighway          DeviceAttributeType = "mpg_highway"
+)
+
+type DeviceDefinitionRange struct {
+	FuelTankCapGal float64 `json:"fuel_tank_capacity_gal"`
+	Mpg            float64 `json:"mpg"`
+	MpgHwy         float64 `json:"mpg_highway"`
 }

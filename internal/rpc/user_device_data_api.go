@@ -41,6 +41,9 @@ type userDeviceData struct {
 }
 
 func (s *userDeviceData) GetUserDeviceData(ctx context.Context, req *pb.UserDeviceDataRequest) (*pb.UserDeviceDataResponse, error) {
+	if req.UserDeviceId == "" || req.DeviceDefinitionId == "" {
+		return nil, status.Error(codes.InvalidArgument, "UserDeviceId and DeviceDefinitionId are required")
+	}
 	deviceData, err := models.UserDeviceData(
 		models.UserDeviceDatumWhere.UserDeviceID.EQ(req.UserDeviceId),
 		models.UserDeviceDatumWhere.Signals.IsNotNull(),

@@ -1,4 +1,4 @@
-package controllers
+package services
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"sort"
 	"time"
 
-	"github.com/DIMO-Network/device-data-api/internal/services"
 	"github.com/DIMO-Network/device-data-api/models"
 	"github.com/DIMO-Network/shared"
 	smartcar "github.com/smartcar/go-sdk"
@@ -14,7 +13,14 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-func PrepareDeviceStatusInformation(ctx context.Context, ddSvc services.DeviceDefinitionsAPIService, deviceData models.UserDeviceDatumSlice, deviceDefinitionID string, deviceStyleID *string, privilegeIDs []int64) DeviceSnapshot {
+const (
+	NonLocationData int64 = 1
+	Commands        int64 = 2
+	CurrentLocation int64 = 3
+	AllTimeLocation int64 = 4
+)
+
+func PrepareDeviceStatusInformation(ctx context.Context, ddSvc DeviceDefinitionsAPIService, deviceData models.UserDeviceDatumSlice, deviceDefinitionID string, deviceStyleID *string, privilegeIDs []int64) DeviceSnapshot {
 	ds := DeviceSnapshot{}
 
 	// set the record created date to most recent one
@@ -150,7 +156,7 @@ func findMostRecentSignal(udd models.UserDeviceDatumSlice, path string, highestF
 }
 
 // calculateRange returns the current estimated range based on fuel tank capacity, mpg, and fuelPercentRemaining and returns it in Kilometers
-func calculateRange(ctx context.Context, ddSvc services.DeviceDefinitionsAPIService, deviceDefinitionID string, deviceStyleID *string, fuelPercentRemaining float64) (*float64, error) {
+func calculateRange(ctx context.Context, ddSvc DeviceDefinitionsAPIService, deviceDefinitionID string, deviceStyleID *string, fuelPercentRemaining float64) (*float64, error) {
 	if fuelPercentRemaining <= 0.01 {
 		return nil, fmt.Errorf("fuelPercentRemaining lt 0.01 so cannot calculate range")
 	}
