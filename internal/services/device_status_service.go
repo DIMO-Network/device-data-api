@@ -13,6 +13,20 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+type deviceStatusService struct {
+	ddSvc DeviceDefinitionsAPIService
+}
+
+type DeviceStatusService interface {
+	PrepareDeviceStatusInformation(ctx context.Context, deviceData models.UserDeviceDatumSlice, deviceDefinitionID string, deviceStyleID *string, privilegeIDs []int64) DeviceSnapshot
+}
+
+func NewDeviceStatusService(deviceDefinitionsSvc DeviceDefinitionsAPIService) DeviceStatusService {
+	return &deviceStatusService{
+		ddSvc: deviceDefinitionsSvc,
+	}
+}
+
 const (
 	NonLocationData int64 = 1
 	Commands        int64 = 2
@@ -20,7 +34,7 @@ const (
 	AllTimeLocation int64 = 4
 )
 
-func PrepareDeviceStatusInformation(ctx context.Context, ddSvc DeviceDefinitionsAPIService, deviceData models.UserDeviceDatumSlice, deviceDefinitionID string, deviceStyleID *string, privilegeIDs []int64) DeviceSnapshot {
+func (dss *deviceStatusService) PrepareDeviceStatusInformation(ctx context.Context, deviceData models.UserDeviceDatumSlice, deviceDefinitionID string, deviceStyleID *string, privilegeIDs []int64) DeviceSnapshot {
 	ds := DeviceSnapshot{}
 
 	// set the record created date to most recent one
@@ -130,7 +144,7 @@ func PrepareDeviceStatusInformation(ctx context.Context, ddSvc DeviceDefinitions
 	}
 
 	if ds.Range == nil && ds.FuelPercentRemaining != nil {
-		calcRange, err := calculateRange(ctx, ddSvc, deviceDefinitionID, deviceStyleID, *ds.FuelPercentRemaining)
+		calcRange, err := dss.calculateRange(ctx, deviceDefinitionID, deviceStyleID, *ds.FuelPercentRemaining)
 		if err == nil {
 			ds.Range = calcRange
 		}
@@ -156,12 +170,12 @@ func findMostRecentSignal(udd models.UserDeviceDatumSlice, path string, highestF
 }
 
 // calculateRange returns the current estimated range based on fuel tank capacity, mpg, and fuelPercentRemaining and returns it in Kilometers
-func calculateRange(ctx context.Context, ddSvc DeviceDefinitionsAPIService, deviceDefinitionID string, deviceStyleID *string, fuelPercentRemaining float64) (*float64, error) {
+func (dss *deviceStatusService) calculateRange(ctx context.Context, deviceDefinitionID string, deviceStyleID *string, fuelPercentRemaining float64) (*float64, error) {
 	if fuelPercentRemaining <= 0.01 {
 		return nil, fmt.Errorf("fuelPercentRemaining lt 0.01 so cannot calculate range")
 	}
 
-	dd, err := ddSvc.GetDeviceDefinitionByID(ctx, deviceDefinitionID)
+	dd, err := dss.ddSvc.GetDeviceDefinitionByID(ctx, deviceDefinitionID)
 
 	if err != nil {
 		return nil, shared.GrpcErrorToFiber(err, "deviceDefSvc error getting definition id: "+deviceDefinitionID)

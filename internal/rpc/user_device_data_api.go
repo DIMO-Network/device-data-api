@@ -29,15 +29,16 @@ import (
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
-func NewUserDeviceData(dbs func() *db.ReaderWriter, logger *zerolog.Logger, deviceDefSvc services.DeviceDefinitionsAPIService) pb.UserDeviceDataServiceServer {
-	return &userDeviceData{dbs: dbs, logger: logger, deviceDefSvc: deviceDefSvc}
+func NewUserDeviceData(dbs func() *db.ReaderWriter, logger *zerolog.Logger, deviceDefSvc services.DeviceDefinitionsAPIService, deviceStatusSvc services.DeviceStatusService) pb.UserDeviceDataServiceServer {
+	return &userDeviceData{dbs: dbs, logger: logger, deviceDefSvc: deviceDefSvc, deviceStatusSvc: deviceStatusSvc}
 }
 
 type userDeviceData struct {
 	pb.UserDeviceDataServiceServer
-	dbs          func() *db.ReaderWriter
-	logger       *zerolog.Logger
-	deviceDefSvc services.DeviceDefinitionsAPIService
+	dbs             func() *db.ReaderWriter
+	logger          *zerolog.Logger
+	deviceDefSvc    services.DeviceDefinitionsAPIService
+	deviceStatusSvc services.DeviceStatusService
 }
 
 func (s *userDeviceData) GetUserDeviceData(ctx context.Context, req *pb.UserDeviceDataRequest) (*pb.UserDeviceDataResponse, error) {
@@ -56,11 +57,59 @@ func (s *userDeviceData) GetUserDeviceData(ctx context.Context, req *pb.UserDevi
 	if len(deviceData) == 0 {
 		return nil, status.Error(codes.NotFound, "No status updates yet.")
 	}
+	var deviceStyleID *string
+	if len(req.DeviceStyleId) > 0 {
+		deviceStyleID = &req.DeviceStyleId
+	} else {
+		deviceStyleID = nil
+	}
 
-	ds := prepareDeviceStatusInformation(ctx, s.deviceDefSvc, deviceData, req.DeviceDefinitionId,
-		null.StringFrom(req.DeviceStyleId), req.PrivilegeIds) // up to caller to pass in correct privileges
+	ds := s.deviceStatusSvc.PrepareDeviceStatusInformation(ctx, deviceData, req.DeviceDefinitionId,
+		deviceStyleID, req.PrivilegeIds) // up to caller to pass in correct privileges
 
-	return ds, nil
+	return &pb.UserDeviceDataResponse{
+		Charging:             convertBoolPtr(ds.Charging),
+		FuelPercentRemaining: convertFloatPtr(ds.FuelPercentRemaining),
+		BatteryCapacity:      convertIntPtr(ds.BatteryCapacity),
+		OilLevel:             convertFloatPtr(ds.OilLevel),
+		Odometer:             convertFloatPtr(ds.Odometer),
+		Latitude:             convertFloatPtr(ds.Latitude),
+		Longitude:            convertFloatPtr(ds.Longitude),
+		Range:                convertFloatPtr(ds.Range),
+		StateOfCharge:        convertFloatPtr(ds.StateOfCharge),
+		ChargeLimit:          convertFloatPtr(ds.ChargeLimit),
+		RecordUpdatedAt:      convertToTimestamp(ds.RecordUpdatedAt),
+		RecordCreatedAt:      convertToTimestamp(ds.RecordCreatedAt),
+		TirePressure:         ds.TirePressure,
+		BatteryVoltage:       convertFloatPtr(ds.BatteryVoltage),
+		AmbientTemp:          convertFloatPtr(ds.AmbientTemp),
+	}, nil
+}
+
+func convertBoolPtr(b *bool) bool {
+	if b == nil {
+		return false
+	}
+	return *b
+}
+func convertFloatPtr(f *float64) float64 {
+	if f == nil {
+		return 0
+	}
+	return *f
+}
+func convertIntPtr(i *int64) int64 {
+	if i == nil {
+		return 0
+	}
+	return *i
+}
+func convertToTimestamp(goTime *time.Time) *timestamppb.Timestamp {
+	if goTime == nil {
+		return nil
+	}
+	timestamp := timestamppb.New(*goTime)
+	return timestamp
 }
 
 func (s *userDeviceData) GetSignals(ctx context.Context, req *pb.SignalRequest) (*pb.SignalResponse, error) {
@@ -111,6 +160,7 @@ func (s *userDeviceData) GetSignals(ctx context.Context, req *pb.SignalRequest) 
 	return result, nil
 }
 
+// todo: delete code from here down
 func prepareDeviceStatusInformation(ctx context.Context, ddSvc services.DeviceDefinitionsAPIService, deviceData models.UserDeviceDatumSlice, deviceDefinitionID string, deviceStyleID null.String, privilegeIDs []int64) *pb.UserDeviceDataResponse {
 	ds := pb.UserDeviceDataResponse{}
 
@@ -234,11 +284,6 @@ func prepareDeviceStatusInformation(ctx context.Context, ddSvc services.DeviceDe
 	}
 
 	return &ds
-}
-
-func convertToTimestamp(goTime time.Time) *timestamppb.Timestamp {
-	timestamp := timestamppb.New(goTime)
-	return timestamp
 }
 
 func convertToUnixTimestamp(timestamp *timestamppb.Timestamp) int64 {
