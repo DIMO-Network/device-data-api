@@ -3,6 +3,7 @@ package rpc
 import (
 	"context"
 	"database/sql"
+
 	"github.com/volatiletech/sqlboiler/v4/queries"
 	"google.golang.org/protobuf/types/known/emptypb"
 
@@ -177,17 +178,17 @@ group by date_id, integration_id) as dates
 order by date_id desc`
 
 	// need obj array
-	var dateIdSlice []*dateIDItem
+	var dateIDSlice []*dateIDItem
 
-	err := queries.Raw(query).Bind(ctx, s.dbs().Reader, &dateIdSlice)
+	err := queries.Raw(query).Bind(ctx, s.dbs().Reader, &dateIDSlice)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	result := &pb.DateIdsResponse{
-		DateIds: make([]*pb.DateIdResponseItem, len(dateIdSlice)),
+		DateIds: make([]*pb.DateIdResponseItem, len(dateIDSlice)),
 	}
-	for i, item := range dateIdSlice {
+	for i, item := range dateIDSlice {
 		result.DateIds[i] = &pb.DateIdResponseItem{
 			DateId:        item.DateID,
 			IntegrationId: item.IntegrationID,
