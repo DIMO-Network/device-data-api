@@ -15,6 +15,11 @@ message SignalRequest {
   string integration_id = 1;
   google.protobuf.Timestamp from_date = 2;
   google.protobuf.Timestamp to_date = 3;
+  optional string signal_name = 4;
+  optional string make_id = 5;
+  // this is the model
+  optional string device_definition_id = 6;
+  optional int64 year = 7;
 }
 
 message SignalResponse {
