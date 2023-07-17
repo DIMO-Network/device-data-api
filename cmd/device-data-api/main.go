@@ -113,7 +113,8 @@ func startGRPCServer(settings *config.Settings, dbs func() *db.ReaderWriter, log
 		grpc.StreamInterceptor(grpc_prometheus.StreamServerInterceptor),
 	)
 
-	dddatagrpc.RegisterUserDeviceDataServiceServer(server, rpc.NewUserDeviceData(dbs, logger, definitionsAPIService))
+	deviceStatusSvc := services.NewDeviceStatusService(definitionsAPIService)
+	dddatagrpc.RegisterUserDeviceDataServiceServer(server, rpc.NewUserDeviceData(dbs, logger, definitionsAPIService, deviceStatusSvc))
 
 	if err := server.Serve(lis); err != nil {
 		logger.Fatal().Err(err).Msg("gRPC server terminated unexpectedly")

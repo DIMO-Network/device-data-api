@@ -35,12 +35,13 @@ import (
 )
 
 type DeviceDataController struct {
-	Settings       *config.Settings
-	log            *zerolog.Logger
-	deviceAPI      services.DeviceAPIService
-	es8Client      *es8.TypedClient
-	definitionsAPI services.DeviceDefinitionsAPIService
-	dbs            func() *db.ReaderWriter
+	Settings        *config.Settings
+	log             *zerolog.Logger
+	deviceAPI       services.DeviceAPIService
+	es8Client       *es8.TypedClient
+	definitionsAPI  services.DeviceDefinitionsAPIService
+	deviceStatusSvc services.DeviceStatusService
+	dbs             func() *db.ReaderWriter
 }
 
 const (
@@ -51,14 +52,15 @@ const (
 )
 
 // NewDeviceDataController constructor
-func NewDeviceDataController(settings *config.Settings, logger *zerolog.Logger, deviceAPIService services.DeviceAPIService, es8Client *es8.TypedClient, definitionsAPIService services.DeviceDefinitionsAPIService, dbs func() *db.ReaderWriter) DeviceDataController {
+func NewDeviceDataController(settings *config.Settings, logger *zerolog.Logger, deviceAPIService services.DeviceAPIService, es8Client *es8.TypedClient, definitionsAPIService services.DeviceDefinitionsAPIService, deviceStatusSvc services.DeviceStatusService, dbs func() *db.ReaderWriter) DeviceDataController {
 	return DeviceDataController{
-		Settings:       settings,
-		log:            logger,
-		deviceAPI:      deviceAPIService,
-		es8Client:      es8Client,
-		definitionsAPI: definitionsAPIService,
-		dbs:            dbs,
+		Settings:        settings,
+		log:             logger,
+		deviceAPI:       deviceAPIService,
+		es8Client:       es8Client,
+		definitionsAPI:  definitionsAPIService,
+		dbs:             dbs,
+		deviceStatusSvc: deviceStatusSvc,
 	}
 }
 
@@ -117,7 +119,7 @@ func addRangeIfNotExists(ctx context.Context, deviceDefSvc services.DeviceDefini
 		return body, errors.Wrapf(err, "could not get device definition by id: %s", deviceDefinitionID)
 	}
 	// extract the range values from definition, already done in devices-api, copy that code or move to shared
-	rangeData := GetActualDeviceDefinitionMetadataValues(definition, deviceStyleID)
+	rangeData := services.GetActualDeviceDefinitionMetadataValues(definition, deviceStyleID)
 
 	resultData := gjson.GetBytes(body, "hits.hits.#._source.data")
 	for i, r := range resultData.Array() {
@@ -334,7 +336,7 @@ func (d *DeviceDataController) GetUserDeviceStatus(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusNotFound, "No status updates yet.")
 	}
 
-	ds := PrepareDeviceStatusInformation(c.Context(), d.definitionsAPI, deviceData, userDevice.DeviceDefinitionId,
+	ds := d.deviceStatusSvc.PrepareDeviceStatusInformation(c.Context(), deviceData, userDevice.DeviceDefinitionId,
 		userDevice.DeviceStyleId, []int64{NonLocationData, CurrentLocation, AllTimeLocation})
 
 	return c.JSON(ds)
@@ -390,7 +392,7 @@ func (d *DeviceDataController) GetVehicleStatus(c *fiber.Ctx) error {
 		return err
 	}
 
-	ds := PrepareDeviceStatusInformation(c.Context(), d.definitionsAPI, deviceData, userDeviceNFT.DeviceDefinitionId,
+	ds := d.deviceStatusSvc.PrepareDeviceStatusInformation(c.Context(), deviceData, userDeviceNFT.DeviceDefinitionId,
 		userDeviceNFT.DeviceStyleId, privileges)
 
 	return c.JSON(ds)

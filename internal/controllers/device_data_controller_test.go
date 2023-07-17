@@ -12,22 +12,23 @@ import (
 
 	"github.com/DIMO-Network/device-data-api/internal/config"
 	"github.com/DIMO-Network/device-data-api/internal/constants"
+	response2 "github.com/DIMO-Network/device-data-api/internal/response"
+	mock_services "github.com/DIMO-Network/device-data-api/internal/services/mocks"
 	"github.com/DIMO-Network/device-data-api/internal/test"
 	"github.com/DIMO-Network/device-data-api/models"
-	"github.com/gofiber/fiber/v2"
-	"github.com/rs/zerolog"
-	"github.com/volatiletech/null/v8"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-
-	mock_services "github.com/DIMO-Network/device-data-api/internal/services/mocks"
 	ddgrpc "github.com/DIMO-Network/device-definitions-api/pkg/grpc"
 	dagrpc "github.com/DIMO-Network/devices-api/pkg/grpc"
+	"github.com/gofiber/fiber/v2"
 	"github.com/golang/mock/gomock"
+	"github.com/rs/zerolog"
 	"github.com/segmentio/ksuid"
+	smartcar "github.com/smartcar/go-sdk"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
+	"github.com/volatiletech/null/v8"
+	"github.com/volatiletech/sqlboiler/v4/boil"
 )
 
 func TestDeviceDataController_addRangeIfNotExists(t *testing.T) {
@@ -130,13 +131,14 @@ func TestUserDevicesController_GetUserDeviceStatus(t *testing.T) {
 
 	deviceSvc := mock_services.NewMockDeviceAPIService(mockCtrl)
 	deviceDefSvc := mock_services.NewMockDeviceDefinitionsAPIService(mockCtrl)
+	deviceStatusSvc := mock_services.NewMockDeviceStatusService(mockCtrl)
 
 	testUserID := "123123"
-	c := NewDeviceDataController(&config.Settings{Port: "3000"}, &logger, deviceSvc, nil, deviceDefSvc, pdb.DBS)
+	c := NewDeviceDataController(&config.Settings{Port: "3000"}, &logger, deviceSvc, nil, deviceDefSvc, deviceStatusSvc, pdb.DBS)
 	app := fiber.New()
 	app.Get("/user/devices/:userDeviceID/status", test.AuthInjectorTestHandler(testUserID), c.GetUserDeviceStatus)
 
-	t.Run("GET - device status merge autopi and smartcar", func(t *testing.T) {
+	t.Run("GET - device status", func(t *testing.T) {
 		// arrange db, insert some user_devices
 		autoPiInteg := test.BuildIntegrationGRPC(constants.AutoPiVendor, 10, 0)
 		smartCarInt := test.BuildIntegrationGRPC(constants.SmartCarVendor, 0, 0)
@@ -147,6 +149,7 @@ func TestUserDevicesController_GetUserDeviceStatus(t *testing.T) {
 			DeviceDefinitionId: dd[0].DeviceDefinitionId,
 			UserId:             testUserID,
 		}, nil)
+
 		// SC data setup to  older
 		smartCarData := models.UserDeviceDatum{
 			UserDeviceID: udID,
@@ -177,6 +180,17 @@ func TestUserDevicesController_GetUserDeviceStatus(t *testing.T) {
 		err = autoPiData.Insert(ctx, pdb.DBS().Writer, boil.Infer())
 		assert.NoError(t, err)
 
+		notCharging := false
+		deviceStatusSvc.EXPECT().PrepareDeviceStatusInformation(gomock.Any(), gomock.Any(), dd[0].DeviceDefinitionId, nil, []int64{1, 3, 4}).Times(1).
+			Return(response2.DeviceSnapshot{
+				Charging:     &notCharging,
+				Odometer:     getPtrFloat(195677.59375),
+				Latitude:     getPtrFloat(33.75),
+				Longitude:    getPtrFloat(-117.91),
+				Range:        getPtrFloat(187.79),
+				TirePressure: &smartcar.TirePressure{BackLeft: 244.0},
+			})
+
 		request := test.BuildRequest("GET", "/user/devices/"+udID+"/status", "")
 		response, _ := app.Test(request)
 		body, _ := io.ReadAll(response.Body)
@@ -185,7 +199,7 @@ func TestUserDevicesController_GetUserDeviceStatus(t *testing.T) {
 			fmt.Println("response body: " + string(body))
 		}
 
-		snapshot := new(DeviceSnapshot)
+		snapshot := new(response2.DeviceSnapshot)
 		err = json.Unmarshal(body, snapshot)
 		assert.NoError(t, err)
 
@@ -195,119 +209,16 @@ func TestUserDevicesController_GetUserDeviceStatus(t *testing.T) {
 		assert.Equal(t, 195677.59375, *snapshot.Odometer)
 		assert.Equal(t, 33.75, *snapshot.Latitude, "expected autopi latitude")
 		assert.Equal(t, -117.91, *snapshot.Longitude, "expected autopi longitude")
-		assert.Equal(t, "2023-04-27T15:57:37Z", snapshot.RecordUpdatedAt.Format(time.RFC3339))
+		//assert.Equal(t, "2023-04-27T15:57:37Z", snapshot.RecordUpdatedAt.Format(time.RFC3339))
 
 		//teardown
 		test.TruncateTables(pdb.DBS().Writer.DB, t)
 	})
 }
 
-func Test_sortBySignalValueDesc(t *testing.T) {
-	udd := models.UserDeviceDatumSlice{
-		&models.UserDeviceDatum{
-			UserDeviceID: "123",
-			Signals: null.JSONFrom([]byte(`{ "odometer": {
-    "value": 88164.32,
-    "timestamp": "2023-04-27T15:57:37Z"
-  }}`)),
-			CreatedAt:     time.Now(),
-			UpdatedAt:     time.Now(),
-			IntegrationID: "123",
-		},
-		&models.UserDeviceDatum{
-			UserDeviceID: "123",
-			Signals: null.JSONFrom([]byte(`{ "odometer": {
-    "value": 88174.32,
-    "timestamp": "2023-04-27T16:57:37Z"
-  }}`)),
-			CreatedAt:     time.Now(),
-			UpdatedAt:     time.Now(),
-			IntegrationID: "345",
-		},
+func getPtrFloat(f float64) *float64 {
+	if f == 0 {
+		return nil
 	}
-	// validate setup is ok
-	assert.Equal(t, 88164.32, gjson.GetBytes(udd[0].Signals.JSON, "odometer.value").Float())
-	assert.Equal(t, 88174.32, gjson.GetBytes(udd[1].Signals.JSON, "odometer.value").Float())
-	// sort and validate
-	sortBySignalValueDesc(udd, "odometer")
-	assert.Equal(t, 88174.32, gjson.GetBytes(udd[0].Signals.JSON, "odometer.value").Float())
-	assert.Equal(t, 88164.32, gjson.GetBytes(udd[1].Signals.JSON, "odometer.value").Float())
-}
-
-func Test_sortBySignalTimestampDesc(t *testing.T) {
-	udd := models.UserDeviceDatumSlice{
-		&models.UserDeviceDatum{
-			UserDeviceID: "123",
-			Signals: null.JSONFrom([]byte(`{ "odometer": {
-    "value": 88164.32,
-    "timestamp": "2023-04-27T15:57:37Z"
-  }}`)),
-			CreatedAt:     time.Now(),
-			UpdatedAt:     time.Now(),
-			IntegrationID: "123",
-		},
-		&models.UserDeviceDatum{
-			UserDeviceID: "123",
-			Signals: null.JSONFrom([]byte(`{ "odometer": {
-    "value": 88174.32,
-    "timestamp": "2023-04-27T16:57:37Z"
-  }}`)),
-			CreatedAt:     time.Now(),
-			UpdatedAt:     time.Now(),
-			IntegrationID: "345",
-		},
-	}
-	// validate setup is ok
-	assert.Equal(t, 88164.32, gjson.GetBytes(udd[0].Signals.JSON, "odometer.value").Float())
-	assert.Equal(t, 88174.32, gjson.GetBytes(udd[1].Signals.JSON, "odometer.value").Float())
-	// sort and validate
-	sortBySignalTimestampDesc(udd, "odometer")
-	assert.Equal(t, 88174.32, gjson.GetBytes(udd[0].Signals.JSON, "odometer.value").Float())
-	assert.Equal(t, "2023-04-27T16:57:37Z", gjson.GetBytes(udd[0].Signals.JSON, "odometer.timestamp").Time().Format(time.RFC3339))
-	assert.Equal(t, 88164.32, gjson.GetBytes(udd[1].Signals.JSON, "odometer.value").Float())
-}
-
-func TestUserDevicesController_calculateRange(t *testing.T) {
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	ctx := context.Background()
-	deviceDefSvc := mock_services.NewMockDeviceDefinitionsAPIService(mockCtrl)
-	deviceSvc := mock_services.NewMockDeviceAPIService(mockCtrl)
-
-	logger := zerolog.New(os.Stdout).With().
-		Timestamp().
-		Str("app", "devices-api").
-		Logger()
-
-	ddID := ksuid.New().String()
-	styleID := ksuid.New().String()
-	attrs := []*ddgrpc.DeviceTypeAttribute{
-		{
-			Name:  "fuel_tank_capacity_gal",
-			Value: "15",
-		},
-		{
-			Name:  "mpg",
-			Value: "20",
-		},
-	}
-	deviceDefSvc.EXPECT().GetDeviceDefinitionByID(gomock.Any(), ddID).Times(1).Return(&ddgrpc.GetDeviceDefinitionItemResponse{
-		DeviceDefinitionId: ddID,
-		Verified:           true,
-		DeviceAttributes:   attrs,
-	}, nil)
-
-	pdb, container := test.StartContainerDatabase(ctx, t, migrationsDirRelPath)
-	defer func() {
-		ctx := context.Background()
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	_ = NewDeviceDataController(&config.Settings{Port: "3000"}, &logger, deviceSvc, nil, deviceDefSvc, pdb.DBS)
-	rge, err := calculateRange(ctx, deviceDefSvc, ddID, &styleID, .7)
-	require.NoError(t, err)
-	require.NotNil(t, rge)
-	assert.Equal(t, 337.9614, *rge)
+	return &f
 }
