@@ -3,6 +3,8 @@ package rpc
 import (
 	"context"
 	"database/sql"
+	"github.com/volatiletech/sqlboiler/v4/queries"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/pkg/errors"
 	smartcar "github.com/smartcar/go-sdk"
@@ -122,14 +124,10 @@ func convertTirePressure(tp *smartcar.TirePressure) *pb.TirePressureResponse {
 }
 
 func (s *userDeviceData) GetSignals(ctx context.Context, req *pb.SignalRequest) (*pb.SignalResponse, error) {
-
-	fromDate := req.FromDate.AsTime().Format("20060102")
-	toDate := req.ToDate.AsTime().Format("20060102")
-
 	queryEventProperty := qm.Where(
 		models.ReportVehicleSignalsEventsTrackingColumns.IntegrationID+" = ?",
 		req.IntegrationId,
-		qm.WhereIn(models.ReportVehicleSignalsEventsTrackingColumns.DateID, []string{fromDate, toDate}),
+		qm.Where(models.ReportVehicleSignalsEventsTrackingColumns.DateID+" = ?", req.DateId),
 	)
 
 	eventProperties, err := models.ReportVehicleSignalsEventsTrackings(queryEventProperty).All(ctx, s.dbs().Reader)
@@ -141,7 +139,7 @@ func (s *userDeviceData) GetSignals(ctx context.Context, req *pb.SignalRequest) 
 	queryEvent := qm.Where(
 		models.ReportVehicleSignalsEventsAllColumns.IntegrationID+" = ?",
 		req.IntegrationId,
-		qm.WhereIn(models.ReportVehicleSignalsEventsAllColumns.DateID, []string{fromDate, toDate}),
+		qm.Where(models.ReportVehicleSignalsEventsAllColumns.DateID+" = ?", req.DateId),
 	)
 
 	events, err := models.ReportVehicleSignalsEventsAlls(queryEvent).All(ctx, s.dbs().Reader)
@@ -167,4 +165,35 @@ func (s *userDeviceData) GetSignals(ctx context.Context, req *pb.SignalRequest) 
 	}
 
 	return result, nil
+}
+
+func (s *userDeviceData) GetAvailableDates(ctx context.Context, _ *emptypb.Empty) (*pb.DateIdsResponse, error) {
+	// raw query, project to list of strings
+
+	query := `select date_id from
+(select date_id
+from device_data_api.report_vehicle_signals_events_tracking
+group by date_id) as dates
+order by date_id desc`
+
+	// need obj array
+	var dateIdSlice []*dateIDItem
+
+	err := queries.Raw(query).Bind(ctx, s.dbs().Reader, &dateIdSlice)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	result := &pb.DateIdsResponse{
+		DateIds: make([]string, len(dateIdSlice)),
+	}
+	for i, item := range dateIdSlice {
+		result.DateIds[i] = item.DateID
+	}
+
+	return result, nil
+}
+
+type dateIDItem struct {
+	DateID string `boil:"date_id" json:"date_id" toml:"date_id" yaml:"date_id"`
 }

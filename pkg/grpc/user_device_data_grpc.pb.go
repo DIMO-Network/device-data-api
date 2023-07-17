@@ -11,6 +11,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -24,6 +25,7 @@ const _ = grpc.SupportPackageIsVersion7
 type UserDeviceDataServiceClient interface {
 	GetUserDeviceData(ctx context.Context, in *UserDeviceDataRequest, opts ...grpc.CallOption) (*UserDeviceDataResponse, error)
 	GetSignals(ctx context.Context, in *SignalRequest, opts ...grpc.CallOption) (*SignalResponse, error)
+	GetAvailableDates(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*DateIdsResponse, error)
 }
 
 type userDeviceDataServiceClient struct {
@@ -52,12 +54,22 @@ func (c *userDeviceDataServiceClient) GetSignals(ctx context.Context, in *Signal
 	return out, nil
 }
 
+func (c *userDeviceDataServiceClient) GetAvailableDates(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*DateIdsResponse, error) {
+	out := new(DateIdsResponse)
+	err := c.cc.Invoke(ctx, "/grpc.UserDeviceDataService/GetAvailableDates", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserDeviceDataServiceServer is the server API for UserDeviceDataService service.
 // All implementations must embed UnimplementedUserDeviceDataServiceServer
 // for forward compatibility
 type UserDeviceDataServiceServer interface {
 	GetUserDeviceData(context.Context, *UserDeviceDataRequest) (*UserDeviceDataResponse, error)
 	GetSignals(context.Context, *SignalRequest) (*SignalResponse, error)
+	GetAvailableDates(context.Context, *emptypb.Empty) (*DateIdsResponse, error)
 	mustEmbedUnimplementedUserDeviceDataServiceServer()
 }
 
@@ -70,6 +82,9 @@ func (UnimplementedUserDeviceDataServiceServer) GetUserDeviceData(context.Contex
 }
 func (UnimplementedUserDeviceDataServiceServer) GetSignals(context.Context, *SignalRequest) (*SignalResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSignals not implemented")
+}
+func (UnimplementedUserDeviceDataServiceServer) GetAvailableDates(context.Context, *emptypb.Empty) (*DateIdsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAvailableDates not implemented")
 }
 func (UnimplementedUserDeviceDataServiceServer) mustEmbedUnimplementedUserDeviceDataServiceServer() {}
 
@@ -120,6 +135,24 @@ func _UserDeviceDataService_GetSignals_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserDeviceDataService_GetAvailableDates_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserDeviceDataServiceServer).GetAvailableDates(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/grpc.UserDeviceDataService/GetAvailableDates",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserDeviceDataServiceServer).GetAvailableDates(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UserDeviceDataService_ServiceDesc is the grpc.ServiceDesc for UserDeviceDataService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -134,6 +167,10 @@ var UserDeviceDataService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetSignals",
 			Handler:    _UserDeviceDataService_GetSignals_Handler,
+		},
+		{
+			MethodName: "GetAvailableDates",
+			Handler:    _UserDeviceDataService_GetAvailableDates_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
