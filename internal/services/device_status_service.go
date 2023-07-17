@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"sort"
-	"time"
 
+	"github.com/DIMO-Network/device-data-api/internal/response"
 	"github.com/DIMO-Network/device-data-api/models"
 	"github.com/DIMO-Network/shared"
 	smartcar "github.com/smartcar/go-sdk"
@@ -13,12 +13,14 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+//go:generate mockgen -source device_status_service.go -destination mocks/device_status_service_mock.go
 type deviceStatusService struct {
 	ddSvc DeviceDefinitionsAPIService
 }
 
 type DeviceStatusService interface {
-	PrepareDeviceStatusInformation(ctx context.Context, deviceData models.UserDeviceDatumSlice, deviceDefinitionID string, deviceStyleID *string, privilegeIDs []int64) DeviceSnapshot
+	PrepareDeviceStatusInformation(ctx context.Context, deviceData models.UserDeviceDatumSlice, deviceDefinitionID string, deviceStyleID *string, privilegeIDs []int64) response.DeviceSnapshot
+	CalculateRange(ctx context.Context, deviceDefinitionID string, deviceStyleID *string, fuelPercentRemaining float64) (*float64, error)
 }
 
 func NewDeviceStatusService(deviceDefinitionsSvc DeviceDefinitionsAPIService) DeviceStatusService {
@@ -34,8 +36,8 @@ const (
 	AllTimeLocation int64 = 4
 )
 
-func (dss *deviceStatusService) PrepareDeviceStatusInformation(ctx context.Context, deviceData models.UserDeviceDatumSlice, deviceDefinitionID string, deviceStyleID *string, privilegeIDs []int64) DeviceSnapshot {
-	ds := DeviceSnapshot{}
+func (dss *deviceStatusService) PrepareDeviceStatusInformation(ctx context.Context, deviceData models.UserDeviceDatumSlice, deviceDefinitionID string, deviceStyleID *string, privilegeIDs []int64) response.DeviceSnapshot {
+	ds := response.DeviceSnapshot{}
 
 	// set the record created date to most recent one
 	for _, datum := range deviceData {
@@ -144,7 +146,7 @@ func (dss *deviceStatusService) PrepareDeviceStatusInformation(ctx context.Conte
 	}
 
 	if ds.Range == nil && ds.FuelPercentRemaining != nil {
-		calcRange, err := dss.calculateRange(ctx, deviceDefinitionID, deviceStyleID, *ds.FuelPercentRemaining)
+		calcRange, err := dss.CalculateRange(ctx, deviceDefinitionID, deviceStyleID, *ds.FuelPercentRemaining)
 		if err == nil {
 			ds.Range = calcRange
 		}
@@ -169,8 +171,8 @@ func findMostRecentSignal(udd models.UserDeviceDatumSlice, path string, highestF
 	return gjson.GetBytes(udd[0].Signals.JSON, path)
 }
 
-// calculateRange returns the current estimated range based on fuel tank capacity, mpg, and fuelPercentRemaining and returns it in Kilometers
-func (dss *deviceStatusService) calculateRange(ctx context.Context, deviceDefinitionID string, deviceStyleID *string, fuelPercentRemaining float64) (*float64, error) {
+// CalculateRange returns the current estimated range based on fuel tank capacity, mpg, and fuelPercentRemaining and returns it in Kilometers
+func (dss *deviceStatusService) CalculateRange(ctx context.Context, deviceDefinitionID string, deviceStyleID *string, fuelPercentRemaining float64) (*float64, error) {
 	if fuelPercentRemaining <= 0.01 {
 		return nil, fmt.Errorf("fuelPercentRemaining lt 0.01 so cannot calculate range")
 	}
@@ -192,26 +194,6 @@ func (dss *deviceStatusService) calculateRange(ctx context.Context, deviceDefini
 	}
 
 	return nil, nil
-}
-
-// DeviceSnapshot is the response object for device status endpoint
-// https://docs.google.com/document/d/1DYzzTOR9WA6WJNoBnwpKOoxfmrVwPWNLv0x0MkjIAqY/edit#heading=h.dnp7xngl47bw
-type DeviceSnapshot struct {
-	Charging             *bool                  `json:"charging,omitempty"`
-	FuelPercentRemaining *float64               `json:"fuelPercentRemaining,omitempty"`
-	BatteryCapacity      *int64                 `json:"batteryCapacity,omitempty"`
-	OilLevel             *float64               `json:"oil,omitempty"`
-	Odometer             *float64               `json:"odometer,omitempty"`
-	Latitude             *float64               `json:"latitude,omitempty"`
-	Longitude            *float64               `json:"longitude,omitempty"`
-	Range                *float64               `json:"range,omitempty"`
-	StateOfCharge        *float64               `json:"soc,omitempty"`
-	ChargeLimit          *float64               `json:"chargeLimit,omitempty"`
-	RecordUpdatedAt      *time.Time             `json:"recordUpdatedAt,omitempty"`
-	RecordCreatedAt      *time.Time             `json:"recordCreatedAt,omitempty"`
-	TirePressure         *smartcar.TirePressure `json:"tirePressure,omitempty"`
-	BatteryVoltage       *float64               `json:"batteryVoltage,omitempty"`
-	AmbientTemp          *float64               `json:"ambientTemp,omitempty"`
 }
 
 // sortBySignalValueDesc Sort user device data so the highest value is first
