@@ -41,7 +41,12 @@ message UserDeviceDataRequest {
 }
 
 message DateIdsResponse {
-  repeated string date_ids = 1;
+  repeated DateIdResponseItem date_ids = 1;
+}
+
+message DateIdResponseItem {
+  string date_id = 1;
+  string integration_id = 2;
 }
 
 message UserDeviceDataResponse {

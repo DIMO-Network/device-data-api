@@ -296,7 +296,7 @@ type DateIdsResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	DateIds []string `protobuf:"bytes,1,rep,name=date_ids,json=dateIds,proto3" json:"date_ids,omitempty"`
+	DateIds []*DateIdResponseItem `protobuf:"bytes,1,rep,name=date_ids,json=dateIds,proto3" json:"date_ids,omitempty"`
 }
 
 func (x *DateIdsResponse) Reset() {
@@ -331,11 +331,66 @@ func (*DateIdsResponse) Descriptor() ([]byte, []int) {
 	return file_pkg_grpc_user_device_data_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *DateIdsResponse) GetDateIds() []string {
+func (x *DateIdsResponse) GetDateIds() []*DateIdResponseItem {
 	if x != nil {
 		return x.DateIds
 	}
 	return nil
+}
+
+type DateIdResponseItem struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	DateId        string `protobuf:"bytes,1,opt,name=date_id,json=dateId,proto3" json:"date_id,omitempty"`
+	IntegrationId string `protobuf:"bytes,2,opt,name=integration_id,json=integrationId,proto3" json:"integration_id,omitempty"`
+}
+
+func (x *DateIdResponseItem) Reset() {
+	*x = DateIdResponseItem{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_pkg_grpc_user_device_data_proto_msgTypes[5]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DateIdResponseItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DateIdResponseItem) ProtoMessage() {}
+
+func (x *DateIdResponseItem) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_grpc_user_device_data_proto_msgTypes[5]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DateIdResponseItem.ProtoReflect.Descriptor instead.
+func (*DateIdResponseItem) Descriptor() ([]byte, []int) {
+	return file_pkg_grpc_user_device_data_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *DateIdResponseItem) GetDateId() string {
+	if x != nil {
+		return x.DateId
+	}
+	return ""
+}
+
+func (x *DateIdResponseItem) GetIntegrationId() string {
+	if x != nil {
+		return x.IntegrationId
+	}
+	return ""
 }
 
 type UserDeviceDataResponse struct {
@@ -363,7 +418,7 @@ type UserDeviceDataResponse struct {
 func (x *UserDeviceDataResponse) Reset() {
 	*x = UserDeviceDataResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_pkg_grpc_user_device_data_proto_msgTypes[5]
+		mi := &file_pkg_grpc_user_device_data_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -376,7 +431,7 @@ func (x *UserDeviceDataResponse) String() string {
 func (*UserDeviceDataResponse) ProtoMessage() {}
 
 func (x *UserDeviceDataResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_grpc_user_device_data_proto_msgTypes[5]
+	mi := &file_pkg_grpc_user_device_data_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -389,7 +444,7 @@ func (x *UserDeviceDataResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserDeviceDataResponse.ProtoReflect.Descriptor instead.
 func (*UserDeviceDataResponse) Descriptor() ([]byte, []int) {
-	return file_pkg_grpc_user_device_data_proto_rawDescGZIP(), []int{5}
+	return file_pkg_grpc_user_device_data_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *UserDeviceDataResponse) GetCharging() bool {
@@ -515,7 +570,7 @@ type TirePressureResponse struct {
 func (x *TirePressureResponse) Reset() {
 	*x = TirePressureResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_pkg_grpc_user_device_data_proto_msgTypes[6]
+		mi := &file_pkg_grpc_user_device_data_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -528,7 +583,7 @@ func (x *TirePressureResponse) String() string {
 func (*TirePressureResponse) ProtoMessage() {}
 
 func (x *TirePressureResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_grpc_user_device_data_proto_msgTypes[6]
+	mi := &file_pkg_grpc_user_device_data_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -541,7 +596,7 @@ func (x *TirePressureResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TirePressureResponse.ProtoReflect.Descriptor instead.
 func (*TirePressureResponse) Descriptor() ([]byte, []int) {
-	return file_pkg_grpc_user_device_data_proto_rawDescGZIP(), []int{6}
+	return file_pkg_grpc_user_device_data_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *TirePressureResponse) GetFrontLeft() float64 {
@@ -651,9 +706,16 @@ var file_pkg_grpc_user_device_data_proto_rawDesc = []byte{
 	0x64, 0x65, 0x76, 0x69, 0x63, 0x65, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x49, 0x64, 0x12, 0x23, 0x0a,
 	0x0d, 0x70, 0x72, 0x69, 0x76, 0x69, 0x6c, 0x65, 0x67, 0x65, 0x5f, 0x69, 0x64, 0x73, 0x18, 0x04,
 	0x20, 0x03, 0x28, 0x03, 0x52, 0x0c, 0x70, 0x72, 0x69, 0x76, 0x69, 0x6c, 0x65, 0x67, 0x65, 0x49,
-	0x64, 0x73, 0x22, 0x2c, 0x0a, 0x0f, 0x44, 0x61, 0x74, 0x65, 0x49, 0x64, 0x73, 0x52, 0x65, 0x73,
-	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x19, 0x0a, 0x08, 0x64, 0x61, 0x74, 0x65, 0x5f, 0x69, 0x64,
-	0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x09, 0x52, 0x07, 0x64, 0x61, 0x74, 0x65, 0x49, 0x64, 0x73,
+	0x64, 0x73, 0x22, 0x46, 0x0a, 0x0f, 0x44, 0x61, 0x74, 0x65, 0x49, 0x64, 0x73, 0x52, 0x65, 0x73,
+	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x33, 0x0a, 0x08, 0x64, 0x61, 0x74, 0x65, 0x5f, 0x69, 0x64,
+	0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x18, 0x2e, 0x67, 0x72, 0x70, 0x63, 0x2e, 0x44,
+	0x61, 0x74, 0x65, 0x49, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x49, 0x74, 0x65,
+	0x6d, 0x52, 0x07, 0x64, 0x61, 0x74, 0x65, 0x49, 0x64, 0x73, 0x22, 0x54, 0x0a, 0x12, 0x44, 0x61,
+	0x74, 0x65, 0x49, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x49, 0x74, 0x65, 0x6d,
+	0x12, 0x17, 0x0a, 0x07, 0x64, 0x61, 0x74, 0x65, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x06, 0x64, 0x61, 0x74, 0x65, 0x49, 0x64, 0x12, 0x25, 0x0a, 0x0e, 0x69, 0x6e, 0x74,
+	0x65, 0x67, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x0d, 0x69, 0x6e, 0x74, 0x65, 0x67, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x49, 0x64,
 	0x22, 0x86, 0x05, 0x0a, 0x16, 0x55, 0x73, 0x65, 0x72, 0x44, 0x65, 0x76, 0x69, 0x63, 0x65, 0x44,
 	0x61, 0x74, 0x61, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x1a, 0x0a, 0x08, 0x63,
 	0x68, 0x61, 0x72, 0x67, 0x69, 0x6e, 0x67, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x08, 0x63,
@@ -743,34 +805,36 @@ func file_pkg_grpc_user_device_data_proto_rawDescGZIP() []byte {
 	return file_pkg_grpc_user_device_data_proto_rawDescData
 }
 
-var file_pkg_grpc_user_device_data_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_pkg_grpc_user_device_data_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_pkg_grpc_user_device_data_proto_goTypes = []interface{}{
 	(*SignalRequest)(nil),          // 0: grpc.SignalRequest
 	(*SignalResponse)(nil),         // 1: grpc.SignalResponse
 	(*SignalItemResponse)(nil),     // 2: grpc.SignalItemResponse
 	(*UserDeviceDataRequest)(nil),  // 3: grpc.UserDeviceDataRequest
 	(*DateIdsResponse)(nil),        // 4: grpc.DateIdsResponse
-	(*UserDeviceDataResponse)(nil), // 5: grpc.UserDeviceDataResponse
-	(*TirePressureResponse)(nil),   // 6: grpc.TirePressureResponse
-	(*timestamppb.Timestamp)(nil),  // 7: google.protobuf.Timestamp
-	(*emptypb.Empty)(nil),          // 8: google.protobuf.Empty
+	(*DateIdResponseItem)(nil),     // 5: grpc.DateIdResponseItem
+	(*UserDeviceDataResponse)(nil), // 6: grpc.UserDeviceDataResponse
+	(*TirePressureResponse)(nil),   // 7: grpc.TirePressureResponse
+	(*timestamppb.Timestamp)(nil),  // 8: google.protobuf.Timestamp
+	(*emptypb.Empty)(nil),          // 9: google.protobuf.Empty
 }
 var file_pkg_grpc_user_device_data_proto_depIdxs = []int32{
 	2, // 0: grpc.SignalResponse.items:type_name -> grpc.SignalItemResponse
-	7, // 1: grpc.UserDeviceDataResponse.record_updated_at:type_name -> google.protobuf.Timestamp
-	7, // 2: grpc.UserDeviceDataResponse.record_created_at:type_name -> google.protobuf.Timestamp
-	6, // 3: grpc.UserDeviceDataResponse.tire_pressure:type_name -> grpc.TirePressureResponse
-	3, // 4: grpc.UserDeviceDataService.GetUserDeviceData:input_type -> grpc.UserDeviceDataRequest
-	0, // 5: grpc.UserDeviceDataService.GetSignals:input_type -> grpc.SignalRequest
-	8, // 6: grpc.UserDeviceDataService.GetAvailableDates:input_type -> google.protobuf.Empty
-	5, // 7: grpc.UserDeviceDataService.GetUserDeviceData:output_type -> grpc.UserDeviceDataResponse
-	1, // 8: grpc.UserDeviceDataService.GetSignals:output_type -> grpc.SignalResponse
-	4, // 9: grpc.UserDeviceDataService.GetAvailableDates:output_type -> grpc.DateIdsResponse
-	7, // [7:10] is the sub-list for method output_type
-	4, // [4:7] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	5, // 1: grpc.DateIdsResponse.date_ids:type_name -> grpc.DateIdResponseItem
+	8, // 2: grpc.UserDeviceDataResponse.record_updated_at:type_name -> google.protobuf.Timestamp
+	8, // 3: grpc.UserDeviceDataResponse.record_created_at:type_name -> google.protobuf.Timestamp
+	7, // 4: grpc.UserDeviceDataResponse.tire_pressure:type_name -> grpc.TirePressureResponse
+	3, // 5: grpc.UserDeviceDataService.GetUserDeviceData:input_type -> grpc.UserDeviceDataRequest
+	0, // 6: grpc.UserDeviceDataService.GetSignals:input_type -> grpc.SignalRequest
+	9, // 7: grpc.UserDeviceDataService.GetAvailableDates:input_type -> google.protobuf.Empty
+	6, // 8: grpc.UserDeviceDataService.GetUserDeviceData:output_type -> grpc.UserDeviceDataResponse
+	1, // 9: grpc.UserDeviceDataService.GetSignals:output_type -> grpc.SignalResponse
+	4, // 10: grpc.UserDeviceDataService.GetAvailableDates:output_type -> grpc.DateIdsResponse
+	8, // [8:11] is the sub-list for method output_type
+	5, // [5:8] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_pkg_grpc_user_device_data_proto_init() }
@@ -840,7 +904,7 @@ func file_pkg_grpc_user_device_data_proto_init() {
 			}
 		}
 		file_pkg_grpc_user_device_data_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*UserDeviceDataResponse); i {
+			switch v := v.(*DateIdResponseItem); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -852,6 +916,18 @@ func file_pkg_grpc_user_device_data_proto_init() {
 			}
 		}
 		file_pkg_grpc_user_device_data_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*UserDeviceDataResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_pkg_grpc_user_device_data_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*TirePressureResponse); i {
 			case 0:
 				return &v.state
@@ -871,7 +947,7 @@ func file_pkg_grpc_user_device_data_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_pkg_grpc_user_device_data_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

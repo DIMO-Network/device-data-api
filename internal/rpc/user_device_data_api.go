@@ -170,10 +170,10 @@ func (s *userDeviceData) GetSignals(ctx context.Context, req *pb.SignalRequest) 
 func (s *userDeviceData) GetAvailableDates(ctx context.Context, _ *emptypb.Empty) (*pb.DateIdsResponse, error) {
 	// raw query, project to list of strings
 
-	query := `select date_id from
-(select date_id
+	query := `select date_id, integration_id from
+(select date_id, integration_id
 from device_data_api.report_vehicle_signals_events_tracking
-group by date_id) as dates
+group by date_id, integration_id) as dates
 order by date_id desc`
 
 	// need obj array
@@ -185,15 +185,19 @@ order by date_id desc`
 	}
 
 	result := &pb.DateIdsResponse{
-		DateIds: make([]string, len(dateIdSlice)),
+		DateIds: make([]*pb.DateIdResponseItem, len(dateIdSlice)),
 	}
 	for i, item := range dateIdSlice {
-		result.DateIds[i] = item.DateID
+		result.DateIds[i] = &pb.DateIdResponseItem{
+			DateId:        item.DateID,
+			IntegrationId: item.IntegrationID,
+		}
 	}
 
 	return result, nil
 }
 
 type dateIDItem struct {
-	DateID string `boil:"date_id" json:"date_id" toml:"date_id" yaml:"date_id"`
+	DateID        string `boil:"date_id" json:"date_id" toml:"date_id" yaml:"date_id"`
+	IntegrationID string `boil:"integration_id" json:"integration_id" toml:"integration_id" yaml:"integration_id"`
 }
