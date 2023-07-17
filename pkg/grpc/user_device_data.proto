@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
 
 option go_package = "github.com/DIMO-Network/device-data-api/pkg/grpc";
 
@@ -9,12 +10,17 @@ package grpc;
 service UserDeviceDataService {
   rpc GetUserDeviceData(UserDeviceDataRequest) returns (UserDeviceDataResponse);
   rpc GetSignals(SignalRequest) returns (SignalResponse);
+  rpc GetAvailableDates(google.protobuf.Empty) returns (DateIdsResponse);
 }
 
 message SignalRequest {
   string integration_id = 1;
-  google.protobuf.Timestamp from_date = 2;
-  google.protobuf.Timestamp to_date = 3;
+  string date_id = 2;
+  optional string signal_name = 3;
+  optional string make_id = 4;
+  // this is the model
+  optional string device_definition_id = 5;
+  optional int64 year = 6;
 }
 
 message SignalResponse {
@@ -32,6 +38,15 @@ message UserDeviceDataRequest {
   string device_definition_id = 2;
   string device_style_id = 3;
   repeated int64 privilege_ids = 4;
+}
+
+message DateIdsResponse {
+  repeated DateIdResponseItem date_ids = 1;
+}
+
+message DateIdResponseItem {
+  string date_id = 1;
+  string integration_id = 2;
 }
 
 message UserDeviceDataResponse {
