@@ -150,7 +150,9 @@ func Test_deviceStatusService_PrepareDeviceStatusInformation(t *testing.T) {
 	}
 	autoPiData := models.UserDeviceDatum{
 		UserDeviceID: udID,
-		Signals: null.JSONFrom([]byte(`{"latitude": { "value": 33.75, "timestamp": "2023-04-27T15:57:37Z" },
+		Signals: null.JSONFrom([]byte(`{
+				"latitude": { "value": 33.75, "timestamp": "2023-04-27T15:57:37Z" },
+				"ambientTemp": { "value": 19, "timestamp": "2023-05-07T13:02:19Z" },
 				"longitude": { "value": -117.91, "timestamp": "2023-04-27T15:57:37Z" } }`)),
 		CreatedAt:     time.Now().Add(time.Minute * -1),
 		UpdatedAt:     time.Now().Add(time.Minute * -1),
@@ -166,6 +168,7 @@ func Test_deviceStatusService_PrepareDeviceStatusInformation(t *testing.T) {
 	assert.Equal(t, false, *snapshot.Charging)
 	assert.Equal(t, 244.0, snapshot.TirePressure.BackLeft)
 	assert.Equal(t, 195677.59375, *snapshot.Odometer)
+	assert.Equal(t, 19.0, *snapshot.AmbientTemp)
 	assert.Equal(t, 33.75, *snapshot.Latitude, "expected autopi latitude")
 	assert.Equal(t, -117.91, *snapshot.Longitude, "expected autopi longitude")
 	assert.Equal(t, "2023-04-27T15:57:37Z", snapshot.RecordUpdatedAt.Format(time.RFC3339))
