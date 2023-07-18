@@ -13,6 +13,10 @@ For an overview of the project, see the [DIMO technical documentation site.](htt
 `docker compose up -d`
 You will also need local psql instance running, eg. via brew services.
 
+If you only need to work on the gRPC side, leave the KAFKA_BROKERS and PORT setting empty. The only dependencies in this mode are:
+- psql
+- device-definitions grpc
+
 If you are working on the data download endpoint, copy and paste the following into the terminal (this creates a bucket on your local s3 instance):
 
 ```
