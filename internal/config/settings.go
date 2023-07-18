@@ -1,6 +1,9 @@
 package config
 
-import "github.com/DIMO-Network/shared/db"
+import (
+	"github.com/DIMO-Network/shared/db"
+	"github.com/rs/zerolog"
+)
 
 // Settings contains the application config
 type Settings struct {
@@ -44,4 +47,20 @@ type Settings struct {
 	DeviceStatusTopic         string      `yaml:"DEVICE_STATUS_TOPIC"`
 	KafkaBrokers              string      `yaml:"KAFKA_BROKERS"`
 	EventsTopic               string      `yaml:"EVENTS_TOPIC"`
+}
+
+func (s *Settings) IsKafkaEnabled(logger *zerolog.Logger) bool {
+	if s.KafkaBrokers == "" {
+		logger.Info().Msg("KAFKA_BROKERS is not set, any dependencies should be disabled")
+		return false
+	}
+	return true
+}
+
+func (s *Settings) IsWebAPIEnabled(logger *zerolog.Logger) bool {
+	if s.Port == "" {
+		logger.Info().Msg("PORT is not set, web api should be disabled")
+		return false
+	}
+	return true
 }

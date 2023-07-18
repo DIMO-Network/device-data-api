@@ -69,10 +69,13 @@ func (dc *dependencyContainer) getDeviceDefinitionService() (services.DeviceDefi
 	return ddSvc, definitionsConn
 }
 
+// getDeviceService dials a grpc connection to devices-api. If fails just returns nil svc, this is ok since not a required svc in all cases
 func (dc *dependencyContainer) getDeviceService() (services.DeviceAPIService, *grpc.ClientConn) {
 	devicesConn, err := grpc.Dial(dc.settings.DevicesAPIGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		dc.logger.Fatal().Err(err).Msg("failed to dial devices grpc")
+		dc.logger.Error().Err(err).Str("devices-api-grpc-addr", dc.settings.DevicesAPIGRPCAddr).
+			Msg("failed to dial devices-api grpc - continuing")
+		return nil, devicesConn
 	}
 	deviceSvc := services.NewDeviceAPIService(devicesConn)
 	return deviceSvc, devicesConn
