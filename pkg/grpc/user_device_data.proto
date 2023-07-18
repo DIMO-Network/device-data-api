@@ -50,21 +50,21 @@ message DateIdResponseItem {
 }
 
 message UserDeviceDataResponse {
-  bool charging = 1;
-  double fuel_percent_remaining = 2;
-  int64 battery_capacity = 3;
-  double oil_level = 4;
-  double odometer = 5;
-  double latitude = 6;
-  double longitude = 7;
-  double range = 8;
-  double state_of_charge = 9;
-  double charge_limit = 10;
+  optional bool charging = 1;
+  optional double fuel_percent_remaining = 2;
+  optional int64 battery_capacity = 3;
+  optional double oil_level = 4;
+  optional double odometer = 5;
+  optional double latitude = 6;
+  optional double longitude = 7;
+  optional double range = 8;
+  optional double state_of_charge = 9;
+  optional double charge_limit = 10;
   google.protobuf.Timestamp record_updated_at = 11;
   google.protobuf.Timestamp record_created_at = 12;
   TirePressureResponse tire_pressure = 13;
-  double battery_voltage   = 14;
-  double ambient_temp= 15;
+  optional double battery_voltage   = 14;
+  optional double ambient_temp= 15;
 }
 
 message TirePressureResponse {

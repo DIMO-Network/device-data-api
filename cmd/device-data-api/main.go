@@ -90,7 +90,7 @@ func main() {
 		if settings.IsWebAPIEnabled(&logger) {
 			startWebAPI(logger, &settings, pdb.DBS, deviceDefsSvc, devicesSvc)
 		}
-
+		// todo fine for production but will shutdown too soon locally
 		go startGRPCServer(&settings, pdb.DBS, &logger, deviceDefsSvc)
 	} else {
 		subcommands.Register(&migrateDBCmd{logger: logger, settings: settings}, "database")
