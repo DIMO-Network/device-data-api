@@ -83,6 +83,9 @@ func main() {
 	// start the actual stuff
 	if len(os.Args) == 1 {
 		startPrometheus(logger)
+		// todo fine for production but will shutdown too soon locally
+		go startGRPCServer(&settings, pdb.DBS, &logger, deviceDefsSvc)
+
 		if settings.IsKafkaEnabled(&logger) {
 			eventService := services.NewEventService(&logger, &settings, deps.getKafkaProducer())
 			startDeviceStatusConsumer(logger, &settings, pdb, eventService, deviceDefsSvc, devicesSvc)
@@ -90,8 +93,6 @@ func main() {
 		if settings.IsWebAPIEnabled(&logger) {
 			startWebAPI(logger, &settings, pdb.DBS, deviceDefsSvc, devicesSvc)
 		}
-		// todo fine for production but will shutdown too soon locally
-		go startGRPCServer(&settings, pdb.DBS, &logger, deviceDefsSvc)
 	} else {
 		subcommands.Register(&migrateDBCmd{logger: logger, settings: settings}, "database")
 		subcommands.Register(&vehicleSignalsEventBatchServiceCmd{db: pdb.DBS, logger: logger, deviceDefSvc: deviceDefsSvc, deviceSvc: devicesSvc}, "events")
