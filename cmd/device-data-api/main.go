@@ -120,7 +120,7 @@ func startGRPCServer(settings *config.Settings, dbs func() *db.ReaderWriter, log
 	logger.Info().Msgf("Starting gRPC server on port %s", settings.GRPCPort)
 	server := grpc.NewServer(
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
-			metrics.GRPCMetricsMiddleware(),
+			metrics.GRPCMetricsAndLogMiddleware(logger),
 			grpc_ctxtags.UnaryServerInterceptor(),
 			grpc_prometheus.UnaryServerInterceptor,
 		)),

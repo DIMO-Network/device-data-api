@@ -116,7 +116,7 @@ func (s *userDeviceData) GetSignals(ctx context.Context, req *pb.SignalRequest) 
 	eventProperties, err := models.ReportVehicleSignalsEventsTrackings(queryEventProperty).All(ctx, s.dbs().Reader)
 
 	if err != nil {
-		return nil, status.Error(codes.Internal, "Internal error.")
+		return nil, status.Error(codes.Internal, "Internal error. "+err.Error())
 	}
 
 	queryEvent := qm.Where(
