@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"os/signal"
+	"syscall"
 
 	"github.com/DIMO-Network/device-data-api/internal/rpc"
 
@@ -91,8 +93,15 @@ func main() {
 			startDeviceStatusConsumer(logger, &settings, pdb, eventService, deviceDefsSvc, devicesSvc)
 		}
 		if settings.IsWebAPIEnabled(&logger) {
-			startWebAPI(logger, &settings, pdb.DBS, deviceDefsSvc, devicesSvc)
+			app := startWebAPI(logger, &settings, pdb.DBS, deviceDefsSvc, devicesSvc)
+			defer app.Shutdown()
 		}
+		c := make(chan os.Signal, 1)                    // Create channel to signify a signal being sent with length of 1
+		signal.Notify(c, os.Interrupt, syscall.SIGTERM) // When an interrupt or termination signal is sent, notify the channel
+		<-c                                             // This blocks the main thread until an interrupt is received
+		logger.Info().Msg("Gracefully shutting down and running cleanup tasks...")
+		// shutdown anything else
+
 	} else {
 		subcommands.Register(&migrateDBCmd{logger: logger, settings: settings}, "database")
 		subcommands.Register(&vehicleSignalsEventBatchServiceCmd{db: pdb.DBS, logger: logger, deviceDefSvc: deviceDefsSvc, deviceSvc: devicesSvc}, "events")

@@ -2,9 +2,6 @@ package main
 
 import (
 	"context"
-	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/DIMO-Network/device-data-api/internal/config"
@@ -28,7 +25,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *db.ReaderWriter, definitionsAPIService services.DeviceDefinitionsAPIService, deviceAPIService services.DeviceAPIService) {
+func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *db.ReaderWriter, definitionsAPIService services.DeviceDefinitionsAPIService, deviceAPIService services.DeviceAPIService) *fiber.App {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			return ErrorHandler(c, err, logger)
@@ -134,10 +131,5 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 			logger.Fatal().Err(err)
 		}
 	}()
-	c := make(chan os.Signal, 1)                    // Create channel to signify a signal being sent with length of 1
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM) // When an interrupt or termination signal is sent, notify the channel
-	<-c                                             // This blocks the main thread until an interrupt is received
-	logger.Info().Msg("Gracefully shutting down and running cleanup tasks...")
-	_ = app.Shutdown()
-	// shutdown anything else
+	return app
 }
