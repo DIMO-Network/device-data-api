@@ -3,8 +3,8 @@ package rpc
 import (
 	"context"
 	"database/sql"
-
 	"github.com/volatiletech/sqlboiler/v4/queries"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/pkg/errors"
@@ -21,8 +21,6 @@ import (
 	"github.com/DIMO-Network/shared/db"
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/types/known/timestamppb"
-
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
 func NewUserDeviceData(dbs func() *db.ReaderWriter, logger *zerolog.Logger, deviceDefSvc services.DeviceDefinitionsAPIService, deviceStatusSvc services.DeviceStatusService) pb.UserDeviceDataServiceServer {
@@ -107,28 +105,57 @@ func convertTirePressure(tp *smartcar.TirePressure) *pb.TirePressureResponse {
 }
 
 func (s *userDeviceData) GetSignals(ctx context.Context, req *pb.SignalRequest) (*pb.SignalResponse, error) {
-	queryEventProperty := qm.Where(
-		models.ReportVehicleSignalsEventsTrackingColumns.IntegrationID+" = ?",
-		req.IntegrationId,
-		qm.Where(models.ReportVehicleSignalsEventsTrackingColumns.DateID+" = ?", req.DateId),
-	)
+	var queryMods []qm.QueryMod
 
-	eventProperties, err := models.ReportVehicleSignalsEventsTrackings(queryEventProperty).All(ctx, s.dbs().Reader)
+	queryMods = append(queryMods, models.ReportVehicleSignalsEventsTrackingWhere.IntegrationID.EQ(req.IntegrationId))
+	queryMods = append(queryMods, models.ReportVehicleSignalsEventsTrackingWhere.DateID.EQ(req.DateId))
+
+	if req.SignalName != nil && *req.SignalName != "" {
+		queryMods = append(queryMods, models.ReportVehicleSignalsEventsTrackingWhere.PropertyID.EQ(*req.SignalName))
+	}
+
+	if req.MakeId != nil && *req.MakeId != "" {
+		queryMods = append(queryMods, models.ReportVehicleSignalsEventsTrackingWhere.DeviceMakeID.EQ(*req.MakeId))
+	}
+
+	if req.DeviceDefinitionId != nil && *req.DeviceDefinitionId != "" {
+		queryMods = append(queryMods, models.ReportVehicleSignalsEventsTrackingWhere.DeviceDefinitionID.EQ(*req.DeviceDefinitionId))
+	}
+
+	if req.Year != nil && *req.Year > 0 {
+		queryMods = append(queryMods, models.ReportVehicleSignalsEventsTrackingWhere.Year.EQ(int(*req.Year)))
+	}
+
+	eventProperties, err := models.ReportVehicleSignalsEventsTrackings(queryMods...).All(ctx, s.dbs().Reader)
 
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Internal error. "+err.Error())
 	}
 
-	queryEvent := qm.Where(
-		models.ReportVehicleSignalsEventsAllColumns.IntegrationID+" = ?",
-		req.IntegrationId,
-		qm.Where(models.ReportVehicleSignalsEventsAllColumns.DateID+" = ?", req.DateId),
-	)
+	var queryAllMods []qm.QueryMod
+	queryAllMods = append(queryAllMods, models.ReportVehicleSignalsEventsAllWhere.IntegrationID.EQ(req.IntegrationId))
+	queryAllMods = append(queryAllMods, models.ReportVehicleSignalsEventsAllWhere.DateID.EQ(req.DateId))
 
-	events, err := models.ReportVehicleSignalsEventsAlls(queryEvent).All(ctx, s.dbs().Reader)
+	if req.SignalName != nil && *req.SignalName != "" {
+		queryAllMods = append(queryAllMods, models.ReportVehicleSignalsEventsAllWhere.PropertyID.EQ(*req.SignalName))
+	}
+
+	if req.MakeId != nil && *req.MakeId != "" {
+		queryAllMods = append(queryAllMods, models.ReportVehicleSignalsEventsAllWhere.DeviceMakeID.EQ(*req.MakeId))
+	}
+
+	if req.DeviceDefinitionId != nil && *req.DeviceDefinitionId != "" {
+		queryAllMods = append(queryAllMods, models.ReportVehicleSignalsEventsAllWhere.DeviceDefinitionID.EQ(*req.DeviceDefinitionId))
+	}
+
+	if req.Year != nil && *req.Year > 0 {
+		queryAllMods = append(queryAllMods, models.ReportVehicleSignalsEventsAllWhere.Year.EQ(int(*req.Year)))
+	}
+
+	events, err := models.ReportVehicleSignalsEventsAlls(queryAllMods...).All(ctx, s.dbs().Reader)
 
 	if err != nil {
-		return nil, status.Error(codes.Internal, "Internal error.")
+		return nil, status.Error(codes.Internal, "Internal error."+err.Error())
 	}
 
 	result := &pb.SignalResponse{}
