@@ -15,6 +15,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	internalmodel "github.com/DIMO-Network/device-data-api/internal/models"
 	"github.com/DIMO-Network/device-data-api/internal/services"
 	"github.com/DIMO-Network/device-data-api/models"
 	pb "github.com/DIMO-Network/device-data-api/pkg/grpc"
@@ -105,7 +106,10 @@ func convertTirePressure(tp *smartcar.TirePressure) *pb.TirePressureResponse {
 }
 
 func (s *userDeviceData) GetSignals(ctx context.Context, req *pb.SignalRequest) (*pb.SignalResponse, error) {
-	var queryMods []qm.QueryMod
+	queryMods := []qm.QueryMod{
+		qm.Select("property_id", "SUM(count) as total_count"),
+		qm.GroupBy("property_id"),
+	}
 
 	queryMods = append(queryMods, models.ReportVehicleSignalsEventsTrackingWhere.IntegrationID.EQ(req.IntegrationId))
 	queryMods = append(queryMods, models.ReportVehicleSignalsEventsTrackingWhere.DateID.EQ(req.DateId))
@@ -126,13 +130,18 @@ func (s *userDeviceData) GetSignals(ctx context.Context, req *pb.SignalRequest) 
 		queryMods = append(queryMods, models.ReportVehicleSignalsEventsTrackingWhere.Year.EQ(int(*req.Year)))
 	}
 
-	eventProperties, err := models.ReportVehicleSignalsEventsTrackings(queryMods...).All(ctx, s.dbs().Reader)
+	var eventProperties []*internalmodel.SignalsEvents
+	err := models.ReportVehicleSignalsEventsTrackings(queryMods...).Bind(ctx, s.dbs().Reader, &eventProperties)
 
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Internal error. "+err.Error())
 	}
 
-	var queryAllMods []qm.QueryMod
+	queryAllMods := []qm.QueryMod{
+		qm.Select("property_id", "SUM(count) as total_count"),
+		qm.GroupBy("property_id"),
+	}
+
 	queryAllMods = append(queryAllMods, models.ReportVehicleSignalsEventsAllWhere.IntegrationID.EQ(req.IntegrationId))
 	queryAllMods = append(queryAllMods, models.ReportVehicleSignalsEventsAllWhere.DateID.EQ(req.DateId))
 
@@ -152,25 +161,26 @@ func (s *userDeviceData) GetSignals(ctx context.Context, req *pb.SignalRequest) 
 		queryAllMods = append(queryAllMods, models.ReportVehicleSignalsEventsAllWhere.Year.EQ(int(*req.Year)))
 	}
 
-	events, err := models.ReportVehicleSignalsEventsAlls(queryAllMods...).All(ctx, s.dbs().Reader)
+	var allEvents []*internalmodel.SignalsEvents
+	err = models.ReportVehicleSignalsEventsAlls(queryAllMods...).Bind(ctx, s.dbs().Reader, &allEvents)
 
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Internal error."+err.Error())
 	}
 
 	result := &pb.SignalResponse{}
-	for _, event := range events {
+	for _, event := range allEvents {
 		requestCount := 0
 		for _, eventProperty := range eventProperties {
 			if eventProperty.PropertyID == event.PropertyID {
-				requestCount = eventProperty.Count
+				requestCount = int(eventProperty.TotalCount)
 				break
 			}
 		}
 		result.Items = append(result.Items, &pb.SignalItemResponse{
 			Property:     event.PropertyID,
 			RequestCount: int32(requestCount),
-			TotalCount:   int32(event.Count),
+			TotalCount:   int32(event.TotalCount),
 		})
 	}
 
@@ -187,7 +197,7 @@ group by date_id, integration_id) as dates
 order by date_id desc`
 
 	// need obj array
-	var dateIDSlice []*dateIDItem
+	var dateIDSlice []*internalmodel.DateIDItem
 
 	err := queries.Raw(query).Bind(ctx, s.dbs().Reader, &dateIDSlice)
 	if err != nil {
@@ -205,9 +215,4 @@ order by date_id desc`
 	}
 
 	return result, nil
-}
-
-type dateIDItem struct {
-	DateID        string `boil:"date_id" json:"date_id" toml:"date_id" yaml:"date_id"`
-	IntegrationID string `boil:"integration_id" json:"integration_id" toml:"integration_id" yaml:"integration_id"`
 }
