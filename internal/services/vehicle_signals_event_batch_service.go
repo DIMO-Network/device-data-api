@@ -18,7 +18,7 @@ import (
 
 //go:generate mockgen -source vehicle_data_tracking_service.go -destination mocks/vehicle_data_tracking_service_mock.go
 type VehicleSignalsEventBatchService interface {
-	GenerateVehicleDataTracking(ctx context.Context) error
+	GenerateVehicleDataTracking(ctx context.Context, dateKey string, fromTime time.Time) error
 }
 
 func NewVehicleSignalsEventBatchService(db func() *db.ReaderWriter,
@@ -41,7 +41,7 @@ type vehicleSignalsEventBatchService struct {
 	deviceSvc    DeviceAPIService
 }
 
-func (v *vehicleSignalsEventBatchService) GenerateVehicleDataTracking(ctx context.Context) error {
+func (v *vehicleSignalsEventBatchService) GenerateVehicleDataTracking(ctx context.Context, dateKey string, fromTime time.Time) error {
 
 	const CacheKey = "VehicleDataTrackingProperties"
 	get, found := v.memoryCache.Get(CacheKey)
@@ -60,12 +60,6 @@ func (v *vehicleSignalsEventBatchService) GenerateVehicleDataTracking(ctx contex
 		v.memoryCache.Set(CacheKey, eventAvailableProperties, 30*time.Minute)
 	}
 
-	now := time.Now()
-	yesterday := now.AddDate(0, 0, -7)
-
-	fromTime := time.Date(yesterday.Year(), yesterday.Month(), yesterday.Day(), 0, 0, 0, 0, yesterday.Location())
-	//toTime := time.Date(yesterday.Year(), yesterday.Month(), yesterday.Day(), 23, 59, 59, 0, yesterday.Location())
-
 	deviceDataEvents, err := models.UserDeviceData(
 		models.UserDeviceDatumWhere.Signals.IsNotNull(),
 		models.UserDeviceDatumWhere.UpdatedAt.GTE(fromTime),
@@ -76,8 +70,6 @@ func (v *vehicleSignalsEventBatchService) GenerateVehicleDataTracking(ctx contex
 	}
 
 	v.log.Info().Msgf("found total of valid userDeviceData records: %d", len(deviceDataEvents))
-
-	dateKey := fromTime.Format("20060102")
 
 	for _, item := range deviceDataEvents {
 
