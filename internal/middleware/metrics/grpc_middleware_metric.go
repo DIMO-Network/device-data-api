@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"context"
+
 	"github.com/rs/zerolog"
 
 	"github.com/DIMO-Network/device-data-api/internal/appmetrics"
