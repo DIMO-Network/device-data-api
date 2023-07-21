@@ -244,6 +244,24 @@ func (s *userDeviceData) GetSummaryConnected(ctx context.Context, in *pb.Summary
 	return result, nil
 }
 
+func (s *userDeviceData) GetSecondLevelSignals(ctx context.Context, in *pb.SecondLevelSignalsRequest) (*pb.SecondLevelSignalsResponse, error) {
+	query := fmt.Sprintf(`select makes.device_make,
+       (select sum(count) from report_vehicle_signals_events_tracking where device_make = makes.device_make) as count_sum,
+       makes.record_count
+from
+(select device_make, count(*) as record_count from report_vehicle_signals_events_tracking
+   where integration_id = '%s'
+   and date_id = '%s' and property_id = '%s'
+      group by device_make
+order by device_make asc) as makes`, in.IntegrationId, in.DateId, in.Property)
+
+	err := queries.Raw(query).Bind(ctx, s.dbs().Reader, &dateIDSlice)
+
+	result := &pb.SecondLevelSignalsResponse{}
+
+	return result, nil
+}
+
 func convertToDate(input string) (time.Time, error) {
 	// Check if the input string is valid and has a length of 8 characters
 	if len(input) != 8 {
