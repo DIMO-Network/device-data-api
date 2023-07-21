@@ -1,12 +1,7 @@
 package models
 
 type SignalsEvents struct {
-	PropertyID string
-	TotalCount int64
-}
-
-type MakeSignalsEvents struct {
-	Make       string `boil:"device_make" json:"device_make" toml:"device_make" yaml:"device_make"`
+	Name       string `boil:"name" json:"name" toml:"name" yaml:"name"`
 	TotalCount int64
 }
 
