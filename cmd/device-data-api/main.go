@@ -94,6 +94,7 @@ func main() {
 		}
 		if settings.IsWebAPIEnabled(&logger) {
 			app := startWebAPI(logger, &settings, pdb.DBS, deviceDefsSvc, devicesSvc)
+			// nolint
 			defer app.Shutdown()
 		}
 		c := make(chan os.Signal, 1)                    // Create channel to signify a signal being sent with length of 1
