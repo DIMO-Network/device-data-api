@@ -24,8 +24,11 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type UserDeviceDataServiceClient interface {
 	GetUserDeviceData(ctx context.Context, in *UserDeviceDataRequest, opts ...grpc.CallOption) (*UserDeviceDataResponse, error)
+	// todo do we have a seperate proto for reports vs user data?
 	GetSignals(ctx context.Context, in *SignalRequest, opts ...grpc.CallOption) (*SignalResponse, error)
 	GetAvailableDates(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*DateIdsResponse, error)
+	GetSummaryConnected(ctx context.Context, in *SummaryConnectedRequest, opts ...grpc.CallOption) (*SummaryConnectedResponse, error)
+	GetSecondLevelSignals(ctx context.Context, in *SignalRequest, opts ...grpc.CallOption) (*SecondLevelSignalsResponse, error)
 }
 
 type userDeviceDataServiceClient struct {
@@ -63,13 +66,34 @@ func (c *userDeviceDataServiceClient) GetAvailableDates(ctx context.Context, in 
 	return out, nil
 }
 
+func (c *userDeviceDataServiceClient) GetSummaryConnected(ctx context.Context, in *SummaryConnectedRequest, opts ...grpc.CallOption) (*SummaryConnectedResponse, error) {
+	out := new(SummaryConnectedResponse)
+	err := c.cc.Invoke(ctx, "/grpc.UserDeviceDataService/GetSummaryConnected", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userDeviceDataServiceClient) GetSecondLevelSignals(ctx context.Context, in *SignalRequest, opts ...grpc.CallOption) (*SecondLevelSignalsResponse, error) {
+	out := new(SecondLevelSignalsResponse)
+	err := c.cc.Invoke(ctx, "/grpc.UserDeviceDataService/GetSecondLevelSignals", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserDeviceDataServiceServer is the server API for UserDeviceDataService service.
 // All implementations must embed UnimplementedUserDeviceDataServiceServer
 // for forward compatibility
 type UserDeviceDataServiceServer interface {
 	GetUserDeviceData(context.Context, *UserDeviceDataRequest) (*UserDeviceDataResponse, error)
+	// todo do we have a seperate proto for reports vs user data?
 	GetSignals(context.Context, *SignalRequest) (*SignalResponse, error)
 	GetAvailableDates(context.Context, *emptypb.Empty) (*DateIdsResponse, error)
+	GetSummaryConnected(context.Context, *SummaryConnectedRequest) (*SummaryConnectedResponse, error)
+	GetSecondLevelSignals(context.Context, *SignalRequest) (*SecondLevelSignalsResponse, error)
 	mustEmbedUnimplementedUserDeviceDataServiceServer()
 }
 
@@ -85,6 +109,12 @@ func (UnimplementedUserDeviceDataServiceServer) GetSignals(context.Context, *Sig
 }
 func (UnimplementedUserDeviceDataServiceServer) GetAvailableDates(context.Context, *emptypb.Empty) (*DateIdsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAvailableDates not implemented")
+}
+func (UnimplementedUserDeviceDataServiceServer) GetSummaryConnected(context.Context, *SummaryConnectedRequest) (*SummaryConnectedResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSummaryConnected not implemented")
+}
+func (UnimplementedUserDeviceDataServiceServer) GetSecondLevelSignals(context.Context, *SignalRequest) (*SecondLevelSignalsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSecondLevelSignals not implemented")
 }
 func (UnimplementedUserDeviceDataServiceServer) mustEmbedUnimplementedUserDeviceDataServiceServer() {}
 
@@ -153,6 +183,42 @@ func _UserDeviceDataService_GetAvailableDates_Handler(srv interface{}, ctx conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserDeviceDataService_GetSummaryConnected_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SummaryConnectedRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserDeviceDataServiceServer).GetSummaryConnected(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/grpc.UserDeviceDataService/GetSummaryConnected",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserDeviceDataServiceServer).GetSummaryConnected(ctx, req.(*SummaryConnectedRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserDeviceDataService_GetSecondLevelSignals_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SignalRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserDeviceDataServiceServer).GetSecondLevelSignals(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/grpc.UserDeviceDataService/GetSecondLevelSignals",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserDeviceDataServiceServer).GetSecondLevelSignals(ctx, req.(*SignalRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UserDeviceDataService_ServiceDesc is the grpc.ServiceDesc for UserDeviceDataService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -171,6 +237,14 @@ var UserDeviceDataService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetAvailableDates",
 			Handler:    _UserDeviceDataService_GetAvailableDates_Handler,
+		},
+		{
+			MethodName: "GetSummaryConnected",
+			Handler:    _UserDeviceDataService_GetSummaryConnected_Handler,
+		},
+		{
+			MethodName: "GetSecondLevelSignals",
+			Handler:    _UserDeviceDataService_GetSecondLevelSignals_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

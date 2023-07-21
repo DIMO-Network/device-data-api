@@ -17,9 +17,6 @@ service UserDeviceDataService {
 }
 
 message SecondLevelSignalsRequest {
-  repeated SecondLevelSignalsItem items = 1;
-}
-message SecondLevelSignalsItem {
   string integration_id = 1;
   string date_id = 2;
   // eg. vin or odometer
@@ -27,6 +24,10 @@ message SecondLevelSignalsItem {
 }
 
 message SecondLevelSignalsResponse {
+  repeated SecondLevelSignalRespItem items = 1;
+}
+
+message SecondLevelSignalRespItem {
   string make_name = 1;
   // use slug as parameter for next tree
   string make_slug = 2;
