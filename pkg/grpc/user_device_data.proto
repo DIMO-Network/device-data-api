@@ -13,7 +13,7 @@ service UserDeviceDataService {
   rpc GetSignals(SignalRequest) returns (SignalResponse);
   rpc GetAvailableDates(google.protobuf.Empty) returns (DateIdsResponse);
   rpc GetSummaryConnected(SummaryConnectedRequest) returns (SummaryConnectedResponse);
-  rpc GetSecondLevelSignals(SignalRequest) returns (SecondLevelSignalsResponse);
+  rpc GetSecondLevelSignals(SecondLevelSignalsRequest) returns (SecondLevelSignalsResponse);
 }
 
 message SecondLevelSignalsRequest {

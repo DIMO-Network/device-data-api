@@ -245,19 +245,57 @@ func (s *userDeviceData) GetSummaryConnected(ctx context.Context, in *pb.Summary
 }
 
 func (s *userDeviceData) GetSecondLevelSignals(ctx context.Context, in *pb.SecondLevelSignalsRequest) (*pb.SecondLevelSignalsResponse, error) {
-	query := fmt.Sprintf(`select makes.device_make,
-       (select sum(count) from report_vehicle_signals_events_tracking where device_make = makes.device_make) as count_sum,
-       makes.record_count
-from
-(select device_make, count(*) as record_count from report_vehicle_signals_events_tracking
-   where integration_id = '%s'
-   and date_id = '%s' and property_id = '%s'
-      group by device_make
-order by device_make asc) as makes`, in.IntegrationId, in.DateId, in.Property)
 
-	err := queries.Raw(query).Bind(ctx, s.dbs().Reader, &dateIDSlice)
+	queryMods := []qm.QueryMod{
+		qm.Select("device_make", "SUM(count) as total_count"),
+		qm.GroupBy("device_make"),
+	}
+
+	queryMods = append(queryMods, models.ReportVehicleSignalsEventsTrackingWhere.IntegrationID.EQ(in.IntegrationId))
+	queryMods = append(queryMods, models.ReportVehicleSignalsEventsTrackingWhere.DateID.EQ(in.DateId))
+	queryMods = append(queryMods, models.ReportVehicleSignalsEventsTrackingWhere.PropertyID.EQ(in.Property))
+
+	var eventProperties []*internalmodel.MakeSignalsEvents
+	err := models.ReportVehicleSignalsEventsTrackings(queryMods...).Bind(ctx, s.dbs().Reader, &eventProperties)
+
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Internal error. "+err.Error())
+	}
+
+	queryAllMods := []qm.QueryMod{
+		qm.Select("device_make", "SUM(count) as total_count"),
+		qm.GroupBy("device_make"),
+	}
+
+	queryAllMods = append(queryAllMods, models.ReportVehicleSignalsEventsAllWhere.IntegrationID.EQ(in.IntegrationId))
+	queryAllMods = append(queryAllMods, models.ReportVehicleSignalsEventsAllWhere.DateID.EQ(in.DateId))
+	queryAllMods = append(queryAllMods, models.ReportVehicleSignalsEventsAllWhere.PropertyID.EQ(in.Property))
+
+	var allEvents []*internalmodel.MakeSignalsEvents
+	err = models.ReportVehicleSignalsEventsAlls(queryAllMods...).Bind(ctx, s.dbs().Reader, &allEvents)
+
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Internal error."+err.Error())
+	}
+
+	s.logger.Info().Msgf("eventProperties %d", len(eventProperties))
+	s.logger.Info().Msgf("allEvents %d", len(allEvents))
 
 	result := &pb.SecondLevelSignalsResponse{}
+	for _, event := range allEvents {
+		requestCount := 0
+		for _, eventProperty := range eventProperties {
+			if eventProperty.Make == event.Make {
+				requestCount = int(eventProperty.TotalCount)
+				break
+			}
+		}
+		result.Items = append(result.Items, &pb.SecondLevelSignalRespItem{
+			MakeName:     event.Make,
+			RequestCount: int32(requestCount),
+			TotalCount:   int32(event.TotalCount),
+		})
+	}
 
 	return result, nil
 }
