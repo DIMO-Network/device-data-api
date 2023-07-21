@@ -3,7 +3,7 @@ package rpc
 import (
 	"context"
 	"database/sql"
-
+	"fmt"
 	"github.com/volatiletech/sqlboiler/v4/queries"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -216,4 +216,66 @@ order by date_id desc`
 	}
 
 	return result, nil
+}
+
+func (s *userDeviceData) GetSummaryConnected(ctx context.Context, in *pb.SummaryConnectedRequest) (*pb.SummaryConnectedResponse, error) {
+	allTimeCnt, err := models.UserDeviceData(models.UserDeviceDatumWhere.IntegrationID.EQ(in.IntegrationId)).Count(ctx, s.dbs().Reader)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	result := &pb.SummaryConnectedResponse{
+		ConnectedAllTime:   allTimeCnt,
+		ConnectedTimeframe: 0,
+	}
+
+	dataExists, err := models.ReportVehicleSignalsEventsTrackings(models.ReportVehicleSignalsEventsTrackingWhere.IntegrationID.EQ(in.IntegrationId),
+		models.ReportVehicleSignalsEventsTrackingWhere.DateID.EQ(in.DateId)).Exists(ctx, s.dbs().Reader)
+	if dataExists == false {
+		result.DateRange = "No Data found for Integration and Date"
+		return result, nil
+	}
+
+	// build date object from in.DateId
+	endDate, err := convertToDate(in.DateId)
+	result.DateRange = endDate.Add(time.Hour*24*-7).Format(time.RFC1123) + " to " + endDate.Format(time.RFC1123)
+
+	// todo query to get connected time frame count (note that this could be broken up by powertrain)
+
+	return result, nil
+}
+
+func convertToDate(input string) (time.Time, error) {
+	// Check if the input string is valid and has a length of 8 characters
+	if len(input) != 8 {
+		return time.Time{}, fmt.Errorf("invalid input: must be 8 characters long")
+	}
+
+	// Extract year, month, and day from the input string
+	year := input[:4]
+	month := input[4:6]
+	day := input[6:8]
+
+	// Parse the extracted parts into integers
+	yearInt := 0
+	monthInt := 0
+	dayInt := 0
+
+	_, err := fmt.Sscanf(year, "%d", &yearInt)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("invalid year: %v", err)
+	}
+
+	_, err = fmt.Sscanf(month, "%d", &monthInt)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("invalid month: %v", err)
+	}
+
+	_, err = fmt.Sscanf(day, "%d", &dayInt)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("invalid day: %v", err)
+	}
+
+	// Create the date from the extracted parts
+	date := time.Date(yearInt, time.Month(monthInt), dayInt, 0, 0, 0, 0, time.UTC)
+	return date, nil
 }

@@ -9,13 +9,52 @@ package grpc;
 
 service UserDeviceDataService {
   rpc GetUserDeviceData(UserDeviceDataRequest) returns (UserDeviceDataResponse);
+  // todo do we have a seperate proto for reports vs user data?
   rpc GetSignals(SignalRequest) returns (SignalResponse);
   rpc GetAvailableDates(google.protobuf.Empty) returns (DateIdsResponse);
+  rpc GetSummaryConnected(SummaryConnectedRequest) returns (SummaryConnectedResponse);
+  rpc GetSecondLevelSignals(SignalRequest) returns (SecondLevelSignalsResponse);
+}
+
+message SecondLevelSignalsRequest {
+  string integration_id = 1;
+  string date_id = 2;
+  // eg. vin or odometer
+  string property = 3;
+}
+
+message SecondLevelSignalsResponse {
+  repeated SecondLevelSignalRespItem items = 1;
+}
+
+message SecondLevelSignalRespItem {
+  string make_name = 1;
+  // use slug as parameter for next tree
+  string make_slug = 2;
+  // observer count
+  int32 total_count = 3;
+  // denominator for make and signal
+  int32 request_count = 4;
+}
+
+message SummaryConnectedRequest {
+  string integration_id = 1;
+  string date_id = 2;
+}
+
+message SummaryConnectedResponse {
+  // count of all udd for integration_id
+  int64 connected_all_time = 1;
+  // count of all udd for integration_id btw start and end date for report
+  int64 connected_timeframe = 2;
+  // start and end date human friendly
+  string date_range = 3;
 }
 
 message SignalRequest {
   string integration_id = 1;
   string date_id = 2;
+  // maybe we do not need any of below
   optional string signal_name = 3;
   optional string make_id = 4;
   // this is the model
