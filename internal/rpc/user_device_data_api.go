@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+
 	"github.com/volatiletech/sqlboiler/v4/queries"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -107,20 +108,56 @@ func convertTirePressure(tp *smartcar.TirePressure) *pb.TirePressureResponse {
 }
 
 func (s *userDeviceData) GetSignals(ctx context.Context, req *pb.SignalRequest) (*pb.SignalResponse, error) {
+
+	keys := make(map[string]string)
+
+	keys["0"] = "property_id"
+	keys["1"] = "device_make"
+	keys["2"] = "model"
+	keys["3"] = "year"
+
 	queryMods := []qm.QueryMod{
-		qm.Select("property_id", "SUM(count) as total_count"),
-		qm.GroupBy("property_id"),
+		qm.Select(fmt.Sprintf("%s as name", keys[*req.Level]), "SUM(count) as total_count"),
+		qm.GroupBy(keys[*req.Level]),
 	}
 
 	queryMods = append(queryMods, models.ReportVehicleSignalsEventsTrackingWhere.IntegrationID.EQ(req.IntegrationId))
 	queryMods = append(queryMods, models.ReportVehicleSignalsEventsTrackingWhere.DateID.EQ(req.DateId))
 
-	if req.SignalName != nil && *req.SignalName != "" {
-		queryMods = append(queryMods, models.ReportVehicleSignalsEventsTrackingWhere.PropertyID.EQ(*req.SignalName))
+	if *req.Level == "1" {
+		if req.PropertyId == nil || *req.PropertyId == "" {
+			return nil, status.Error(codes.InvalidArgument, "Invalid argument. PropertyId is required.")
+		}
 	}
 
-	if req.MakeId != nil && *req.MakeId != "" {
-		queryMods = append(queryMods, models.ReportVehicleSignalsEventsTrackingWhere.DeviceMakeID.EQ(*req.MakeId))
+	if *req.Level == "2" {
+		if req.Make == nil || *req.Make == "" {
+			return nil, status.Error(codes.InvalidArgument, "Invalid argument. Make is required.")
+		}
+	}
+
+	if *req.Level == "3" {
+		if req.Model == nil || *req.Model == "" {
+			return nil, status.Error(codes.InvalidArgument, "Invalid argument. Model is required.")
+		}
+	}
+
+	if *req.Level == "4" {
+		if req.Year == nil || *req.Year == 0 {
+			return nil, status.Error(codes.InvalidArgument, "Invalid argument. Year is required.")
+		}
+	}
+
+	if req.PropertyId != nil && *req.PropertyId != "" {
+		queryMods = append(queryMods, models.ReportVehicleSignalsEventsTrackingWhere.PropertyID.EQ(*req.PropertyId))
+	}
+
+	if req.Make != nil && *req.Make != "" {
+		queryMods = append(queryMods, models.ReportVehicleSignalsEventsTrackingWhere.DeviceMake.EQ(*req.Make))
+	}
+
+	if req.Model != nil && *req.Model != "" {
+		queryMods = append(queryMods, models.ReportVehicleSignalsEventsTrackingWhere.Model.EQ(*req.Model))
 	}
 
 	if req.DeviceDefinitionId != nil && *req.DeviceDefinitionId != "" {
@@ -139,19 +176,23 @@ func (s *userDeviceData) GetSignals(ctx context.Context, req *pb.SignalRequest) 
 	}
 
 	queryAllMods := []qm.QueryMod{
-		qm.Select("property_id", "SUM(count) as total_count"),
-		qm.GroupBy("property_id"),
+		qm.Select(fmt.Sprintf("%s as name", keys[*req.Level]), "SUM(count) as total_count"),
+		qm.GroupBy(keys[*req.Level]),
 	}
 
 	queryAllMods = append(queryAllMods, models.ReportVehicleSignalsEventsAllWhere.IntegrationID.EQ(req.IntegrationId))
 	queryAllMods = append(queryAllMods, models.ReportVehicleSignalsEventsAllWhere.DateID.EQ(req.DateId))
 
-	if req.SignalName != nil && *req.SignalName != "" {
-		queryAllMods = append(queryAllMods, models.ReportVehicleSignalsEventsAllWhere.PropertyID.EQ(*req.SignalName))
+	if req.PropertyId != nil && *req.PropertyId != "" {
+		queryAllMods = append(queryAllMods, models.ReportVehicleSignalsEventsAllWhere.PropertyID.EQ(*req.PropertyId))
 	}
 
-	if req.MakeId != nil && *req.MakeId != "" {
-		queryAllMods = append(queryAllMods, models.ReportVehicleSignalsEventsAllWhere.DeviceMakeID.EQ(*req.MakeId))
+	if req.Make != nil && *req.Make != "" {
+		queryAllMods = append(queryAllMods, models.ReportVehicleSignalsEventsAllWhere.DeviceMake.EQ(*req.Make))
+	}
+
+	if req.Model != nil && *req.Model != "" {
+		queryAllMods = append(queryAllMods, models.ReportVehicleSignalsEventsAllWhere.Model.EQ(*req.Model))
 	}
 
 	if req.DeviceDefinitionId != nil && *req.DeviceDefinitionId != "" {
@@ -173,13 +214,13 @@ func (s *userDeviceData) GetSignals(ctx context.Context, req *pb.SignalRequest) 
 	for _, event := range allEvents {
 		requestCount := 0
 		for _, eventProperty := range eventProperties {
-			if eventProperty.PropertyID == event.PropertyID {
+			if eventProperty.Name == event.Name {
 				requestCount = int(eventProperty.TotalCount)
 				break
 			}
 		}
 		result.Items = append(result.Items, &pb.SignalItemResponse{
-			Property:     event.PropertyID,
+			Name:         event.Name,
 			RequestCount: int32(requestCount),
 			TotalCount:   int32(event.TotalCount),
 		})
@@ -240,62 +281,6 @@ func (s *userDeviceData) GetSummaryConnected(ctx context.Context, in *pb.Summary
 	result.DateRange = endDate.Add(time.Hour*24*-7).Format(time.RFC1123) + " to " + endDate.Format(time.RFC1123)
 
 	// todo query to get connected time frame count (note that this could be broken up by powertrain)
-
-	return result, nil
-}
-
-func (s *userDeviceData) GetSecondLevelSignals(ctx context.Context, in *pb.SecondLevelSignalsRequest) (*pb.SecondLevelSignalsResponse, error) {
-
-	queryMods := []qm.QueryMod{
-		qm.Select("device_make", "SUM(count) as total_count"),
-		qm.GroupBy("device_make"),
-	}
-
-	queryMods = append(queryMods, models.ReportVehicleSignalsEventsTrackingWhere.IntegrationID.EQ(in.IntegrationId))
-	queryMods = append(queryMods, models.ReportVehicleSignalsEventsTrackingWhere.DateID.EQ(in.DateId))
-	queryMods = append(queryMods, models.ReportVehicleSignalsEventsTrackingWhere.PropertyID.EQ(in.Property))
-
-	var eventProperties []*internalmodel.MakeSignalsEvents
-	err := models.ReportVehicleSignalsEventsTrackings(queryMods...).Bind(ctx, s.dbs().Reader, &eventProperties)
-
-	if err != nil {
-		return nil, status.Error(codes.Internal, "Internal error. "+err.Error())
-	}
-
-	queryAllMods := []qm.QueryMod{
-		qm.Select("device_make", "SUM(count) as total_count"),
-		qm.GroupBy("device_make"),
-	}
-
-	queryAllMods = append(queryAllMods, models.ReportVehicleSignalsEventsAllWhere.IntegrationID.EQ(in.IntegrationId))
-	queryAllMods = append(queryAllMods, models.ReportVehicleSignalsEventsAllWhere.DateID.EQ(in.DateId))
-	queryAllMods = append(queryAllMods, models.ReportVehicleSignalsEventsAllWhere.PropertyID.EQ(in.Property))
-
-	var allEvents []*internalmodel.MakeSignalsEvents
-	err = models.ReportVehicleSignalsEventsAlls(queryAllMods...).Bind(ctx, s.dbs().Reader, &allEvents)
-
-	if err != nil {
-		return nil, status.Error(codes.Internal, "Internal error."+err.Error())
-	}
-
-	s.logger.Info().Msgf("eventProperties %d", len(eventProperties))
-	s.logger.Info().Msgf("allEvents %d", len(allEvents))
-
-	result := &pb.SecondLevelSignalsResponse{}
-	for _, event := range allEvents {
-		requestCount := 0
-		for _, eventProperty := range eventProperties {
-			if eventProperty.Make == event.Make {
-				requestCount = int(eventProperty.TotalCount)
-				break
-			}
-		}
-		result.Items = append(result.Items, &pb.SecondLevelSignalRespItem{
-			MakeName:     event.Make,
-			RequestCount: int32(requestCount),
-			TotalCount:   int32(event.TotalCount),
-		})
-	}
 
 	return result, nil
 }
