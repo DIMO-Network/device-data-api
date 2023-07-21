@@ -17,6 +17,9 @@ service UserDeviceDataService {
 }
 
 message SecondLevelSignalsRequest {
+  repeated SecondLevelSignalsItem items = 1;
+}
+message SecondLevelSignalsItem {
   string integration_id = 1;
   string date_id = 2;
   // eg. vin or odometer
