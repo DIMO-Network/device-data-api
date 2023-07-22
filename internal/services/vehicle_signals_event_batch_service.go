@@ -69,7 +69,7 @@ func (v *vehicleSignalsEventBatchService) GenerateVehicleDataTracking(ctx contex
 		return err
 	}
 
-	v.log.Info().Msgf("found total of valid userDeviceData records: %d", len(deviceDataEvents))
+	v.log.Info().Msgf("snapshot based on userDeviceData records: %d, where updated_at > %s", len(deviceDataEvents), fromTime.Format(time.RFC822))
 
 	for _, item := range deviceDataEvents {
 
