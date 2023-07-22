@@ -219,6 +219,11 @@ func (s *userDeviceData) GetSignals(ctx context.Context, req *pb.SignalRequest) 
 				break
 			}
 		}
+
+		if requestCount == 0 && event.TotalCount == 0 {
+			continue
+		}
+
 		result.Items = append(result.Items, &pb.SignalItemResponse{
 			Name:         event.Name,
 			RequestCount: int32(requestCount),
