@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"flag"
-	pb "github.com/DIMO-Network/users-api/pkg/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"os/signal"
 	"syscall"
+
+	pb "github.com/DIMO-Network/users-api/pkg/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/DIMO-Network/device-data-api/internal/rpc"
 

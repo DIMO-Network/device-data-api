@@ -276,13 +276,19 @@ func (s *userDeviceData) GetSummaryConnected(ctx context.Context, in *pb.Summary
 
 	dataExists, err := models.ReportVehicleSignalsEventsTrackings(models.ReportVehicleSignalsEventsTrackingWhere.IntegrationID.EQ(in.IntegrationId),
 		models.ReportVehicleSignalsEventsTrackingWhere.DateID.EQ(in.DateId)).Exists(ctx, s.dbs().Reader)
-	if dataExists == false {
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
+	if !dataExists {
 		result.DateRange = "No Data found for Integration and Date"
 		return result, nil
 	}
 
 	// build date object from in.DateId
 	endDate, err := convertToDate(in.DateId)
+	if err != nil {
+		return nil, err
+	}
 	result.DateRange = endDate.Add(time.Hour*24*-7).Format(time.RFC1123) + " to " + endDate.Format(time.RFC1123)
 
 	// todo query to get connected time frame count (note that this could be broken up by powertrain)
