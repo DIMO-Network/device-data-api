@@ -21,11 +21,12 @@ import (
 	fiberrecover "github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/swagger"
 	"github.com/rs/zerolog"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
-func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *db.ReaderWriter, definitionsAPIService services.DeviceDefinitionsAPIService, deviceAPIService services.DeviceAPIService) *fiber.App {
+func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *db.ReaderWriter,
+	definitionsAPIService services.DeviceDefinitionsAPIService,
+	deviceAPIService services.DeviceAPIService,
+	usersClient pb.UserServiceClient) *fiber.App {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			return ErrorHandler(c, err, logger)
@@ -72,12 +73,6 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 		logger.Fatal().Err(err).Msg("Error constructing Elasticsearch client.")
 	}
 
-	usersConn, err := grpc.Dial(settings.UsersAPIGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		logger.Fatal().Err(err).Msgf("Failed to dial users-api at %s", settings.UsersAPIGRPCAddr)
-	}
-	defer usersConn.Close()
-	usersClient := pb.NewUserServiceClient(usersConn)
 	deviceStatusSvc := services.NewDeviceStatusService(definitionsAPIService)
 
 	deviceDataController := controllers.NewDeviceDataController(settings, &logger, deviceAPIService, esClient8, definitionsAPIService, deviceStatusSvc, dbs)

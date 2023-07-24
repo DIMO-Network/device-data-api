@@ -7,6 +7,9 @@ import (
 	"os/signal"
 	"syscall"
 
+	pb "github.com/DIMO-Network/users-api/pkg/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+
 	"github.com/DIMO-Network/device-data-api/internal/rpc"
 
 	"net"
@@ -85,7 +88,7 @@ func main() {
 	// start the actual stuff
 	if len(os.Args) == 1 {
 		startPrometheus(logger)
-		// todo fine for production but will shutdown too soon locally
+
 		go startGRPCServer(&settings, pdb.DBS, &logger, deviceDefsSvc)
 
 		if settings.IsKafkaEnabled(&logger) {
@@ -93,16 +96,22 @@ func main() {
 			startDeviceStatusConsumer(logger, &settings, pdb, eventService, deviceDefsSvc, devicesSvc)
 		}
 		if settings.IsWebAPIEnabled(&logger) {
-			app := startWebAPI(logger, &settings, pdb.DBS, deviceDefsSvc, devicesSvc)
+			usersConn, err := grpc.Dial(settings.UsersAPIGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+			if err != nil {
+				logger.Fatal().Err(err).Msgf("Failed to dial users-api at %s", settings.UsersAPIGRPCAddr)
+			}
+			defer usersConn.Close()
+			usersClient := pb.NewUserServiceClient(usersConn)
+			app := startWebAPI(logger, &settings, pdb.DBS, deviceDefsSvc, devicesSvc, usersClient)
 			// nolint
 			defer app.Shutdown()
 		}
+
 		c := make(chan os.Signal, 1)                    // Create channel to signify a signal being sent with length of 1
 		signal.Notify(c, os.Interrupt, syscall.SIGTERM) // When an interrupt or termination signal is sent, notify the channel
 		<-c                                             // This blocks the main thread until an interrupt is received
 		logger.Info().Msg("Gracefully shutting down and running cleanup tasks...")
 		// shutdown anything else
-
 	} else {
 		subcommands.Register(&migrateDBCmd{logger: logger, settings: settings}, "database")
 		subcommands.Register(&vehicleSignalsEventBatchServiceCmd{db: pdb.DBS, logger: logger, deviceDefSvc: deviceDefsSvc, deviceSvc: devicesSvc}, "events")
