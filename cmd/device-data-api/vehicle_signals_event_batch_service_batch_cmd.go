@@ -35,7 +35,11 @@ func (p *vehicleSignalsEventBatchServiceCmd) SetFlags(f *flag.FlagSet) {
 
 func (p *vehicleSignalsEventBatchServiceCmd) Execute(ctx context.Context, _ *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	p.logger.Info().Msg("running batch report for vehicle signals")
-	batchSrv := services.NewVehicleSignalsEventBatchService(p.db, &p.logger, p.deviceDefSvc, p.deviceSvc)
+
+	vehicleSignalsEventPropertySrv := services.NewVehicleSignalsEventPropertyService(p.db, &p.logger)
+	vehicleSignalsEventDeviceUserSrv := services.NewVehicleSignalsEventDeviceUserService(p.db, &p.logger)
+
+	batchSrv := services.NewVehicleSignalsEventBatchService(p.db, &p.logger, p.deviceDefSvc, p.deviceSvc, vehicleSignalsEventPropertySrv, vehicleSignalsEventDeviceUserSrv)
 	vehicleSignalJobSrv := services.NewVehicleSignalJobService(p.db, &p.logger)
 	jobContext, err := vehicleSignalJobSrv.GetJobContext(ctx)
 

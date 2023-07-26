@@ -2,8 +2,6 @@ package services
 
 import (
 	"context"
-	"database/sql"
-	"encoding/json"
 	"time"
 
 	pb "github.com/DIMO-Network/devices-api/pkg/grpc"
@@ -11,8 +9,6 @@ import (
 	models "github.com/DIMO-Network/device-data-api/models"
 	"github.com/DIMO-Network/shared/db"
 	gocache "github.com/patrickmn/go-cache"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-
 	"github.com/rs/zerolog"
 )
 
@@ -22,23 +18,28 @@ type VehicleSignalsEventBatchService interface {
 }
 
 func NewVehicleSignalsEventBatchService(db func() *db.ReaderWriter,
-	log *zerolog.Logger, deviceDefSvc DeviceDefinitionsAPIService, deviceSvc DeviceAPIService) VehicleSignalsEventBatchService {
+	log *zerolog.Logger, deviceDefSvc DeviceDefinitionsAPIService, deviceSvc DeviceAPIService,
+	vehicleSignalsEventPropertyService VehicleSignalsEventPropertyService, vehicleSignalsEventDeviceUserService VehicleSignalsEventDeviceUserService) VehicleSignalsEventBatchService {
 	cache := gocache.New(30*time.Minute, 60*time.Minute) // band-aid on top of band-aids
 	return &vehicleSignalsEventBatchService{
-		db:           db,
-		log:          log,
-		deviceDefSvc: deviceDefSvc,
-		deviceSvc:    deviceSvc,
-		memoryCache:  cache,
+		db:                                   db,
+		log:                                  log,
+		deviceDefSvc:                         deviceDefSvc,
+		deviceSvc:                            deviceSvc,
+		memoryCache:                          cache,
+		vehicleSignalsEventPropertyService:   vehicleSignalsEventPropertyService,
+		vehicleSignalsEventDeviceUserService: vehicleSignalsEventDeviceUserService,
 	}
 }
 
 type vehicleSignalsEventBatchService struct {
-	db           func() *db.ReaderWriter
-	log          *zerolog.Logger
-	memoryCache  *gocache.Cache
-	deviceDefSvc DeviceDefinitionsAPIService
-	deviceSvc    DeviceAPIService
+	db                                   func() *db.ReaderWriter
+	log                                  *zerolog.Logger
+	memoryCache                          *gocache.Cache
+	deviceDefSvc                         DeviceDefinitionsAPIService
+	deviceSvc                            DeviceAPIService
+	vehicleSignalsEventPropertyService   VehicleSignalsEventPropertyService
+	vehicleSignalsEventDeviceUserService VehicleSignalsEventDeviceUserService
 }
 
 func (v *vehicleSignalsEventBatchService) GenerateVehicleDataTracking(ctx context.Context, dateKey string, fromTime time.Time) error {
@@ -59,6 +60,8 @@ func (v *vehicleSignalsEventBatchService) GenerateVehicleDataTracking(ctx contex
 		}
 		v.memoryCache.Set(CacheKey, eventAvailableProperties, 30*time.Minute)
 	}
+
+	v.log.Info().Msgf("Available properties: %d", len(eventAvailableProperties))
 
 	deviceDataEvents, err := models.UserDeviceData(
 		models.UserDeviceDatumWhere.Signals.IsNotNull(),
@@ -99,114 +102,17 @@ func (v *vehicleSignalsEventBatchService) GenerateVehicleDataTracking(ctx contex
 			continue
 		}
 
-		var data map[string]interface{}
-		err = json.Unmarshal(item.Signals.JSON, &data)
+		err = v.vehicleSignalsEventPropertyService.GenerateData(ctx, dateKey, item.IntegrationID, item, deviceDefinition, eventAvailableProperties)
 		if err != nil {
+			v.log.Err(err).Msgf("(%s) generate event property error: %s", device.Id, device.DeviceDefinitionId)
 			continue
 		}
 
-		v.log.Info().Msgf("Available properties: %d", len(eventAvailableProperties))
-
-		for key, value := range eventAvailableProperties {
-
-			integrationID := item.IntegrationID
-			deviceMakeID := deviceDefinition.Make.Id
-			model := deviceDefinition.Type.Model
-			year := int(deviceDefinition.Type.Year)
-
-			event, err := models.ReportVehicleSignalsEventsAlls(
-				models.ReportVehicleSignalsEventsAllWhere.DateID.EQ(dateKey),
-				models.ReportVehicleSignalsEventsAllWhere.IntegrationID.EQ(integrationID),
-				models.ReportVehicleSignalsEventsAllWhere.DeviceMakeID.EQ(deviceMakeID),
-				models.ReportVehicleSignalsEventsAllWhere.PropertyID.EQ(key),
-				models.ReportVehicleSignalsEventsAllWhere.Model.EQ(model),
-				models.ReportVehicleSignalsEventsAllWhere.Year.EQ(year),
-			).One(ctx, v.db().Reader)
-
-			if err != nil {
-				if err != sql.ErrNoRows {
-					v.log.Err(err).Msg("failed to find report vehicle signals")
-					continue
-				}
-			}
-
-			if event == nil {
-				event = &models.ReportVehicleSignalsEventsAll{
-					DateID:             dateKey,
-					IntegrationID:      item.IntegrationID,
-					DeviceMakeID:       deviceDefinition.Make.Id,
-					PropertyID:         value,
-					Year:               int(deviceDefinition.Type.Year),
-					Model:              deviceDefinition.Type.Model,
-					DeviceDefinitionID: deviceDefinition.DeviceDefinitionId,
-					DeviceMake:         deviceDefinition.Make.Name,
-					Count:              0,
-				}
-			} else {
-				event.Count++
-			}
-
-			var reportVehicleSignalsEventPrimaryKeyColumns = []string{
-				models.ReportVehicleSignalsEventsAllColumns.DateID,
-				models.ReportVehicleSignalsEventsAllColumns.IntegrationID,
-				models.ReportVehicleSignalsEventsAllColumns.DeviceMakeID,
-				models.ReportVehicleSignalsEventsAllColumns.PropertyID,
-				models.ReportVehicleSignalsEventsAllColumns.Model,
-				models.ReportVehicleSignalsEventsAllColumns.Year,
-			}
-
-			if err := event.Upsert(ctx, v.db().Writer, true, reportVehicleSignalsEventPrimaryKeyColumns, boil.Infer(), boil.Infer()); err != nil {
-				v.log.Err(err).Msgf("error inserting report event : %s %s %s %s", event.DateID, event.IntegrationID, event.DeviceMakeID, event.PropertyID)
-			}
-
-			if _, ok := data[key]; ok {
-				eventProperties, err := models.ReportVehicleSignalsEventsTrackings(
-					models.ReportVehicleSignalsEventsTrackingWhere.DateID.EQ(dateKey),
-					models.ReportVehicleSignalsEventsTrackingWhere.IntegrationID.EQ(integrationID),
-					models.ReportVehicleSignalsEventsTrackingWhere.DeviceMakeID.EQ(deviceMakeID),
-					models.ReportVehicleSignalsEventsTrackingWhere.PropertyID.EQ(key),
-					models.ReportVehicleSignalsEventsTrackingWhere.Model.EQ(model),
-					models.ReportVehicleSignalsEventsTrackingWhere.Year.EQ(year),
-				).One(ctx, v.db().Reader)
-
-				if err != nil {
-					if err != sql.ErrNoRows {
-						v.log.Err(err).Msg("failed to find report vehicle signals")
-						continue
-					}
-				}
-
-				if eventProperties == nil {
-					eventProperties = &models.ReportVehicleSignalsEventsTracking{
-						DateID:             dateKey,
-						IntegrationID:      item.IntegrationID,
-						DeviceMakeID:       deviceDefinition.Make.Id,
-						PropertyID:         value,
-						Year:               int(deviceDefinition.Type.Year),
-						Model:              deviceDefinition.Type.Model,
-						DeviceDefinitionID: deviceDefinition.DeviceDefinitionId,
-						DeviceMake:         deviceDefinition.Make.Name,
-						Count:              0,
-					}
-				} else {
-					eventProperties.Count++
-				}
-
-				var reportVehicleSignalsPrimaryKeyColumns = []string{
-					models.ReportVehicleSignalsEventsTrackingColumns.DateID,
-					models.ReportVehicleSignalsEventsTrackingColumns.IntegrationID,
-					models.ReportVehicleSignalsEventsTrackingColumns.DeviceMakeID,
-					models.ReportVehicleSignalsEventsTrackingColumns.PropertyID,
-					models.ReportVehicleSignalsEventsTrackingColumns.Model,
-					models.ReportVehicleSignalsEventsTrackingColumns.Year,
-				}
-
-				if err := eventProperties.Upsert(ctx, v.db().Writer, true, reportVehicleSignalsPrimaryKeyColumns, boil.Infer(), boil.Infer()); err != nil {
-					v.log.Err(err).Msgf("error inserting report properties : %s %s %s %s", eventProperties.DateID, eventProperties.IntegrationID, eventProperties.DeviceMakeID, eventProperties.PropertyID)
-				}
-			}
+		err = v.vehicleSignalsEventDeviceUserService.GenerateData(ctx, dateKey, item.IntegrationID, device.PowerTrainType)
+		if err != nil {
+			v.log.Err(err).Msgf("(%s) generate user device error: %s", device.Id, device.DeviceDefinitionId)
+			continue
 		}
-
 	}
 
 	return nil

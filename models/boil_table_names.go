@@ -4,15 +4,17 @@
 package models
 
 var TableNames = struct {
-	ReportVehicleSignalsEventsAll      string
-	ReportVehicleSignalsEventsTracking string
-	UserDeviceData                     string
-	VehicleSignalsAvailableProperties  string
-	VehicleSignalsJob                  string
+	ReportVehicleSignalsEventsAll         string
+	ReportVehicleSignalsEventsTracking    string
+	ReportVehicleSignalsEventsUserDevices string
+	UserDeviceData                        string
+	VehicleSignalsAvailableProperties     string
+	VehicleSignalsJob                     string
 }{
-	ReportVehicleSignalsEventsAll:      "report_vehicle_signals_events_all",
-	ReportVehicleSignalsEventsTracking: "report_vehicle_signals_events_tracking",
-	UserDeviceData:                     "user_device_data",
-	VehicleSignalsAvailableProperties:  "vehicle_signals_available_properties",
-	VehicleSignalsJob:                  "vehicle_signals_job",
+	ReportVehicleSignalsEventsAll:         "report_vehicle_signals_events_all",
+	ReportVehicleSignalsEventsTracking:    "report_vehicle_signals_events_tracking",
+	ReportVehicleSignalsEventsUserDevices: "report_vehicle_signals_events_user_devices",
+	UserDeviceData:                        "user_device_data",
+	VehicleSignalsAvailableProperties:     "vehicle_signals_available_properties",
+	VehicleSignalsJob:                     "vehicle_signals_job",
 }

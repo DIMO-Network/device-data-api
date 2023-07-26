@@ -18,56 +18,90 @@ import (
 	"github.com/volatiletech/sqlboiler/v4/queries"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"github.com/volatiletech/sqlboiler/v4/queries/qmhelper"
+	"github.com/volatiletech/sqlboiler/v4/types"
 	"github.com/volatiletech/strmangle"
 )
 
 // VehicleSignalsAvailableProperty is an object representing the database table.
 type VehicleSignalsAvailableProperty struct {
-	ID        string    `boil:"id" json:"id" toml:"id" yaml:"id"`
-	Name      string    `boil:"name" json:"name" toml:"name" yaml:"name"`
-	CreatedAt time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
-	UpdatedAt time.Time `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
+	ID             string            `boil:"id" json:"id" toml:"id" yaml:"id"`
+	Name           string            `boil:"name" json:"name" toml:"name" yaml:"name"`
+	CreatedAt      time.Time         `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
+	UpdatedAt      time.Time         `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
+	PowerTrainType types.StringArray `boil:"power_train_type" json:"power_train_type,omitempty" toml:"power_train_type" yaml:"power_train_type,omitempty"`
 
 	R *vehicleSignalsAvailablePropertyR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L vehicleSignalsAvailablePropertyL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
 var VehicleSignalsAvailablePropertyColumns = struct {
-	ID        string
-	Name      string
-	CreatedAt string
-	UpdatedAt string
+	ID             string
+	Name           string
+	CreatedAt      string
+	UpdatedAt      string
+	PowerTrainType string
 }{
-	ID:        "id",
-	Name:      "name",
-	CreatedAt: "created_at",
-	UpdatedAt: "updated_at",
+	ID:             "id",
+	Name:           "name",
+	CreatedAt:      "created_at",
+	UpdatedAt:      "updated_at",
+	PowerTrainType: "power_train_type",
 }
 
 var VehicleSignalsAvailablePropertyTableColumns = struct {
-	ID        string
-	Name      string
-	CreatedAt string
-	UpdatedAt string
+	ID             string
+	Name           string
+	CreatedAt      string
+	UpdatedAt      string
+	PowerTrainType string
 }{
-	ID:        "vehicle_signals_available_properties.id",
-	Name:      "vehicle_signals_available_properties.name",
-	CreatedAt: "vehicle_signals_available_properties.created_at",
-	UpdatedAt: "vehicle_signals_available_properties.updated_at",
+	ID:             "vehicle_signals_available_properties.id",
+	Name:           "vehicle_signals_available_properties.name",
+	CreatedAt:      "vehicle_signals_available_properties.created_at",
+	UpdatedAt:      "vehicle_signals_available_properties.updated_at",
+	PowerTrainType: "vehicle_signals_available_properties.power_train_type",
 }
 
 // Generated where
 
+type whereHelpertypes_StringArray struct{ field string }
+
+func (w whereHelpertypes_StringArray) EQ(x types.StringArray) qm.QueryMod {
+	return qmhelper.WhereNullEQ(w.field, false, x)
+}
+func (w whereHelpertypes_StringArray) NEQ(x types.StringArray) qm.QueryMod {
+	return qmhelper.WhereNullEQ(w.field, true, x)
+}
+func (w whereHelpertypes_StringArray) LT(x types.StringArray) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LT, x)
+}
+func (w whereHelpertypes_StringArray) LTE(x types.StringArray) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LTE, x)
+}
+func (w whereHelpertypes_StringArray) GT(x types.StringArray) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GT, x)
+}
+func (w whereHelpertypes_StringArray) GTE(x types.StringArray) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GTE, x)
+}
+
+func (w whereHelpertypes_StringArray) IsNull() qm.QueryMod { return qmhelper.WhereIsNull(w.field) }
+func (w whereHelpertypes_StringArray) IsNotNull() qm.QueryMod {
+	return qmhelper.WhereIsNotNull(w.field)
+}
+
 var VehicleSignalsAvailablePropertyWhere = struct {
-	ID        whereHelperstring
-	Name      whereHelperstring
-	CreatedAt whereHelpertime_Time
-	UpdatedAt whereHelpertime_Time
+	ID             whereHelperstring
+	Name           whereHelperstring
+	CreatedAt      whereHelpertime_Time
+	UpdatedAt      whereHelpertime_Time
+	PowerTrainType whereHelpertypes_StringArray
 }{
-	ID:        whereHelperstring{field: "\"device_data_api\".\"vehicle_signals_available_properties\".\"id\""},
-	Name:      whereHelperstring{field: "\"device_data_api\".\"vehicle_signals_available_properties\".\"name\""},
-	CreatedAt: whereHelpertime_Time{field: "\"device_data_api\".\"vehicle_signals_available_properties\".\"created_at\""},
-	UpdatedAt: whereHelpertime_Time{field: "\"device_data_api\".\"vehicle_signals_available_properties\".\"updated_at\""},
+	ID:             whereHelperstring{field: "\"device_data_api\".\"vehicle_signals_available_properties\".\"id\""},
+	Name:           whereHelperstring{field: "\"device_data_api\".\"vehicle_signals_available_properties\".\"name\""},
+	CreatedAt:      whereHelpertime_Time{field: "\"device_data_api\".\"vehicle_signals_available_properties\".\"created_at\""},
+	UpdatedAt:      whereHelpertime_Time{field: "\"device_data_api\".\"vehicle_signals_available_properties\".\"updated_at\""},
+	PowerTrainType: whereHelpertypes_StringArray{field: "\"device_data_api\".\"vehicle_signals_available_properties\".\"power_train_type\""},
 }
 
 // VehicleSignalsAvailablePropertyRels is where relationship names are stored.
@@ -87,9 +121,9 @@ func (*vehicleSignalsAvailablePropertyR) NewStruct() *vehicleSignalsAvailablePro
 type vehicleSignalsAvailablePropertyL struct{}
 
 var (
-	vehicleSignalsAvailablePropertyAllColumns            = []string{"id", "name", "created_at", "updated_at"}
+	vehicleSignalsAvailablePropertyAllColumns            = []string{"id", "name", "created_at", "updated_at", "power_train_type"}
 	vehicleSignalsAvailablePropertyColumnsWithoutDefault = []string{"id", "name"}
-	vehicleSignalsAvailablePropertyColumnsWithDefault    = []string{"created_at", "updated_at"}
+	vehicleSignalsAvailablePropertyColumnsWithDefault    = []string{"created_at", "updated_at", "power_train_type"}
 	vehicleSignalsAvailablePropertyPrimaryKeyColumns     = []string{"id"}
 	vehicleSignalsAvailablePropertyGeneratedColumns      = []string{}
 )
