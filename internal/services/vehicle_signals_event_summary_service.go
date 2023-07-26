@@ -12,32 +12,32 @@ import (
 	"github.com/rs/zerolog"
 )
 
-//go:generate mockgen -source vehicle_signals_event_user_device_service.go -destination mocks/vehicle_signals_event_user_device_service_mock.go
-type vehicleSignalsEventDeviceUserService struct {
+//go:generate mockgen -source vehicle_signals_event_summary_service.go -destination mocks/vehicle_signals_event_summary_service_mock.go
+type vehicleSignalsEventSummaryService struct {
 	db          func() *db.ReaderWriter
 	log         *zerolog.Logger
 	memoryCache *gocache.Cache
 }
 
-type VehicleSignalsEventDeviceUserService interface {
+type VehicleSignalsEventSummaryService interface {
 	GenerateData(ctx context.Context, dateKey string, integrationID string, powerTrainType string) error
 }
 
-func NewVehicleSignalsEventDeviceUserService(db func() *db.ReaderWriter, log *zerolog.Logger) VehicleSignalsEventDeviceUserService {
+func NewVehicleSignalsEventSummaryService(db func() *db.ReaderWriter, log *zerolog.Logger) VehicleSignalsEventSummaryService {
 	cache := gocache.New(30*time.Minute, 60*time.Minute) // band-aid on top of band-aids
-	return &vehicleSignalsEventDeviceUserService{
+	return &vehicleSignalsEventSummaryService{
 		db:          db,
 		log:         log,
 		memoryCache: cache,
 	}
 }
 
-func (v *vehicleSignalsEventDeviceUserService) GenerateData(ctx context.Context, dateKey string, integrationID string, powerTrainType string) error {
+func (v *vehicleSignalsEventSummaryService) GenerateData(ctx context.Context, dateKey string, integrationID string, powerTrainType string) error {
 
-	userDeviceEvent, err := models.ReportVehicleSignalsEventsUserDevices(
-		models.ReportVehicleSignalsEventsUserDeviceWhere.DateID.EQ(dateKey),
-		models.ReportVehicleSignalsEventsUserDeviceWhere.IntegrationID.EQ(integrationID),
-		models.ReportVehicleSignalsEventsUserDeviceWhere.PowerTrainType.EQ(powerTrainType),
+	userDeviceEvent, err := models.ReportVehicleSignalsEventsSummaries(
+		models.ReportVehicleSignalsEventsSummaryWhere.DateID.EQ(dateKey),
+		models.ReportVehicleSignalsEventsSummaryWhere.IntegrationID.EQ(integrationID),
+		models.ReportVehicleSignalsEventsSummaryWhere.PowerTrainType.EQ(powerTrainType),
 	).One(ctx, v.db().Reader)
 
 	if err != nil {
@@ -48,7 +48,7 @@ func (v *vehicleSignalsEventDeviceUserService) GenerateData(ctx context.Context,
 	}
 
 	if userDeviceEvent == nil {
-		userDeviceEvent = &models.ReportVehicleSignalsEventsUserDevice{
+		userDeviceEvent = &models.ReportVehicleSignalsEventsSummary{
 			DateID:         dateKey,
 			IntegrationID:  integrationID,
 			PowerTrainType: powerTrainType,
@@ -59,9 +59,9 @@ func (v *vehicleSignalsEventDeviceUserService) GenerateData(ctx context.Context,
 	}
 
 	var reportVehicleSignalsPrimaryKeyColumns = []string{
-		models.ReportVehicleSignalsEventsUserDeviceColumns.DateID,
-		models.ReportVehicleSignalsEventsUserDeviceColumns.IntegrationID,
-		models.ReportVehicleSignalsEventsUserDeviceColumns.PowerTrainType,
+		models.ReportVehicleSignalsEventsSummaryColumns.DateID,
+		models.ReportVehicleSignalsEventsSummaryColumns.IntegrationID,
+		models.ReportVehicleSignalsEventsSummaryColumns.PowerTrainType,
 	}
 
 	if err := userDeviceEvent.Upsert(ctx, v.db().Writer, true, reportVehicleSignalsPrimaryKeyColumns, boil.Infer(), boil.Infer()); err != nil {

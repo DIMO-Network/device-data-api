@@ -19,7 +19,7 @@ type VehicleSignalsEventBatchService interface {
 
 func NewVehicleSignalsEventBatchService(db func() *db.ReaderWriter,
 	log *zerolog.Logger, deviceDefSvc DeviceDefinitionsAPIService, deviceSvc DeviceAPIService,
-	vehicleSignalsEventPropertyService VehicleSignalsEventPropertyService, vehicleSignalsEventDeviceUserService VehicleSignalsEventDeviceUserService) VehicleSignalsEventBatchService {
+	vehicleSignalsEventPropertyService VehicleSignalsEventPropertyService, vehicleSignalsEventDeviceUserService VehicleSignalsEventSummaryService) VehicleSignalsEventBatchService {
 	cache := gocache.New(30*time.Minute, 60*time.Minute) // band-aid on top of band-aids
 	return &vehicleSignalsEventBatchService{
 		db:                                   db,
@@ -39,7 +39,7 @@ type vehicleSignalsEventBatchService struct {
 	deviceDefSvc                         DeviceDefinitionsAPIService
 	deviceSvc                            DeviceAPIService
 	vehicleSignalsEventPropertyService   VehicleSignalsEventPropertyService
-	vehicleSignalsEventDeviceUserService VehicleSignalsEventDeviceUserService
+	vehicleSignalsEventDeviceUserService VehicleSignalsEventSummaryService
 }
 
 func (v *vehicleSignalsEventBatchService) GenerateVehicleDataTracking(ctx context.Context, dateKey string, fromTime time.Time) error {

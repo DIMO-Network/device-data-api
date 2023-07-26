@@ -37,9 +37,9 @@ func (p *vehicleSignalsEventBatchServiceCmd) Execute(ctx context.Context, _ *fla
 	p.logger.Info().Msg("running batch report for vehicle signals")
 
 	vehicleSignalsEventPropertySrv := services.NewVehicleSignalsEventPropertyService(p.db, &p.logger)
-	vehicleSignalsEventDeviceUserSrv := services.NewVehicleSignalsEventDeviceUserService(p.db, &p.logger)
+	vehicleSignalsEventSummarySrv := services.NewVehicleSignalsEventSummaryService(p.db, &p.logger)
 
-	batchSrv := services.NewVehicleSignalsEventBatchService(p.db, &p.logger, p.deviceDefSvc, p.deviceSvc, vehicleSignalsEventPropertySrv, vehicleSignalsEventDeviceUserSrv)
+	batchSrv := services.NewVehicleSignalsEventBatchService(p.db, &p.logger, p.deviceDefSvc, p.deviceSvc, vehicleSignalsEventPropertySrv, vehicleSignalsEventSummarySrv)
 	vehicleSignalJobSrv := services.NewVehicleSignalJobService(p.db, &p.logger)
 	jobContext, err := vehicleSignalJobSrv.GetJobContext(ctx)
 

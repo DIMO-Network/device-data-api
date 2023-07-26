@@ -265,8 +265,8 @@ order by date_id desc`
 }
 
 func (s *userDeviceData) GetSummaryConnected(ctx context.Context, in *pb.SummaryConnectedRequest) (*pb.SummaryConnectedResponse, error) {
-	allTimeCnt, err := models.ReportVehicleSignalsEventsUserDevices(
-		models.ReportVehicleSignalsEventsUserDeviceWhere.IntegrationID.EQ(in.IntegrationId),
+	allTimeCnt, err := models.ReportVehicleSignalsEventsSummaries(
+		models.ReportVehicleSignalsEventsSummaryWhere.IntegrationID.EQ(in.IntegrationId),
 	).Count(ctx, s.dbs().Reader)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -277,15 +277,15 @@ func (s *userDeviceData) GetSummaryConnected(ctx context.Context, in *pb.Summary
 	}
 
 	queryMods := []qm.QueryMod{
-		qm.Select(models.ReportVehicleSignalsEventsUserDeviceColumns.IntegrationID, models.ReportVehicleSignalsEventsUserDeviceColumns.PowerTrainType, "SUM(count) as total_count"),
-		qm.GroupBy(models.ReportVehicleSignalsEventsUserDeviceColumns.IntegrationID + "," + models.ReportVehicleSignalsEventsUserDeviceColumns.PowerTrainType),
+		qm.Select(models.ReportVehicleSignalsEventsSummaryColumns.IntegrationID, models.ReportVehicleSignalsEventsSummaryColumns.PowerTrainType, "SUM(count) as total_count"),
+		qm.GroupBy(models.ReportVehicleSignalsEventsSummaryColumns.IntegrationID + "," + models.ReportVehicleSignalsEventsSummaryColumns.PowerTrainType),
 	}
 
-	queryMods = append(queryMods, models.ReportVehicleSignalsEventsUserDeviceWhere.IntegrationID.EQ(in.IntegrationId))
-	queryMods = append(queryMods, models.ReportVehicleSignalsEventsUserDeviceWhere.DateID.EQ(in.DateId))
+	queryMods = append(queryMods, models.ReportVehicleSignalsEventsSummaryWhere.IntegrationID.EQ(in.IntegrationId))
+	queryMods = append(queryMods, models.ReportVehicleSignalsEventsSummaryWhere.DateID.EQ(in.DateId))
 
 	var allEvents []*internalmodel.SignalsEventsUserDevices
-	err = models.ReportVehicleSignalsEventsUserDevices(queryMods...).Bind(ctx, s.dbs().Reader, &allEvents)
+	err = models.ReportVehicleSignalsEventsSummaries(queryMods...).Bind(ctx, s.dbs().Reader, &allEvents)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Internal error."+err.Error())
 	}
@@ -316,7 +316,7 @@ func (s *userDeviceData) GetSummaryConnected(ctx context.Context, in *pb.Summary
 		for _, item := range group {
 			powerTrainTypeTimeframeCount += int(item.TotalCount)
 		}
-		result.PowerTrainTypeTimeframe = append(result.PowerTrainTypeTimeframe, &pb.SummaryConnectedResponse_PowerTrainTypeConnectedResponse{
+		result.PowerTrainTypeCountTimeframe = append(result.PowerTrainTypeCountTimeframe, &pb.SummaryConnectedResponse_PowerTrainTypeConnectedResponse{
 			Type:  powerTrainType,
 			Count: int32(powerTrainTypeTimeframeCount),
 		})
