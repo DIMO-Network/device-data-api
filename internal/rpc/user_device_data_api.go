@@ -265,7 +265,9 @@ order by date_id desc`
 }
 
 func (s *userDeviceData) GetSummaryConnected(ctx context.Context, in *pb.SummaryConnectedRequest) (*pb.SummaryConnectedResponse, error) {
-	allTimeCnt, err := models.UserDeviceData(models.UserDeviceDatumWhere.IntegrationID.EQ(in.IntegrationId)).Count(ctx, s.dbs().Reader)
+	allTimeCnt, err := models.ReportVehicleSignalsEventsSummaries(
+		models.ReportVehicleSignalsEventsSummaryWhere.IntegrationID.EQ(in.IntegrationId),
+	).Count(ctx, s.dbs().Reader)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -274,12 +276,21 @@ func (s *userDeviceData) GetSummaryConnected(ctx context.Context, in *pb.Summary
 		ConnectedTimeframe: 0,
 	}
 
-	dataExists, err := models.ReportVehicleSignalsEventsTrackings(models.ReportVehicleSignalsEventsTrackingWhere.IntegrationID.EQ(in.IntegrationId),
-		models.ReportVehicleSignalsEventsTrackingWhere.DateID.EQ(in.DateId)).Exists(ctx, s.dbs().Reader)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return nil, err
+	queryMods := []qm.QueryMod{
+		qm.Select(models.ReportVehicleSignalsEventsSummaryColumns.IntegrationID, models.ReportVehicleSignalsEventsSummaryColumns.PowerTrainType, "SUM(count) as total_count"),
+		qm.GroupBy(models.ReportVehicleSignalsEventsSummaryColumns.IntegrationID + "," + models.ReportVehicleSignalsEventsSummaryColumns.PowerTrainType),
 	}
-	if !dataExists {
+
+	queryMods = append(queryMods, models.ReportVehicleSignalsEventsSummaryWhere.IntegrationID.EQ(in.IntegrationId))
+	queryMods = append(queryMods, models.ReportVehicleSignalsEventsSummaryWhere.DateID.EQ(in.DateId))
+
+	var allEvents []*internalmodel.SignalsEventsUserDevices
+	err = models.ReportVehicleSignalsEventsSummaries(queryMods...).Bind(ctx, s.dbs().Reader, &allEvents)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Internal error."+err.Error())
+	}
+
+	if len(allEvents) == 0 {
 		result.DateRange = "No Data found for Integration and Date"
 		return result, nil
 	}
@@ -291,7 +302,25 @@ func (s *userDeviceData) GetSummaryConnected(ctx context.Context, in *pb.Summary
 	}
 	result.DateRange = endDate.Add(time.Hour*24*-7).Format(time.RFC1123) + " to " + endDate.Format(time.RFC1123)
 
-	// todo query to get connected time frame count (note that this could be broken up by powertrain)
+	powerTrainTypeGroups := make(map[string][]*internalmodel.SignalsEventsUserDevices)
+	connectedTimeframe := 0
+	for _, item := range allEvents {
+		connectedTimeframe += int(item.TotalCount)
+		powerTrainTypeGroups[item.PowerTrainType] = append(powerTrainTypeGroups[item.PowerTrainType], item)
+	}
+
+	result.ConnectedTimeframe = int64(connectedTimeframe)
+
+	for powerTrainType, group := range powerTrainTypeGroups {
+		powerTrainTypeTimeframeCount := 0
+		for _, item := range group {
+			powerTrainTypeTimeframeCount += int(item.TotalCount)
+		}
+		result.PowerTrainTypeCountTimeframe = append(result.PowerTrainTypeCountTimeframe, &pb.SummaryConnectedResponse_PowerTrainTypeConnectedResponse{
+			Type:  powerTrainType,
+			Count: int32(powerTrainTypeTimeframeCount),
+		})
+	}
 
 	return result, nil
 }
