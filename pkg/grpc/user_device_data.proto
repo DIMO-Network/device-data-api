@@ -26,16 +26,15 @@ message SummaryConnectedResponse {
   // count of all udd for integration_id btw start and end date for report
   int64 connected_timeframe = 2;
   // start and end date human friendly
-  string date_range = 3;
-  repeated PowerTrainTypeConnectedResponse power_train_type_count_timeframe = 4;
+  string start_date = 3;
+  string end_date = 4;
+  repeated PowerTrainTypeConnectedResponse power_train_type_count_timeframe = 5;
 
   message PowerTrainTypeConnectedResponse {
     string type = 1;
     int32 count = 2;
   }
-
 }
-
 
 message SignalRequest {
   string integration_id = 1;

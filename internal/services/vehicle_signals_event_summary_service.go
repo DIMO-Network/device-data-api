@@ -3,8 +3,9 @@ package services
 import (
 	"context"
 	"database/sql"
-	"github.com/volatiletech/sqlboiler/v4/boil"
 	"time"
+
+	"github.com/volatiletech/sqlboiler/v4/boil"
 
 	"github.com/DIMO-Network/device-data-api/models"
 	"github.com/DIMO-Network/shared/db"
