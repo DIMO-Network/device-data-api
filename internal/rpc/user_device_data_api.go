@@ -220,8 +220,10 @@ func (s *userDeviceData) GetSignals(ctx context.Context, req *pb.SignalRequest) 
 			}
 		}
 
-		if requestCount == 0 && event.TotalCount == 0 {
-			continue
+		if *req.RemoveEmpty {
+			if requestCount == 0 && event.TotalCount == 0 {
+				continue
+			}
 		}
 
 		result.Items = append(result.Items, &pb.SignalItemResponse{
