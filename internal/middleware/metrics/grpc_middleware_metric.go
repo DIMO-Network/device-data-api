@@ -2,6 +2,10 @@ package metrics
 
 import (
 	"context"
+	"fmt"
+	"runtime/debug"
+
+	"google.golang.org/grpc/codes"
 
 	"github.com/rs/zerolog"
 
@@ -39,4 +43,15 @@ func GRPCMetricsAndLogMiddleware(logger *zerolog.Logger) grpc.UnaryServerInterce
 
 		return resp, err
 	}
+}
+
+type GRPCPanicker struct {
+	Logger *zerolog.Logger
+}
+
+func (pr *GRPCPanicker) GRPCPanicRecoveryHandler(p any) (err error) {
+	appmetrics.GRPCPanicsCount.Inc()
+
+	pr.Logger.Err(fmt.Errorf("%s", p)).Str("stack", string(debug.Stack())).Msg("grpc recovered from panic")
+	return status.Errorf(codes.Internal, "%s", p)
 }
