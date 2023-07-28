@@ -26,6 +26,11 @@ var (
 		Help: "Total AutoPi ingest events started",
 	})
 
+	GRPCPanicsCount = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "device_data_api_panics_total",
+		Help: "Total Panics recovered",
+	})
+
 	GRPCRequestCount = promauto.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "device_data_api_grpc_request_count",

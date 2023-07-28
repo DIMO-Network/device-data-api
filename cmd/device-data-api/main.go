@@ -7,6 +7,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
+
 	pb "github.com/DIMO-Network/users-api/pkg/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -128,11 +130,13 @@ func startGRPCServer(settings *config.Settings, dbs func() *db.ReaderWriter, log
 	}
 
 	logger.Info().Msgf("Starting gRPC server on port %s", settings.GRPCPort)
+	gp := metrics.GRPCPanicker{Logger: logger}
 	server := grpc.NewServer(
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
 			metrics.GRPCMetricsAndLogMiddleware(logger),
 			grpc_ctxtags.UnaryServerInterceptor(),
 			grpc_prometheus.UnaryServerInterceptor,
+			recovery.UnaryServerInterceptor(recovery.WithRecoveryHandler(gp.GRPCPanicRecoveryHandler)),
 		)),
 		grpc.StreamInterceptor(grpc_prometheus.StreamServerInterceptor),
 	)
