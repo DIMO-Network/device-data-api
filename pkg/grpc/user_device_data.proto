@@ -47,6 +47,7 @@ message SignalRequest {
   optional int64 year = 6;
   optional string level = 7;
   optional string model = 8;
+  optional bool remove_empty = 9;
 }
 
 message SignalResponse {

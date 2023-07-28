@@ -76,7 +76,7 @@ func (v *vehicleSignalsEventPropertyService) GenerateData(ctx context.Context, d
 				Model:              deviceDefinition.Type.Model,
 				DeviceDefinitionID: deviceDefinition.DeviceDefinitionId,
 				DeviceMake:         deviceDefinition.Make.Name,
-				Count:              0,
+				Count:              1,
 			}
 		} else {
 			event.Count++
@@ -122,7 +122,7 @@ func (v *vehicleSignalsEventPropertyService) GenerateData(ctx context.Context, d
 					Model:              deviceDefinition.Type.Model,
 					DeviceDefinitionID: deviceDefinition.DeviceDefinitionId,
 					DeviceMake:         deviceDefinition.Make.Name,
-					Count:              0,
+					Count:              1,
 				}
 			} else {
 				eventProperties.Count++
