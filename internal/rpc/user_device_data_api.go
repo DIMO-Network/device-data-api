@@ -207,6 +207,7 @@ func (s *userDeviceData) GetSignals(ctx context.Context, req *pb.SignalRequest) 
 	err = models.ReportVehicleSignalsEventsAlls(queryAllMods...).Bind(ctx, s.dbs().Reader, &allEvents)
 
 	if err != nil {
+		s.logger.Info().Msg("Running second query (failed)")
 		return nil, status.Error(codes.Internal, "Internal error."+err.Error())
 	}
 
@@ -220,7 +221,7 @@ func (s *userDeviceData) GetSignals(ctx context.Context, req *pb.SignalRequest) 
 			}
 		}
 
-		if *req.RemoveEmpty {
+		if req.RemoveEmpty != nil && *req.RemoveEmpty {
 			if requestCount == 0 && event.TotalCount == 0 {
 				continue
 			}
