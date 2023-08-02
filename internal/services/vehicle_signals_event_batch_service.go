@@ -108,7 +108,7 @@ func (v *vehicleSignalsEventBatchService) GenerateVehicleDataTracking(ctx contex
 			continue
 		}
 
-		err = v.vehicleSignalsEventDeviceUserService.GenerateData(ctx, dateKey, item.IntegrationID, device.PowerTrainType)
+		err = v.vehicleSignalsEventDeviceUserService.GenerateData(ctx, dateKey, item.IntegrationID, device.PowerTrainType, deviceDefinition.DeviceDefinitionId)
 		if err != nil {
 			v.log.Err(err).Msgf("(%s) generate user device error: %s", device.Id, device.DeviceDefinitionId)
 			continue
