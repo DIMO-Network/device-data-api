@@ -74,6 +74,8 @@ func (v *vehicleSignalsEventBatchService) GenerateVehicleDataTracking(ctx contex
 
 	v.log.Info().Msgf("snapshot based on userDeviceData records: %d, where updated_at > %s", len(deviceDataEvents), fromTime.Format(time.RFC822))
 
+	deviceDefinitionCount := make(map[string]int)
+
 	for _, item := range deviceDataEvents {
 
 		device := &pb.UserDevice{}
@@ -102,13 +104,15 @@ func (v *vehicleSignalsEventBatchService) GenerateVehicleDataTracking(ctx contex
 			continue
 		}
 
+		deviceDefinitionCount[deviceDefinition.DeviceDefinitionId]++
+
 		err = v.vehicleSignalsEventPropertyService.GenerateData(ctx, dateKey, item.IntegrationID, item, deviceDefinition, eventAvailableProperties)
 		if err != nil {
 			v.log.Err(err).Msgf("(%s) generate event property error: %s", device.Id, device.DeviceDefinitionId)
 			continue
 		}
 
-		err = v.vehicleSignalsEventDeviceUserService.GenerateData(ctx, dateKey, item.IntegrationID, device.PowerTrainType)
+		err = v.vehicleSignalsEventDeviceUserService.GenerateData(ctx, dateKey, item.IntegrationID, device.PowerTrainType, deviceDefinitionCount[deviceDefinition.DeviceDefinitionId])
 		if err != nil {
 			v.log.Err(err).Msgf("(%s) generate user device error: %s", device.Id, device.DeviceDefinitionId)
 			continue

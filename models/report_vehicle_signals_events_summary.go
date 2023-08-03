@@ -23,58 +23,65 @@ import (
 
 // ReportVehicleSignalsEventsSummary is an object representing the database table.
 type ReportVehicleSignalsEventsSummary struct {
-	DateID         string    `boil:"date_id" json:"date_id" toml:"date_id" yaml:"date_id"`
-	IntegrationID  string    `boil:"integration_id" json:"integration_id" toml:"integration_id" yaml:"integration_id"`
-	PowerTrainType string    `boil:"power_train_type" json:"power_train_type" toml:"power_train_type" yaml:"power_train_type"`
-	Count          int       `boil:"count" json:"count" toml:"count" yaml:"count"`
-	CreatedAt      time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
+	DateID                string    `boil:"date_id" json:"date_id" toml:"date_id" yaml:"date_id"`
+	IntegrationID         string    `boil:"integration_id" json:"integration_id" toml:"integration_id" yaml:"integration_id"`
+	PowerTrainType        string    `boil:"power_train_type" json:"power_train_type" toml:"power_train_type" yaml:"power_train_type"`
+	Count                 int       `boil:"count" json:"count" toml:"count" yaml:"count"`
+	CreatedAt             time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
+	DeviceDefinitionCount int       `boil:"device_definition_count" json:"device_definition_count" toml:"device_definition_count" yaml:"device_definition_count"`
 
 	R *reportVehicleSignalsEventsSummaryR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L reportVehicleSignalsEventsSummaryL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
 var ReportVehicleSignalsEventsSummaryColumns = struct {
-	DateID         string
-	IntegrationID  string
-	PowerTrainType string
-	Count          string
-	CreatedAt      string
+	DateID                string
+	IntegrationID         string
+	PowerTrainType        string
+	Count                 string
+	CreatedAt             string
+	DeviceDefinitionCount string
 }{
-	DateID:         "date_id",
-	IntegrationID:  "integration_id",
-	PowerTrainType: "power_train_type",
-	Count:          "count",
-	CreatedAt:      "created_at",
+	DateID:                "date_id",
+	IntegrationID:         "integration_id",
+	PowerTrainType:        "power_train_type",
+	Count:                 "count",
+	CreatedAt:             "created_at",
+	DeviceDefinitionCount: "device_definition_count",
 }
 
 var ReportVehicleSignalsEventsSummaryTableColumns = struct {
-	DateID         string
-	IntegrationID  string
-	PowerTrainType string
-	Count          string
-	CreatedAt      string
+	DateID                string
+	IntegrationID         string
+	PowerTrainType        string
+	Count                 string
+	CreatedAt             string
+	DeviceDefinitionCount string
 }{
-	DateID:         "report_vehicle_signals_events_summary.date_id",
-	IntegrationID:  "report_vehicle_signals_events_summary.integration_id",
-	PowerTrainType: "report_vehicle_signals_events_summary.power_train_type",
-	Count:          "report_vehicle_signals_events_summary.count",
-	CreatedAt:      "report_vehicle_signals_events_summary.created_at",
+	DateID:                "report_vehicle_signals_events_summary.date_id",
+	IntegrationID:         "report_vehicle_signals_events_summary.integration_id",
+	PowerTrainType:        "report_vehicle_signals_events_summary.power_train_type",
+	Count:                 "report_vehicle_signals_events_summary.count",
+	CreatedAt:             "report_vehicle_signals_events_summary.created_at",
+	DeviceDefinitionCount: "report_vehicle_signals_events_summary.device_definition_count",
 }
 
 // Generated where
 
 var ReportVehicleSignalsEventsSummaryWhere = struct {
-	DateID         whereHelperstring
-	IntegrationID  whereHelperstring
-	PowerTrainType whereHelperstring
-	Count          whereHelperint
-	CreatedAt      whereHelpertime_Time
+	DateID                whereHelperstring
+	IntegrationID         whereHelperstring
+	PowerTrainType        whereHelperstring
+	Count                 whereHelperint
+	CreatedAt             whereHelpertime_Time
+	DeviceDefinitionCount whereHelperint
 }{
-	DateID:         whereHelperstring{field: "\"device_data_api\".\"report_vehicle_signals_events_summary\".\"date_id\""},
-	IntegrationID:  whereHelperstring{field: "\"device_data_api\".\"report_vehicle_signals_events_summary\".\"integration_id\""},
-	PowerTrainType: whereHelperstring{field: "\"device_data_api\".\"report_vehicle_signals_events_summary\".\"power_train_type\""},
-	Count:          whereHelperint{field: "\"device_data_api\".\"report_vehicle_signals_events_summary\".\"count\""},
-	CreatedAt:      whereHelpertime_Time{field: "\"device_data_api\".\"report_vehicle_signals_events_summary\".\"created_at\""},
+	DateID:                whereHelperstring{field: "\"device_data_api\".\"report_vehicle_signals_events_summary\".\"date_id\""},
+	IntegrationID:         whereHelperstring{field: "\"device_data_api\".\"report_vehicle_signals_events_summary\".\"integration_id\""},
+	PowerTrainType:        whereHelperstring{field: "\"device_data_api\".\"report_vehicle_signals_events_summary\".\"power_train_type\""},
+	Count:                 whereHelperint{field: "\"device_data_api\".\"report_vehicle_signals_events_summary\".\"count\""},
+	CreatedAt:             whereHelpertime_Time{field: "\"device_data_api\".\"report_vehicle_signals_events_summary\".\"created_at\""},
+	DeviceDefinitionCount: whereHelperint{field: "\"device_data_api\".\"report_vehicle_signals_events_summary\".\"device_definition_count\""},
 }
 
 // ReportVehicleSignalsEventsSummaryRels is where relationship names are stored.
@@ -94,9 +101,9 @@ func (*reportVehicleSignalsEventsSummaryR) NewStruct() *reportVehicleSignalsEven
 type reportVehicleSignalsEventsSummaryL struct{}
 
 var (
-	reportVehicleSignalsEventsSummaryAllColumns            = []string{"date_id", "integration_id", "power_train_type", "count", "created_at"}
+	reportVehicleSignalsEventsSummaryAllColumns            = []string{"date_id", "integration_id", "power_train_type", "count", "created_at", "device_definition_count"}
 	reportVehicleSignalsEventsSummaryColumnsWithoutDefault = []string{"date_id", "integration_id", "power_train_type", "count"}
-	reportVehicleSignalsEventsSummaryColumnsWithDefault    = []string{"created_at"}
+	reportVehicleSignalsEventsSummaryColumnsWithDefault    = []string{"created_at", "device_definition_count"}
 	reportVehicleSignalsEventsSummaryPrimaryKeyColumns     = []string{"date_id", "integration_id", "power_train_type"}
 	reportVehicleSignalsEventsSummaryGeneratedColumns      = []string{}
 )
