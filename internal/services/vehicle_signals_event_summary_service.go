@@ -21,7 +21,7 @@ type vehicleSignalsEventSummaryService struct {
 }
 
 type VehicleSignalsEventSummaryService interface {
-	GenerateData(ctx context.Context, dateKey string, integrationID string, powerTrainType string, ddID string) error
+	GenerateData(ctx context.Context, dateKey string, integrationID string, powerTrainType string, deviceDefinitionCount int) error
 }
 
 func NewVehicleSignalsEventSummaryService(db func() *db.ReaderWriter, log *zerolog.Logger) VehicleSignalsEventSummaryService {
@@ -33,13 +33,12 @@ func NewVehicleSignalsEventSummaryService(db func() *db.ReaderWriter, log *zerol
 	}
 }
 
-func (v *vehicleSignalsEventSummaryService) GenerateData(ctx context.Context, dateKey string, integrationID string, powerTrainType string, ddID string) error {
+func (v *vehicleSignalsEventSummaryService) GenerateData(ctx context.Context, dateKey string, integrationID string, powerTrainType string, deviceDefinitionCount int) error {
 
 	userDeviceEvent, err := models.ReportVehicleSignalsEventsSummaries(
 		models.ReportVehicleSignalsEventsSummaryWhere.DateID.EQ(dateKey),
 		models.ReportVehicleSignalsEventsSummaryWhere.IntegrationID.EQ(integrationID),
 		models.ReportVehicleSignalsEventsSummaryWhere.PowerTrainType.EQ(powerTrainType),
-		models.ReportVehicleSignalsEventsSummaryWhere.DeviceDefinitionID.EQ(ddID),
 	).One(ctx, v.db().Reader)
 
 	if err != nil {
@@ -51,21 +50,21 @@ func (v *vehicleSignalsEventSummaryService) GenerateData(ctx context.Context, da
 
 	if userDeviceEvent == nil {
 		userDeviceEvent = &models.ReportVehicleSignalsEventsSummary{
-			DateID:             dateKey,
-			IntegrationID:      integrationID,
-			PowerTrainType:     powerTrainType,
-			DeviceDefinitionID: ddID,
-			Count:              1,
+			DateID:                dateKey,
+			IntegrationID:         integrationID,
+			PowerTrainType:        powerTrainType,
+			DeviceDefinitionCount: deviceDefinitionCount,
+			Count:                 1,
 		}
 	} else {
 		userDeviceEvent.Count++
+		userDeviceEvent.DeviceDefinitionCount = deviceDefinitionCount
 	}
 
 	var reportVehicleSignalsPrimaryKeyColumns = []string{
 		models.ReportVehicleSignalsEventsSummaryColumns.DateID,
 		models.ReportVehicleSignalsEventsSummaryColumns.IntegrationID,
 		models.ReportVehicleSignalsEventsSummaryColumns.PowerTrainType,
-		models.ReportVehicleSignalsEventsSummaryColumns.DeviceDefinitionID,
 	}
 
 	if err := userDeviceEvent.Upsert(ctx, v.db().Writer, true, reportVehicleSignalsPrimaryKeyColumns, boil.Infer(), boil.Infer()); err != nil {

@@ -280,7 +280,7 @@ func (s *userDeviceData) GetSummaryConnected(ctx context.Context, in *pb.Summary
 	}
 
 	queryMods := []qm.QueryMod{
-		qm.Select(models.ReportVehicleSignalsEventsSummaryColumns.IntegrationID, models.ReportVehicleSignalsEventsSummaryColumns.PowerTrainType, "SUM(count) as total_count"),
+		qm.Select(models.ReportVehicleSignalsEventsSummaryColumns.IntegrationID, models.ReportVehicleSignalsEventsSummaryColumns.PowerTrainType, "SUM(count) as total_count", "SUM(device_definition_count) as total_device_definition_count"),
 		qm.GroupBy(models.ReportVehicleSignalsEventsSummaryColumns.IntegrationID + "," + models.ReportVehicleSignalsEventsSummaryColumns.PowerTrainType),
 	}
 
@@ -316,12 +316,15 @@ func (s *userDeviceData) GetSummaryConnected(ctx context.Context, in *pb.Summary
 
 	for powerTrainType, group := range powerTrainTypeGroups {
 		powerTrainTypeTimeframeCount := 0
+		powerTrainTypeTimeframeDeviceDefinitionCount := 0
 		for _, item := range group {
 			powerTrainTypeTimeframeCount += int(item.TotalCount)
+			powerTrainTypeTimeframeDeviceDefinitionCount += int(item.TotalDeviceDefinitionCount)
 		}
 		result.PowerTrainTypeCountTimeframe = append(result.PowerTrainTypeCountTimeframe, &pb.SummaryConnectedResponse_PowerTrainTypeConnectedResponse{
-			Type:  powerTrainType,
-			Count: int32(powerTrainTypeTimeframeCount),
+			Type:                  powerTrainType,
+			Count:                 int32(powerTrainTypeTimeframeCount),
+			DeviceDefinitionCount: int32(powerTrainTypeTimeframeDeviceDefinitionCount),
 		})
 	}
 

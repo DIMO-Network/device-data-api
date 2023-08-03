@@ -23,65 +23,65 @@ import (
 
 // ReportVehicleSignalsEventsSummary is an object representing the database table.
 type ReportVehicleSignalsEventsSummary struct {
-	DateID             string    `boil:"date_id" json:"date_id" toml:"date_id" yaml:"date_id"`
-	IntegrationID      string    `boil:"integration_id" json:"integration_id" toml:"integration_id" yaml:"integration_id"`
-	PowerTrainType     string    `boil:"power_train_type" json:"power_train_type" toml:"power_train_type" yaml:"power_train_type"`
-	Count              int       `boil:"count" json:"count" toml:"count" yaml:"count"`
-	CreatedAt          time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
-	DeviceDefinitionID string    `boil:"device_definition_id" json:"device_definition_id" toml:"device_definition_id" yaml:"device_definition_id"`
+	DateID                string    `boil:"date_id" json:"date_id" toml:"date_id" yaml:"date_id"`
+	IntegrationID         string    `boil:"integration_id" json:"integration_id" toml:"integration_id" yaml:"integration_id"`
+	PowerTrainType        string    `boil:"power_train_type" json:"power_train_type" toml:"power_train_type" yaml:"power_train_type"`
+	Count                 int       `boil:"count" json:"count" toml:"count" yaml:"count"`
+	CreatedAt             time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
+	DeviceDefinitionCount int       `boil:"device_definition_count" json:"device_definition_count" toml:"device_definition_count" yaml:"device_definition_count"`
 
 	R *reportVehicleSignalsEventsSummaryR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L reportVehicleSignalsEventsSummaryL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
 var ReportVehicleSignalsEventsSummaryColumns = struct {
-	DateID             string
-	IntegrationID      string
-	PowerTrainType     string
-	Count              string
-	CreatedAt          string
-	DeviceDefinitionID string
+	DateID                string
+	IntegrationID         string
+	PowerTrainType        string
+	Count                 string
+	CreatedAt             string
+	DeviceDefinitionCount string
 }{
-	DateID:             "date_id",
-	IntegrationID:      "integration_id",
-	PowerTrainType:     "power_train_type",
-	Count:              "count",
-	CreatedAt:          "created_at",
-	DeviceDefinitionID: "device_definition_id",
+	DateID:                "date_id",
+	IntegrationID:         "integration_id",
+	PowerTrainType:        "power_train_type",
+	Count:                 "count",
+	CreatedAt:             "created_at",
+	DeviceDefinitionCount: "device_definition_count",
 }
 
 var ReportVehicleSignalsEventsSummaryTableColumns = struct {
-	DateID             string
-	IntegrationID      string
-	PowerTrainType     string
-	Count              string
-	CreatedAt          string
-	DeviceDefinitionID string
+	DateID                string
+	IntegrationID         string
+	PowerTrainType        string
+	Count                 string
+	CreatedAt             string
+	DeviceDefinitionCount string
 }{
-	DateID:             "report_vehicle_signals_events_summary.date_id",
-	IntegrationID:      "report_vehicle_signals_events_summary.integration_id",
-	PowerTrainType:     "report_vehicle_signals_events_summary.power_train_type",
-	Count:              "report_vehicle_signals_events_summary.count",
-	CreatedAt:          "report_vehicle_signals_events_summary.created_at",
-	DeviceDefinitionID: "report_vehicle_signals_events_summary.device_definition_id",
+	DateID:                "report_vehicle_signals_events_summary.date_id",
+	IntegrationID:         "report_vehicle_signals_events_summary.integration_id",
+	PowerTrainType:        "report_vehicle_signals_events_summary.power_train_type",
+	Count:                 "report_vehicle_signals_events_summary.count",
+	CreatedAt:             "report_vehicle_signals_events_summary.created_at",
+	DeviceDefinitionCount: "report_vehicle_signals_events_summary.device_definition_count",
 }
 
 // Generated where
 
 var ReportVehicleSignalsEventsSummaryWhere = struct {
-	DateID             whereHelperstring
-	IntegrationID      whereHelperstring
-	PowerTrainType     whereHelperstring
-	Count              whereHelperint
-	CreatedAt          whereHelpertime_Time
-	DeviceDefinitionID whereHelperstring
+	DateID                whereHelperstring
+	IntegrationID         whereHelperstring
+	PowerTrainType        whereHelperstring
+	Count                 whereHelperint
+	CreatedAt             whereHelpertime_Time
+	DeviceDefinitionCount whereHelperint
 }{
-	DateID:             whereHelperstring{field: "\"device_data_api\".\"report_vehicle_signals_events_summary\".\"date_id\""},
-	IntegrationID:      whereHelperstring{field: "\"device_data_api\".\"report_vehicle_signals_events_summary\".\"integration_id\""},
-	PowerTrainType:     whereHelperstring{field: "\"device_data_api\".\"report_vehicle_signals_events_summary\".\"power_train_type\""},
-	Count:              whereHelperint{field: "\"device_data_api\".\"report_vehicle_signals_events_summary\".\"count\""},
-	CreatedAt:          whereHelpertime_Time{field: "\"device_data_api\".\"report_vehicle_signals_events_summary\".\"created_at\""},
-	DeviceDefinitionID: whereHelperstring{field: "\"device_data_api\".\"report_vehicle_signals_events_summary\".\"device_definition_id\""},
+	DateID:                whereHelperstring{field: "\"device_data_api\".\"report_vehicle_signals_events_summary\".\"date_id\""},
+	IntegrationID:         whereHelperstring{field: "\"device_data_api\".\"report_vehicle_signals_events_summary\".\"integration_id\""},
+	PowerTrainType:        whereHelperstring{field: "\"device_data_api\".\"report_vehicle_signals_events_summary\".\"power_train_type\""},
+	Count:                 whereHelperint{field: "\"device_data_api\".\"report_vehicle_signals_events_summary\".\"count\""},
+	CreatedAt:             whereHelpertime_Time{field: "\"device_data_api\".\"report_vehicle_signals_events_summary\".\"created_at\""},
+	DeviceDefinitionCount: whereHelperint{field: "\"device_data_api\".\"report_vehicle_signals_events_summary\".\"device_definition_count\""},
 }
 
 // ReportVehicleSignalsEventsSummaryRels is where relationship names are stored.
@@ -101,10 +101,10 @@ func (*reportVehicleSignalsEventsSummaryR) NewStruct() *reportVehicleSignalsEven
 type reportVehicleSignalsEventsSummaryL struct{}
 
 var (
-	reportVehicleSignalsEventsSummaryAllColumns            = []string{"date_id", "integration_id", "power_train_type", "count", "created_at", "device_definition_id"}
+	reportVehicleSignalsEventsSummaryAllColumns            = []string{"date_id", "integration_id", "power_train_type", "count", "created_at", "device_definition_count"}
 	reportVehicleSignalsEventsSummaryColumnsWithoutDefault = []string{"date_id", "integration_id", "power_train_type", "count"}
-	reportVehicleSignalsEventsSummaryColumnsWithDefault    = []string{"created_at", "device_definition_id"}
-	reportVehicleSignalsEventsSummaryPrimaryKeyColumns     = []string{"date_id", "integration_id", "power_train_type", "device_definition_id"}
+	reportVehicleSignalsEventsSummaryColumnsWithDefault    = []string{"created_at", "device_definition_count"}
+	reportVehicleSignalsEventsSummaryPrimaryKeyColumns     = []string{"date_id", "integration_id", "power_train_type"}
 	reportVehicleSignalsEventsSummaryGeneratedColumns      = []string{}
 )
 
@@ -399,7 +399,7 @@ func ReportVehicleSignalsEventsSummaries(mods ...qm.QueryMod) reportVehicleSigna
 
 // FindReportVehicleSignalsEventsSummary retrieves a single record by ID with an executor.
 // If selectCols is empty Find will return all columns.
-func FindReportVehicleSignalsEventsSummary(ctx context.Context, exec boil.ContextExecutor, dateID string, integrationID string, powerTrainType string, deviceDefinitionID string, selectCols ...string) (*ReportVehicleSignalsEventsSummary, error) {
+func FindReportVehicleSignalsEventsSummary(ctx context.Context, exec boil.ContextExecutor, dateID string, integrationID string, powerTrainType string, selectCols ...string) (*ReportVehicleSignalsEventsSummary, error) {
 	reportVehicleSignalsEventsSummaryObj := &ReportVehicleSignalsEventsSummary{}
 
 	sel := "*"
@@ -407,10 +407,10 @@ func FindReportVehicleSignalsEventsSummary(ctx context.Context, exec boil.Contex
 		sel = strings.Join(strmangle.IdentQuoteSlice(dialect.LQ, dialect.RQ, selectCols), ",")
 	}
 	query := fmt.Sprintf(
-		"select %s from \"device_data_api\".\"report_vehicle_signals_events_summary\" where \"date_id\"=$1 AND \"integration_id\"=$2 AND \"power_train_type\"=$3 AND \"device_definition_id\"=$4", sel,
+		"select %s from \"device_data_api\".\"report_vehicle_signals_events_summary\" where \"date_id\"=$1 AND \"integration_id\"=$2 AND \"power_train_type\"=$3", sel,
 	)
 
-	q := queries.Raw(query, dateID, integrationID, powerTrainType, deviceDefinitionID)
+	q := queries.Raw(query, dateID, integrationID, powerTrainType)
 
 	err := q.Bind(ctx, exec, reportVehicleSignalsEventsSummaryObj)
 	if err != nil {
@@ -776,7 +776,7 @@ func (o *ReportVehicleSignalsEventsSummary) Delete(ctx context.Context, exec boi
 	}
 
 	args := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(o)), reportVehicleSignalsEventsSummaryPrimaryKeyMapping)
-	sql := "DELETE FROM \"device_data_api\".\"report_vehicle_signals_events_summary\" WHERE \"date_id\"=$1 AND \"integration_id\"=$2 AND \"power_train_type\"=$3 AND \"device_definition_id\"=$4"
+	sql := "DELETE FROM \"device_data_api\".\"report_vehicle_signals_events_summary\" WHERE \"date_id\"=$1 AND \"integration_id\"=$2 AND \"power_train_type\"=$3"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -873,7 +873,7 @@ func (o ReportVehicleSignalsEventsSummarySlice) DeleteAll(ctx context.Context, e
 // Reload refetches the object from the database
 // using the primary keys with an executor.
 func (o *ReportVehicleSignalsEventsSummary) Reload(ctx context.Context, exec boil.ContextExecutor) error {
-	ret, err := FindReportVehicleSignalsEventsSummary(ctx, exec, o.DateID, o.IntegrationID, o.PowerTrainType, o.DeviceDefinitionID)
+	ret, err := FindReportVehicleSignalsEventsSummary(ctx, exec, o.DateID, o.IntegrationID, o.PowerTrainType)
 	if err != nil {
 		return err
 	}
@@ -912,16 +912,16 @@ func (o *ReportVehicleSignalsEventsSummarySlice) ReloadAll(ctx context.Context, 
 }
 
 // ReportVehicleSignalsEventsSummaryExists checks if the ReportVehicleSignalsEventsSummary row exists.
-func ReportVehicleSignalsEventsSummaryExists(ctx context.Context, exec boil.ContextExecutor, dateID string, integrationID string, powerTrainType string, deviceDefinitionID string) (bool, error) {
+func ReportVehicleSignalsEventsSummaryExists(ctx context.Context, exec boil.ContextExecutor, dateID string, integrationID string, powerTrainType string) (bool, error) {
 	var exists bool
-	sql := "select exists(select 1 from \"device_data_api\".\"report_vehicle_signals_events_summary\" where \"date_id\"=$1 AND \"integration_id\"=$2 AND \"power_train_type\"=$3 AND \"device_definition_id\"=$4 limit 1)"
+	sql := "select exists(select 1 from \"device_data_api\".\"report_vehicle_signals_events_summary\" where \"date_id\"=$1 AND \"integration_id\"=$2 AND \"power_train_type\"=$3 limit 1)"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
 		fmt.Fprintln(writer, sql)
-		fmt.Fprintln(writer, dateID, integrationID, powerTrainType, deviceDefinitionID)
+		fmt.Fprintln(writer, dateID, integrationID, powerTrainType)
 	}
-	row := exec.QueryRowContext(ctx, sql, dateID, integrationID, powerTrainType, deviceDefinitionID)
+	row := exec.QueryRowContext(ctx, sql, dateID, integrationID, powerTrainType)
 
 	err := row.Scan(&exists)
 	if err != nil {
