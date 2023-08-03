@@ -104,7 +104,7 @@ func (v *vehicleSignalsEventBatchService) GenerateVehicleDataTracking(ctx contex
 			continue
 		}
 
-		deviceDefinitionCount[deviceDefinition.DeviceDefinitionId] += 1
+		deviceDefinitionCount[deviceDefinition.DeviceDefinitionId]++
 
 		err = v.vehicleSignalsEventPropertyService.GenerateData(ctx, dateKey, item.IntegrationID, item, deviceDefinition, eventAvailableProperties)
 		if err != nil {
