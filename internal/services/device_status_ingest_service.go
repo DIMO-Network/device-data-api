@@ -89,6 +89,10 @@ func (i *DeviceStatusIngestService) processMessage(ctx goka.Context, event *Devi
 
 var userDeviceDataPrimaryKeyColumns = []string{models.UserDeviceDatumColumns.UserDeviceID, models.UserDeviceDatumColumns.IntegrationID}
 
+func cacheKey(userDeviceID, integrationID string) string {
+	return fmt.Sprintf("%s_%s", userDeviceID, integrationID)
+}
+
 // processEvent handles the device data status update so we have a latest snapshot and saves to signals. This should all be refactored to device data api.
 func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceStatusEvent) error {
 	ctx := context.Background() // todo: will this still work with goka context instead?
@@ -99,9 +103,20 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 		return err
 	}
 
-	device, err := i.deviceSvc.GetUserDevice(ctx, userDeviceID)
-	if err != nil {
-		return fmt.Errorf("failed to find device: %w", err)
+	ck := cacheKey(userDeviceID, integration.Id)
+
+	var device *pb.UserDevice
+	maybeDevice, ok := i.memoryCache.Get(ck)
+	if ok {
+		device = maybeDevice.(*pb.UserDevice)
+	} else {
+		device, err = i.deviceSvc.GetUserDevice(ctx, userDeviceID)
+		if err != nil {
+			return fmt.Errorf("failed to find device: %w", err)
+		}
+
+		// Validate integration Id
+		i.memoryCache.Set(ck, device, 30*time.Minute)
 	}
 
 	var apiIntegration *pb.UserDeviceIntegration
