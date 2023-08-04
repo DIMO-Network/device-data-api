@@ -16,7 +16,6 @@ import (
 	"github.com/DIMO-Network/device-data-api/models"
 	"github.com/DIMO-Network/device-definitions-api/pkg/grpc"
 	"github.com/DIMO-Network/shared/db"
-	"github.com/gofiber/fiber/v2"
 	"github.com/lovoo/goka"
 	gocache "github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
@@ -107,7 +106,6 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 		device = get.(*pb.UserDevice)
 	} else {
 		device, err = i.deviceSvc.GetUserDevice(ctx, userDeviceID)
-
 		if err != nil {
 			return fmt.Errorf("failed to find device: %w", err)
 		}
@@ -120,17 +118,29 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 		return fmt.Errorf("can't find API integration for device %s and integration %s", userDeviceID, integration.Id)
 	}
 
+	var apiIntegration *pb.UserDeviceIntegration
+
+	for _, connIntegration := range device.Integrations {
+		if connIntegration.Id == integration.Id {
+			apiIntegration = connIntegration
+			break
+		}
+	}
+
+	if apiIntegration == nil {
+		return fmt.Errorf("device %s got a status for deleted integration %s", userDeviceID, integration.Id)
+	}
+
 	deviceDefinitionResponse, err := i.deviceDefSvc.GetDeviceDefinitionByID(ctx, device.DeviceDefinitionId)
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("deviceDefSvc error getting definition id: %s", device.DeviceDefinitionId))
+		return fmt.Errorf("failed to look up device definition %s: %w", device.DeviceDefinitionId, err)
 	}
 
 	if deviceDefinitionResponse == nil {
-		return fiber.NewError(fiber.StatusNotFound, fmt.Sprintf("device definition with id %s not found", device.DeviceDefinitionId))
+		return fmt.Errorf("failed to look up device definition %s", device.DeviceDefinitionId)
 	}
 
 	// update status to Active if not already set
-	apiIntegration := device.Integrations[0]
 	if apiIntegration.Status != constants.UserDeviceAPIIntegrationStatusActive {
 		apiIntegration.Status = constants.UserDeviceAPIIntegrationStatusActive
 		if _, err := i.deviceSvc.UpdateStatus(ctx, userDeviceID, apiIntegration.Id, apiIntegration.Status); err != nil {
@@ -143,6 +153,7 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 				return fmt.Errorf("failed to update status when calling autopi api for deviceId: %s", apiIntegration.ExternalId)
 			}
 		}
+
 		i.memoryCache.Delete(userDeviceID + "_" + integration.Id)
 	}
 
