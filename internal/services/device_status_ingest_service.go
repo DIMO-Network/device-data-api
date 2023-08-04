@@ -99,23 +99,9 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 		return err
 	}
 
-	device := &pb.UserDevice{}
-	get, found := i.memoryCache.Get(userDeviceID + "_" + integration.Id)
-
-	if found {
-		device = get.(*pb.UserDevice)
-	} else {
-		device, err = i.deviceSvc.GetUserDevice(ctx, userDeviceID)
-		if err != nil {
-			return fmt.Errorf("failed to find device: %w", err)
-		}
-
-		// Validate integration Id
-		i.memoryCache.Set(userDeviceID+"_"+integration.Id, device, 30*time.Minute)
-	}
-
-	if len(device.Integrations) == 0 {
-		return fmt.Errorf("can't find API integration for device %s and integration %s", userDeviceID, integration.Id)
+	device, err := i.deviceSvc.GetUserDevice(ctx, userDeviceID)
+	if err != nil {
+		return fmt.Errorf("failed to find device: %w", err)
 	}
 
 	var apiIntegration *pb.UserDeviceIntegration
@@ -128,7 +114,7 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 	}
 
 	if apiIntegration == nil {
-		return fmt.Errorf("device %s got a status for deleted integration %s", userDeviceID, integration.Id)
+		return fmt.Errorf("device %s got a status for unpaired integration %s", userDeviceID, integration.Id)
 	}
 
 	deviceDefinitionResponse, err := i.deviceDefSvc.GetDeviceDefinitionByID(ctx, device.DeviceDefinitionId)

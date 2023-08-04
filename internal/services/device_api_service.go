@@ -55,29 +55,16 @@ func (das *deviceAPIService) UserDeviceBelongsToUserID(ctx context.Context, user
 	return device.UserId == userID, nil
 }
 
-// GetUserDevice gets the userDevice from devices-api, checks in local cache first
+// GetUserDevice gets the userDevice from devices-api.
 func (das *deviceAPIService) GetUserDevice(ctx context.Context, userDeviceID string) (*pb.UserDevice, error) {
 	if len(userDeviceID) == 0 {
 		return nil, fmt.Errorf("user device id was empty - invalid")
 	}
-	var err error
 	deviceClient := pb.NewUserDeviceServiceClient(das.devicesConn)
 
-	var userDevice *pb.UserDevice
-	get, found := das.memoryCache.Get("ud_" + userDeviceID)
-	if found {
-		userDevice = get.(*pb.UserDevice)
-	} else {
-		userDevice, err = deviceClient.GetUserDevice(ctx, &pb.GetUserDeviceRequest{
-			Id: userDeviceID,
-		})
-		if err != nil {
-			return nil, err
-		}
-		das.memoryCache.Set("ud_"+userDeviceID, userDevice, time.Hour*24)
-	}
-
-	return userDevice, nil
+	return deviceClient.GetUserDevice(ctx, &pb.GetUserDeviceRequest{
+		Id: userDeviceID,
+	})
 }
 
 func (das *deviceAPIService) GetUserDeviceByTokenID(ctx context.Context, tokenID int64) (*pb.UserDevice, error) {
