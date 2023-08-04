@@ -68,7 +68,7 @@ func TestAutoPiStatus(t *testing.T) {
 		UserId: ksuid.New().String(),
 		Integrations: []*pb.UserDeviceIntegration{
 			{
-				Id:         "2RZIQAmcSNHt0X6OhqEDFE1Wj0X",
+				Id:         apInt.Id,
 				Status:     "Active",
 				ExternalId: "",
 			},
