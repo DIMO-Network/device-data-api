@@ -4,9 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 
 	"github.com/volatiletech/sqlboiler/v4/queries"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/pkg/errors"
@@ -83,6 +85,26 @@ func (s *userDeviceData) GetUserDeviceData(ctx context.Context, req *pb.UserDevi
 		BatteryVoltage:       ds.BatteryVoltage,
 		AmbientTemp:          ds.AmbientTemp,
 	}, nil
+}
+
+func (s *userDeviceData) GetRawDeviceData(ctx context.Context, req *pb.RawDeviceDataRequest) (*pb.RawDeviceDataResponse, error) {
+	//Create gRPC connection
+	conn, err := grpc.Dial("address:port", grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("failed to connect to data retrieval service: %v", err)
+	}
+	defer conn.Close()
+	// Create gRPC client
+	client := pb.NewUserDeviceDataServiceClient(conn)
+
+	//Call GetRawDeviceData method
+	response, err := client.GetRawDeviceData(ctx, req)
+
+	if err != nil {
+		log.Fatalf("failed to get raw device data from retrieval service: %v", err)
+	}
+	//Return response
+	return response, nil
 }
 
 func convertToTimestamp(goTime *time.Time) *timestamppb.Timestamp {
