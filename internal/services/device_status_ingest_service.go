@@ -112,7 +112,7 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 	} else {
 		device, err = i.deviceSvc.GetUserDevice(ctx, userDeviceID)
 		if err != nil {
-			return fmt.Errorf("failed to find device: %w", err)
+			return fmt.Errorf("failed to find device with id %s. error: %w", userDeviceID, err)
 		}
 
 		// Validate integration Id
@@ -143,6 +143,8 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 
 	// update status to Active if not already set
 	if apiIntegration.Status != constants.UserDeviceAPIIntegrationStatusActive {
+		i.log.Info().Str("user_device_id", userDeviceID).Str("integration_id", apiIntegration.Id).
+			Msgf("updating integration status for user device. current status %s", apiIntegration.Status)
 		apiIntegration.Status = constants.UserDeviceAPIIntegrationStatusActive
 		if _, err := i.deviceSvc.UpdateStatus(ctx, userDeviceID, apiIntegration.Id, apiIntegration.Status); err != nil {
 			return fmt.Errorf("failed to update API integration: %w", err)
