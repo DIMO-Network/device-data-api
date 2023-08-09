@@ -9,7 +9,7 @@ package grpc;
 
 service UserDeviceDataService {
   rpc GetUserDeviceData(UserDeviceDataRequest) returns (UserDeviceDataResponse);
-  // todo do we have a seperate proto for reports vs user data?
+  rpc GetRawDeviceData(RawDeviceDataRequest) returns (RawDeviceDataResponse);
   rpc GetSignals(SignalRequest) returns (SignalResponse);
   rpc GetAvailableDates(google.protobuf.Empty) returns (DateIdsResponse);
   rpc GetSummaryConnected(SummaryConnectedRequest) returns (SummaryConnectedResponse);
@@ -19,7 +19,6 @@ message SummaryConnectedRequest {
   string integration_id = 1;
   string date_id = 2;
 }
-
 message SummaryConnectedResponse {
   // count of all udd for integration_id
   int64 connected_all_time = 1;
@@ -33,8 +32,24 @@ message SummaryConnectedResponse {
   message PowerTrainTypeConnectedResponse {
     string type = 1;
     int32 count = 2;
-    int32 device_definition_count =3;
+    int32 device_definition_count = 3;
   }
+}
+message RawDeviceDataRequest {
+  string user_device_id = 1;
+  optional string integration_id = 2;
+}
+
+message RawDeviceDataResponse {
+  repeated RawDeviceDataResponseItem items = 1;
+}
+
+message RawDeviceDataResponseItem {
+  bytes signals_json_data = 1;
+  bytes error_json_data = 2;
+  google.protobuf.Timestamp last_odometer_event_at = 3;
+  google.protobuf.Timestamp record_updated_at = 4;
+  google.protobuf.Timestamp record_created_at = 5;
 }
 
 message SignalRequest {

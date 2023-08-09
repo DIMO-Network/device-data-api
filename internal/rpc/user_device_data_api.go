@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/volatiletech/sqlboiler/v4/queries"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
@@ -38,10 +39,9 @@ type userDeviceData struct {
 	deviceStatusSvc services.DeviceStatusService
 }
 
-// todo need test for this
-
+// ! TODO: need test for this
 func (s *userDeviceData) GetUserDeviceData(ctx context.Context, req *pb.UserDeviceDataRequest) (*pb.UserDeviceDataResponse, error) {
-	if req.UserDeviceId == "" || req.DeviceDefinitionId == "" {
+	if isEmpty(req.UserDeviceId) || isEmpty(req.DeviceDefinitionId) {
 		return nil, status.Error(codes.InvalidArgument, "UserDeviceId and DeviceDefinitionId are required")
 	}
 	deviceData, err := models.UserDeviceData(
@@ -49,6 +49,7 @@ func (s *userDeviceData) GetUserDeviceData(ctx context.Context, req *pb.UserDevi
 		models.UserDeviceDatumWhere.Signals.IsNotNull(),
 		models.UserDeviceDatumWhere.UpdatedAt.GT(time.Now().Add(-14*24*time.Hour)),
 	).All(ctx, s.dbs().Reader)
+
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, status.Error(codes.Internal, "Internal error.")
 	}
@@ -85,6 +86,45 @@ func (s *userDeviceData) GetUserDeviceData(ctx context.Context, req *pb.UserDevi
 	}, nil
 }
 
+func (s *userDeviceData) GetRawDeviceData(ctx context.Context, req *pb.RawDeviceDataRequest) (*pb.RawDeviceDataResponse, error) {
+	if isEmpty(req.UserDeviceId) {
+		return nil, status.Error(codes.InvalidArgument, "UserDeviceId is required")
+	}
+
+	query := make([]qm.QueryMod, 0)
+
+	query = append(query, models.UserDeviceDatumWhere.UserDeviceID.EQ(req.UserDeviceId))
+
+	if req.IntegrationId != nil && !isEmpty(*req.IntegrationId) {
+		query = append(query, models.UserDeviceDatumWhere.IntegrationID.EQ(*req.IntegrationId))
+	}
+
+	deviceData, err := models.UserDeviceData(
+		query...,
+	).All(ctx, s.dbs().Reader)
+
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, status.Error(codes.Internal, "Internal error.")
+	}
+
+	responseData := make([]*pb.RawDeviceDataResponseItem, len(deviceData))
+
+	for i, d := range deviceData {
+		responseData[i] = &pb.RawDeviceDataResponseItem{
+			SignalsJsonData:     d.Signals.JSON,
+			ErrorJsonData:       d.ErrorData.JSON,
+			RecordUpdatedAt:     convertToTimestamp(&d.UpdatedAt),
+			RecordCreatedAt:     convertToTimestamp(&d.CreatedAt),
+			LastOdometerEventAt: convertToTimestamp(&d.LastOdometerEventAt.Time),
+		}
+	}
+
+	return &pb.RawDeviceDataResponse{
+		Items: responseData,
+	}, nil
+
+}
+
 func convertToTimestamp(goTime *time.Time) *timestamppb.Timestamp {
 	if goTime == nil {
 		return nil
@@ -92,6 +132,7 @@ func convertToTimestamp(goTime *time.Time) *timestamppb.Timestamp {
 	timestamp := timestamppb.New(*goTime)
 	return timestamp
 }
+
 func convertTirePressure(tp *smartcar.TirePressure) *pb.TirePressureResponse {
 	if tp == nil {
 		return nil
@@ -365,4 +406,8 @@ func convertToDate(input string) (time.Time, error) {
 	// Create the date from the extracted parts
 	date := time.Date(yearInt, time.Month(monthInt), dayInt, 0, 0, 0, 0, time.UTC)
 	return date, nil
+}
+
+func isEmpty(currentString string) bool {
+	return len(strings.TrimSpace(currentString)) == 0
 }
