@@ -4,11 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
+	"strings"
 
 	"github.com/volatiletech/sqlboiler/v4/queries"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
-	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/pkg/errors"
@@ -40,8 +39,7 @@ type userDeviceData struct {
 	deviceStatusSvc services.DeviceStatusService
 }
 
-// todo need test for this
-
+// ! TODO: need test for this
 func (s *userDeviceData) GetUserDeviceData(ctx context.Context, req *pb.UserDeviceDataRequest) (*pb.UserDeviceDataResponse, error) {
 	if req.UserDeviceId == "" || req.DeviceDefinitionId == "" {
 		return nil, status.Error(codes.InvalidArgument, "UserDeviceId and DeviceDefinitionId are required")
@@ -51,6 +49,7 @@ func (s *userDeviceData) GetUserDeviceData(ctx context.Context, req *pb.UserDevi
 		models.UserDeviceDatumWhere.Signals.IsNotNull(),
 		models.UserDeviceDatumWhere.UpdatedAt.GT(time.Now().Add(-14*24*time.Hour)),
 	).All(ctx, s.dbs().Reader)
+
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, status.Error(codes.Internal, "Internal error.")
 	}
@@ -87,24 +86,44 @@ func (s *userDeviceData) GetUserDeviceData(ctx context.Context, req *pb.UserDevi
 	}, nil
 }
 
+// ? TODO: should this follow mediator patter as all other services?
 func (s *userDeviceData) GetRawDeviceData(ctx context.Context, req *pb.RawDeviceDataRequest) (*pb.RawDeviceDataResponse, error) {
-	//Create gRPC connection
-	conn, err := grpc.Dial("address:port", grpc.WithInsecure())
-	if err != nil {
-		log.Fatalf("failed to connect to data retrieval service: %v", err)
+	if isEmpty(req.UserDeviceId) {
+		return nil, status.Error(codes.InvalidArgument, "UserDeviceId is required")
 	}
-	defer conn.Close()
-	// Create gRPC client
-	client := pb.NewUserDeviceDataServiceClient(conn)
 
-	//Call GetRawDeviceData method
-	response, err := client.GetRawDeviceData(ctx, req)
+	query := make([]qm.QueryMod, 0)
 
-	if err != nil {
-		log.Fatalf("failed to get raw device data from retrieval service: %v", err)
+	query = append(query, models.UserDeviceDatumWhere.UserDeviceID.EQ(req.UserDeviceId))
+
+	if req.IntegrationId != nil && !isEmpty(*req.IntegrationId) {
+		query = append(query, models.UserDeviceDatumWhere.IntegrationID.EQ(*req.IntegrationId))
 	}
-	//Return response
-	return response, nil
+
+	deviceData, err := models.UserDeviceData(
+		query...,
+	).All(ctx, s.dbs().Reader)
+
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, status.Error(codes.Internal, "Internal error.")
+	}
+
+	responseData := make([]*pb.RawDeviceDataResponseItem, len(deviceData))
+
+	for i, d := range deviceData {
+		responseData[i] = &pb.RawDeviceDataResponseItem{
+			SignalsJsonData:     d.Signals.JSON,
+			ErrorJsonData:       d.ErrorData.JSON,
+			RecordUpdatedAt:     convertToTimestamp(&d.UpdatedAt),
+			RecordCreatedAt:     convertToTimestamp(&d.CreatedAt),
+			LastOdometerEventAt: convertToTimestamp(&d.LastOdometerEventAt.Time),
+		}
+	}
+
+	return &pb.RawDeviceDataResponse{
+		Items: responseData,
+	}, nil
+
 }
 
 func convertToTimestamp(goTime *time.Time) *timestamppb.Timestamp {
@@ -114,6 +133,7 @@ func convertToTimestamp(goTime *time.Time) *timestamppb.Timestamp {
 	timestamp := timestamppb.New(*goTime)
 	return timestamp
 }
+
 func convertTirePressure(tp *smartcar.TirePressure) *pb.TirePressureResponse {
 	if tp == nil {
 		return nil
@@ -387,4 +407,8 @@ func convertToDate(input string) (time.Time, error) {
 	// Create the date from the extracted parts
 	date := time.Date(yearInt, time.Month(monthInt), dayInt, 0, 0, 0, 0, time.UTC)
 	return date, nil
+}
+
+func isEmpty(currentString string) bool {
+	return len(strings.TrimSpace(currentString)) == 0
 }

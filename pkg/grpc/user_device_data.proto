@@ -36,11 +36,20 @@ message SummaryConnectedResponse {
   }
 }
 message RawDeviceDataRequest {
-  string integration_id = 1;
-  string user_device_id = 2;
+  string user_device_id = 1;
+  optional string integration_id = 2;
 }
+
 message RawDeviceDataResponse {
-  bytes json_data = 1;
+  repeated RawDeviceDataResponseItem items = 1;
+}
+
+message RawDeviceDataResponseItem {
+  bytes signals_json_data = 1;
+  bytes error_json_data = 2;
+  google.protobuf.Timestamp last_odometer_event_at = 3;
+  google.protobuf.Timestamp record_updated_at = 4;
+  google.protobuf.Timestamp record_created_at = 5;
 }
 
 message SignalRequest {
