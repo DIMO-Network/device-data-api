@@ -41,7 +41,7 @@ type userDeviceData struct {
 
 // ! TODO: need test for this
 func (s *userDeviceData) GetUserDeviceData(ctx context.Context, req *pb.UserDeviceDataRequest) (*pb.UserDeviceDataResponse, error) {
-	if req.UserDeviceId == "" || req.DeviceDefinitionId == "" {
+	if isEmpty(req.UserDeviceId) || isEmpty(req.DeviceDefinitionId) {
 		return nil, status.Error(codes.InvalidArgument, "UserDeviceId and DeviceDefinitionId are required")
 	}
 	deviceData, err := models.UserDeviceData(
