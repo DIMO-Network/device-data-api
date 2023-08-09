@@ -86,7 +86,6 @@ func (s *userDeviceData) GetUserDeviceData(ctx context.Context, req *pb.UserDevi
 	}, nil
 }
 
-// ? TODO: should this follow mediator patter as all other services?
 func (s *userDeviceData) GetRawDeviceData(ctx context.Context, req *pb.RawDeviceDataRequest) (*pb.RawDeviceDataResponse, error) {
 	if isEmpty(req.UserDeviceId) {
 		return nil, status.Error(codes.InvalidArgument, "UserDeviceId is required")
