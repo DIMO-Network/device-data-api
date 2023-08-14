@@ -45,11 +45,13 @@ message RawDeviceDataResponse {
 }
 
 message RawDeviceDataResponseItem {
-  bytes signals_json_data = 1;
-  bytes error_json_data = 2;
-  google.protobuf.Timestamp last_odometer_event_at = 3;
-  google.protobuf.Timestamp record_updated_at = 4;
-  google.protobuf.Timestamp record_created_at = 5;
+  string integration_id = 1;
+  string user_device_id = 2;
+  bytes signals_json_data = 3;
+  bytes error_json_data = 4;
+  google.protobuf.Timestamp last_odometer_event_at = 5;
+  google.protobuf.Timestamp record_updated_at = 6;
+  google.protobuf.Timestamp record_created_at = 7;
 }
 
 message SignalRequest {

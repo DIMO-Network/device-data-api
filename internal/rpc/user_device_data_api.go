@@ -111,6 +111,8 @@ func (s *userDeviceData) GetRawDeviceData(ctx context.Context, req *pb.RawDevice
 
 	for i, d := range deviceData {
 		responseData[i] = &pb.RawDeviceDataResponseItem{
+			UserDeviceId:        d.UserDeviceID,
+			IntegrationId:       d.IntegrationID,
 			SignalsJsonData:     d.Signals.JSON,
 			ErrorJsonData:       d.ErrorData.JSON,
 			RecordUpdatedAt:     convertToTimestamp(&d.UpdatedAt),
