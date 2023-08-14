@@ -348,6 +348,9 @@ func (s *userDeviceData) GetSummaryConnected(ctx context.Context, in *pb.Summary
 	}
 	result.DateRange = endDate.Add(time.Hour*24*-7).Format(time.RFC1123) + " to " + endDate.Format(time.RFC1123)
 
+	result.StartDate = endDate.Add(time.Hour * 24 * -7).Format(time.RFC1123)
+	result.EndDate = endDate.Format(time.RFC1123)
+
 	powerTrainTypeGroups := make(map[string][]*internalmodel.SignalsEventsUserDevices)
 	connectedTimeframe := 0
 	for _, item := range allEvents {
