@@ -368,7 +368,7 @@ func (s *userDeviceData) GetSummaryConnected(ctx context.Context, in *pb.Summary
 			powerTrainTypeTimeframeDeviceDefinitionCount += int(item.TotalDeviceDefinitionCount)
 		}
 		result.PowerTrainTypeCountTimeframe = append(result.PowerTrainTypeCountTimeframe, &pb.SummaryConnectedResponse_PowerTrainTypeConnectedResponse{
-			Type:                  powerTrainType,
+			Type:                  strings.Trim(powerTrainType, ""),
 			Count:                 int32(powerTrainTypeTimeframeCount),
 			DeviceDefinitionCount: int32(powerTrainTypeTimeframeDeviceDefinitionCount),
 		})
