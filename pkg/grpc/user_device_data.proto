@@ -76,6 +76,7 @@ message SignalItemResponse {
   string name = 1;
   int32 total_count = 2;
   int32 request_count = 3;
+  repeated string power_train_type = 4;
 }
 
 message UserDeviceDataRequest {

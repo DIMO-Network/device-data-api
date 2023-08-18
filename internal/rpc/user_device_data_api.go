@@ -254,6 +254,12 @@ func (s *userDeviceData) GetSignals(ctx context.Context, req *pb.SignalRequest) 
 		return nil, status.Error(codes.Internal, "Internal error."+err.Error())
 	}
 
+	availableProperties, err := models.VehicleSignalsAvailableProperties().All(ctx, s.dbs().Reader)
+	if err != nil {
+		s.logger.Info().Msg("VehicleSignalsAvailableProperties (failed)")
+		return nil, status.Error(codes.Internal, "Internal error."+err.Error())
+	}
+
 	result := &pb.SignalResponse{}
 	for _, event := range allEvents {
 		requestCount := 0
@@ -270,11 +276,21 @@ func (s *userDeviceData) GetSignals(ctx context.Context, req *pb.SignalRequest) 
 			}
 		}
 
-		result.Items = append(result.Items, &pb.SignalItemResponse{
-			Name:         event.Name,
+		signalItemResponse := &pb.SignalItemResponse{
+			Name:         strings.TrimSpace(event.Name),
 			RequestCount: int32(requestCount),
 			TotalCount:   int32(event.TotalCount),
-		})
+		}
+
+		for _, prop := range availableProperties {
+			s.logger.Info().Msgf("prop.ID => %s | event.Name => %s", prop.ID, signalItemResponse.Name)
+			if prop.ID == signalItemResponse.Name {
+				signalItemResponse.PowerTrainType = prop.PowerTrainType
+				break
+			}
+		}
+
+		result.Items = append(result.Items, signalItemResponse)
 	}
 
 	return result, nil
@@ -368,7 +384,7 @@ func (s *userDeviceData) GetSummaryConnected(ctx context.Context, in *pb.Summary
 			powerTrainTypeTimeframeDeviceDefinitionCount += int(item.TotalDeviceDefinitionCount)
 		}
 		result.PowerTrainTypeCountTimeframe = append(result.PowerTrainTypeCountTimeframe, &pb.SummaryConnectedResponse_PowerTrainTypeConnectedResponse{
-			Type:                  strings.Trim(powerTrainType, ""),
+			Type:                  strings.TrimSpace(powerTrainType),
 			Count:                 int32(powerTrainTypeTimeframeCount),
 			DeviceDefinitionCount: int32(powerTrainTypeTimeframeDeviceDefinitionCount),
 		})
