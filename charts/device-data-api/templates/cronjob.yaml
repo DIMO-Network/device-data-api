@@ -1,34 +1,38 @@
-{{- if .Values.cronJob.enabled }}
+{{- range $job := .Values.jobs }}
+---
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: {{ include "device-data-api.fullname" . }}-load-dd
-  namespace: {{ .Release.Namespace }}
+  name: {{ include "device-data-api.fullname" $ }}-{{ $job.name }}
+  namespace: {{ $.Release.Namespace }}
   labels:
-    {{- include "device-data-api.labels" . | nindent 4 }}
+    {{- include "device-data-api.labels" $ | nindent 4 }}
 spec:
-  schedule: {{ .Values.cronJob.schedule | quote}}
+  schedule: {{ $job.schedule | quote }}
   concurrencyPolicy: "Forbid"
   jobTemplate:
     spec:
       template:
         metadata:
           annotations:
-          {{- with .Values.podAnnotations }}
+          {{- with $.Values.podAnnotations }}
           {{- toYaml . | nindent 8 }}
           {{- end }}
         spec:
           containers:
-            - name: generate-report-vehicle-signals-event
+            - name: device-data-api
               securityContext:
-                {{- toYaml .Values.securityContext | nindent 14 }}
-              image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+                {{- toYaml $.Values.securityContext | nindent 14 }}
+              image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag | default $.Chart.AppVersion }}"
               command: ['/bin/sh']
-              args: ['-c', '/device-data-api generate-report-vehicle-signals-event; CODE=$?; echo "generate-report-vehicle-signals-event completed"; wget -q --post-data "hello=shutdown" http://localhost:4191/shutdown; exit $CODE;']
+              {{- with $job.args }}
+              args:
+{{ toYaml . | indent 12 }}
+                {{- end }}
               envFrom:
-              - configMapRef:
-                    name: {{ include "device-data-api.fullname" . }}-config
-              - secretRef:
-                  name: {{ include "device-data-api.fullname" . }}-secret
-          restartPolicy: OnFailure
-  {{ end }}
+                - configMapRef:
+                    name: {{ include "device-data-api.fullname" $ }}-config
+                - secretRef:
+              name: {{ include "device-data-api.fullname" $ }}-secret
+              restartPolicy: OnFailure
+{{- end }}
