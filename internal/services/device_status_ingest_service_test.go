@@ -101,7 +101,7 @@ func TestAutoPiStatus(t *testing.T) {
 	integrationID := integs[0].Id
 
 	ingest := NewDeviceStatusIngestService(pdb.DBS, &logger, mes, deviceDefSvc, autoPISvc, deviceSvc)
-
+	// add an existing autopi datum
 	dat1 := models.UserDeviceDatum{
 		UserDeviceID:        userDeviceID,
 		Signals:             null.JSONFrom([]byte(`{"signal_name_version_1": {"timestamp": "xx", "value": 23.4}}`)),
@@ -109,6 +109,15 @@ func TestAutoPiStatus(t *testing.T) {
 		IntegrationID:       integrationID,
 	}
 	err := dat1.Insert(ctx, pdb.DBS().Writer, boil.Infer())
+	require.NoError(t, err)
+	// add a smartcar datum to make sure can handle multiple
+	dat2 := models.UserDeviceDatum{
+		UserDeviceID:        userDeviceID,
+		Signals:             null.JSONFrom([]byte(`{"signal_name_version_2": {"timestamp": "xx", "value": 23.4}}`)),
+		LastOdometerEventAt: null.TimeFrom(time.Now().Add(-10 * time.Hour)),
+		IntegrationID:       ksuid.New().String(), // just any other integrationId
+	}
+	err = dat2.Insert(ctx, pdb.DBS().Writer, boil.Infer())
 	require.NoError(t, err)
 
 	input := &DeviceStatusEvent{
