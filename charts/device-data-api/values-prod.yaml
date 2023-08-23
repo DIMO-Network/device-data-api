@@ -56,3 +56,9 @@ tolerations: []
 affinity: {}
 podDisruptionBudget:
   minAvailable: 1
+job:
+  - name: generate-report-vehicle-signals-event
+    schedule: 0 0 * * 0
+    args:
+      - '-c'
+      - /device-data-api generate-report-vehicle-signals-event; CODE=$?; echo "weekly vehicle data dashboard report"; wget -q --post-data "hello=shutdown" http://localhost:4191/shutdown &> /dev/null; exit $CODE;
