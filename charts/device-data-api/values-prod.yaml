@@ -61,4 +61,4 @@ job:
     schedule: 0 0 * * 0
     args:
       - '-c'
-      - /device-data-api generate-report-vehicle-signals-event; CODE=$?; echo "weekly elastic mmy search index sync completed"; wget -q --post-data "hello=shutdown" http://localhost:4191/shutdown &> /dev/null; exit $CODE;
+      - /device-data-api generate-report-vehicle-signals-event; CODE=$?; echo "weekly vehicle data dashboard report"; wget -q --post-data "hello=shutdown" http://localhost:4191/shutdown &> /dev/null; exit $CODE;
