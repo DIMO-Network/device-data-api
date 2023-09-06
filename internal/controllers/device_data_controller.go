@@ -79,7 +79,7 @@ func (d *DeviceDataController) GetHistoricalRaw(c *fiber.Ctx) error {
 	userDeviceID := c.Params("userDeviceID")
 	startDate := c.Query("startDate")
 	if startDate == "" {
-		startDate = time.Now().Add(-1 * (time.Hour * 24 * 14)).Format(dateLayout)
+		startDate = time.Now().Format(dateLayout)
 	} else {
 		_, err := time.Parse(dateLayout, startDate)
 		if err != nil {
@@ -154,7 +154,7 @@ func (d *DeviceDataController) GetHistoricalRawPermissioned(c *fiber.Ctx) error 
 	tokenID := c.Params("tokenID")
 	startDate := c.Query("startDate")
 	if startDate == "" {
-		startDate = time.Now().Add(-1 * (time.Hour * 24 * 14)).Format(dateLayout)
+		startDate = time.Now().Format(dateLayout)
 	} else {
 		_, err := time.Parse(dateLayout, startDate)
 		if err != nil {
