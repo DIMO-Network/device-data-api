@@ -79,7 +79,7 @@ func (d *DeviceDataController) GetHistoricalRaw(c *fiber.Ctx) error {
 	userDeviceID := c.Params("userDeviceID")
 	startDate := c.Query("startDate")
 	if startDate == "" {
-		startDate = time.Now().Format(dateLayout)
+		startDate = time.Now().Add(-1 * (time.Hour * 24 * 14)).Format(dateLayout) // if no start date default to 2 weeks
 	} else {
 		_, err := time.Parse(dateLayout, startDate)
 		if err != nil {
@@ -154,7 +154,7 @@ func (d *DeviceDataController) GetHistoricalRawPermissioned(c *fiber.Ctx) error 
 	tokenID := c.Params("tokenID")
 	startDate := c.Query("startDate")
 	if startDate == "" {
-		startDate = time.Now().Format(dateLayout)
+		startDate = time.Now().Add(-1 * (time.Hour * 24 * 14)).Format(dateLayout) // if no startdate default to 2 weeks
 	} else {
 		_, err := time.Parse(dateLayout, startDate)
 		if err != nil {
@@ -326,7 +326,7 @@ func (d *DeviceDataController) GetUserDeviceStatus(c *fiber.Ctx) error {
 	deviceData, err := models.UserDeviceData(
 		models.UserDeviceDatumWhere.UserDeviceID.EQ(userDevice.Id),
 		models.UserDeviceDatumWhere.Signals.IsNotNull(),
-		models.UserDeviceDatumWhere.UpdatedAt.GT(time.Now().Add(-14*24*time.Hour)),
+		models.UserDeviceDatumWhere.UpdatedAt.GT(time.Now().Add(-90*24*time.Hour)),
 	).All(c.Context(), d.dbs().Reader)
 	if err != nil {
 		return err
@@ -383,7 +383,7 @@ func (d *DeviceDataController) GetVehicleStatus(c *fiber.Ctx) error {
 	deviceData, err := models.UserDeviceData(
 		models.UserDeviceDatumWhere.UserDeviceID.EQ(userDeviceNFT.Id),
 		models.UserDeviceDatumWhere.Signals.IsNotNull(),
-		models.UserDeviceDatumWhere.UpdatedAt.GT(time.Now().Add(-14*24*time.Hour)),
+		models.UserDeviceDatumWhere.UpdatedAt.GT(time.Now().Add(-90*24*time.Hour)),
 	).All(c.Context(), d.dbs().Reader)
 	if errors.Is(err, sql.ErrNoRows) || len(deviceData) == 0 {
 		return fiber.NewError(fiber.StatusNotFound, "no status updates yet")
