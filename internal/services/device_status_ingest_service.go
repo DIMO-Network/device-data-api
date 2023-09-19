@@ -181,11 +181,13 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 
 	deviceData, err := models.UserDeviceData(
 		models.UserDeviceDatumWhere.UserDeviceID.EQ(userDeviceID),
+		models.UserDeviceDatumWhere.IntegrationID.EQ(integration.Id),
 		models.UserDeviceDatumWhere.Signals.IsNotNull(),
 		models.UserDeviceDatumWhere.UpdatedAt.GT(time.Now().Add(-14*24*time.Hour)),
 	).All(ctx, i.db().Reader)
+
 	if err != nil {
-		return fmt.Errorf("Internal error: %w", err)
+		return fmt.Errorf("internal error: %w", err)
 	}
 
 	if len(deviceData) > 0 {
