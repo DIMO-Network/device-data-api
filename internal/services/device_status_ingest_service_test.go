@@ -147,3 +147,115 @@ func TestAutoPiStatus(t *testing.T) {
 	assert.Equal(input.Time.Format("2006-01-02T15:04:05Z"), gjson.GetBytes(updatedData.Signals.JSON, "signal_name_version_2.timestamp").Str, "signal 2 ts should be updated from latest event")
 	assert.Equal(12.3, gjson.GetBytes(updatedData.Signals.JSON, "signal_name_version_2.value").Num, "signal 2 value should be updated from latest event")
 }
+
+// User device data is getting a different row for all incoming integrations
+func TestUserDeviceIntegrationsDifferent(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	//assert := assert.New(t)
+
+	mes := &testEventService{
+		Buffer: make([]*Event, 0),
+	}
+	deviceDefSvc := mock_services.NewMockDeviceDefinitionsAPIService(mockCtrl)
+	autoPISvc := mock_services.NewMockAutoPiAPIService(mockCtrl)
+	deviceSvc := mock_services.NewMockDeviceAPIService(mockCtrl)
+
+	logger := zerolog.New(os.Stdout).With().Timestamp().Logger()
+	ctx := context.Background()
+	pdb, container := test.StartContainerDatabase(ctx, t, migrationsDirRelPath)
+	defer func() {
+		if err := container.Terminate(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}()
+	userDeviceID := ksuid.New().String()
+	deviceDefinitionID := ksuid.New().String()
+	vin := "4T3R6RFVXMU023395"
+
+	autopiInt := test.BuildIntegrationDefaultGRPC("AutoPi", 10, 10, true)
+	smartCarInt := test.BuildIntegrationDefaultGRPC("SmartCar", 10, 10, true)
+
+	deviceDefSvc.EXPECT().GetIntegrations(gomock.Any()).Times(3).Return([]*ddgrpc.Integration{autopiInt, smartCarInt}, nil)
+
+	deviceSvc.EXPECT().GetUserDevice(gomock.Any(), userDeviceID).Times(2).Return(&pb.UserDevice{
+		Id:     userDeviceID,
+		UserId: ksuid.New().String(),
+		Integrations: []*pb.UserDeviceIntegration{
+			{
+				Id:         autopiInt.Id,
+				Status:     "Active",
+				ExternalId: "",
+			},
+			{
+				Id:         smartCarInt.Id,
+				Status:     "Active",
+				ExternalId: "",
+			},
+		},
+		Vin:                &vin,
+		DeviceDefinitionId: deviceDefinitionID,
+		VinConfirmed:       true,
+	}, nil)
+
+	deviceDefSvc.EXPECT().GetDeviceDefinitionByID(gomock.Any(), deviceDefinitionID).Times(2).Return(&ddgrpc.GetDeviceDefinitionItemResponse{
+		DeviceDefinitionId: deviceDefinitionID,
+		Name:               "Malibu",
+		Verified:           true,
+		Type: &ddgrpc.DeviceType{
+			Type:      "Vehicle",
+			Make:      "Chevrolet",
+			Model:     "Malibu",
+			Year:      2012,
+			MakeSlug:  "chevrolet",
+			ModelSlug: "malibu",
+		},
+		Make: &ddgrpc.DeviceMake{
+			Id:       ksuid.New().String(),
+			Name:     "Chevrolet",
+			NameSlug: "chevrolet",
+		},
+	}, nil)
+
+	// get all integrations
+	integs, _ := deviceDefSvc.GetIntegrations(ctx)
+
+	// add an existing autopi datum
+
+	currentTime := time.Now()
+
+	for _, integration := range integs {
+		ingest := NewDeviceStatusIngestService(pdb.DBS, &logger, mes, deviceDefSvc, autoPISvc, deviceSvc)
+		input := &DeviceStatusEvent{
+			Source:      "dimo/integration/" + integration.Id,
+			Specversion: "1.0",
+			Subject:     userDeviceID,
+			Type:        deviceStatusEventType,
+			Time:        currentTime,
+			Data:        []byte(`{"odometer": 45.22, "signal_name_version_2": 12.3}`),
+		}
+
+		var ctxGk goka.Context
+		err := ingest.processEvent(ctxGk, input)
+		require.NoError(t, err)
+	}
+
+	// get updated dat1 from db
+	updatedDataAutoPi, err := models.FindUserDeviceDatum(ctx, pdb.DBS().Reader, userDeviceID, autopiInt.Id)
+	require.NoError(t, err)
+
+	// validate signals were updated, or not updated, as expected
+	// assume UTC tz
+	assert.Equal(t, currentTime.Format("2006-01-02T15:04:05Z"), gjson.GetBytes(updatedDataAutoPi.Signals.JSON, "odometer.timestamp").Str, "odometer ts should be updated from latest event")
+	assert.Equal(t, 45.22, gjson.GetBytes(updatedDataAutoPi.Signals.JSON, "odometer.value").Num, "odometer value should be updated from latest event")
+
+	updatedDataSmartCar, err := models.FindUserDeviceDatum(ctx, pdb.DBS().Reader, userDeviceID, smartCarInt.Id)
+	require.NoError(t, err)
+
+	// validate signals were updated, or not updated, as expected
+	// assume UTC tz
+	assert.Equal(t, currentTime.Format("2006-01-02T15:04:05Z"), gjson.GetBytes(updatedDataSmartCar.Signals.JSON, "odometer.timestamp").Str, "odometer ts should be updated from latest event")
+	assert.Equal(t, 45.22, gjson.GetBytes(updatedDataSmartCar.Signals.JSON, "odometer.value").Num, "odometer value should be updated from latest event")
+
+}
