@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"database/sql"
+	"math"
 	"time"
 
 	"github.com/DIMO-Network/device-data-api/models"
@@ -57,7 +58,8 @@ func (v vehicleSignalJobService) GetJobContext(ctx context.Context) (*internalmo
 	v.log.Info().Msgf("Date format:  %s", dateKey)
 
 	if vehicleSignalsJob != nil {
-		daysDifference := vehicleSignalsJob.EndDate.Sub(now).Hours() / 24
+		daysDifference := math.Abs(vehicleSignalsJob.EndDate.Sub(now).Hours() / 24)
+
 		v.log.Err(err).Msgf("Day Difference %f", daysDifference)
 		if daysDifference > 7 {
 			vehicleSignalsJob = &models.VehicleSignalsJob{
