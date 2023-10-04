@@ -116,7 +116,7 @@ func main() {
 		// shutdown anything else
 	} else {
 		subcommands.Register(&migrateDBCmd{logger: logger, settings: settings}, "database")
-		subcommands.Register(&vehicleSignalsEventBatchServiceCmd{db: pdb.DBS, logger: logger, deviceDefSvc: deviceDefsSvc, deviceSvc: devicesSvc}, "events")
+		subcommands.Register(&vehicleSignalsBatchCmd{db: pdb.DBS, logger: logger, deviceDefSvc: deviceDefsSvc, deviceSvc: devicesSvc}, "events")
 
 		flag.Parse()
 		os.Exit(int(subcommands.Execute(ctx)))

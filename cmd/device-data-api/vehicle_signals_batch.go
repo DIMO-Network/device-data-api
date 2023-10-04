@@ -11,29 +11,29 @@ import (
 	"github.com/rs/zerolog"
 )
 
-type vehicleSignalsEventBatchServiceCmd struct {
+type vehicleSignalsBatchCmd struct {
 	db           func() *db.ReaderWriter
 	logger       zerolog.Logger
 	deviceDefSvc services.DeviceDefinitionsAPIService
 	deviceSvc    services.DeviceAPIService
 }
 
-func (*vehicleSignalsEventBatchServiceCmd) Name() string {
-	return "generate-report-vehicle-signals-event"
+func (*vehicleSignalsBatchCmd) Name() string {
+	return "generate-report-vehicle-signals"
 }
-func (*vehicleSignalsEventBatchServiceCmd) Synopsis() string {
-	return "generate vehicle signals events report by date"
+func (*vehicleSignalsBatchCmd) Synopsis() string {
+	return "generate vehicle signals events report by date for Data Dashboard"
 }
-func (*vehicleSignalsEventBatchServiceCmd) Usage() string {
-	return `generate-report-vehicle-signals-event`
+func (*vehicleSignalsBatchCmd) Usage() string {
+	return `generate-report-vehicle-signals`
 }
 
 // nolint
-func (p *vehicleSignalsEventBatchServiceCmd) SetFlags(f *flag.FlagSet) {
+func (p *vehicleSignalsBatchCmd) SetFlags(f *flag.FlagSet) {
 
 }
 
-func (p *vehicleSignalsEventBatchServiceCmd) Execute(ctx context.Context, _ *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (p *vehicleSignalsBatchCmd) Execute(ctx context.Context, _ *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	p.logger.Info().Msg("running batch report for vehicle signals")
 
 	vehicleSignalsEventPropertySrv := services.NewVehicleSignalsEventPropertyService(p.db, &p.logger)
