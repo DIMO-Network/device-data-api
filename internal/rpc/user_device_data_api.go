@@ -117,7 +117,8 @@ func (s *userDeviceData) GetRawDeviceData(ctx context.Context, req *pb.RawDevice
 			ErrorJsonData:       d.ErrorData.JSON,
 			RecordUpdatedAt:     convertToTimestamp(&d.UpdatedAt),
 			RecordCreatedAt:     convertToTimestamp(&d.CreatedAt),
-			LastOdometerEventAt: convertToTimestamp(&d.LastOdometerEventAt.Time),
+			LastLocationEventAt: convertToTimestamp(&d.LastLocationEventAt.Time),
+			LastObd2EventAt:     convertToTimestamp(&d.LastOdb2EventAt.Time),
 		}
 	}
 

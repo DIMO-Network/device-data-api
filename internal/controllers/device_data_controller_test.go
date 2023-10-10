@@ -163,7 +163,8 @@ func TestUserDevicesController_GetUserDeviceStatus(t *testing.T) {
 				}`)),
 			CreatedAt:           time.Now().Add(time.Minute * -5),
 			UpdatedAt:           time.Now().Add(time.Minute * -5),
-			LastOdometerEventAt: null.TimeFrom(time.Now().Add(time.Minute * -5)),
+			LastLocationEventAt: null.TimeFrom(time.Now().Add(time.Minute * -5)),
+			LastOdb2EventAt:     null.TimeFrom(time.Now().Add(time.Minute * -5)),
 			IntegrationID:       smartCarInt.Id,
 		}
 		err := smartCarData.Insert(ctx, pdb.DBS().Writer, boil.Infer())
