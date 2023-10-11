@@ -259,52 +259,49 @@ func (i *DeviceStatusIngestService) processOdometer(datum *models.UserDeviceDatu
 	if !newOdometer.Valid {
 		return
 	}
-	// ! TODO: change for new values
 
-	// var oldOdometer null.Float64
-	// if datum.Signals.Valid {
-	// 	if o, err := extractOdometer(datum.Signals.JSON); err == nil {
-	// 		oldOdometer = null.Float64From(o)
-	// 	}
-	// }
+	var oldOdometer null.Float64
+	var oldOdometerTimestamp null.Time
+	if datum.Signals.Valid {
+		if o, err := extractOdometer(datum.Signals.JSON); err == nil {
+			oldOdometer = null.Float64From(o)
+		}
+		if t, err := extractOdometerTime(datum.Signals.JSON); err == nil {
+			oldOdometerTimestamp = null.TimeFrom(t)
+		}
+	}
 
-	// now := time.Now()
-	// odometerOffCooldown := !datum.LastOdometerEventAt.Valid || now.Sub(datum.LastOdometerEventAt.Time) >= odometerCooldown
-	// odometerChanged := !oldOdometer.Valid || newOdometer.Float64 > oldOdometer.Float64
+	now := time.Now()
+	odometerOffCooldown := !oldOdometerTimestamp.Valid || now.Sub(oldOdometerTimestamp.Time) >= odometerCooldown
+	odometerChanged := !oldOdometer.Valid || newOdometer.Float64 > oldOdometer.Float64
 
-	// if odometerOffCooldown && odometerChanged {
-	// 	datum.LastOdometerEventAt = null.TimeFrom(now)
-	// 	if newOdometer.Float64 > 0.01 {
-	// 		// Since this function will always receive 0.0 for odo if not present
-	// 		// if odometer value is 0 then it must have been fake
-	// 		datum.RealLastOdometerEventAt = null.TimeFrom(now)
-	// 	}
-	// 	i.emitOdometerEvent(device, dd, integrationID, newOdometer.Float64)
-	// }
-
+	if odometerOffCooldown && odometerChanged {
+		oldOdometerTimestamp = null.TimeFrom(now)
+		i.emitOdometerEvent(device, dd, integrationID, newOdometer.Float64)
+	}
 }
 
-// func (i *DeviceStatusIngestService) emitOdometerEvent(device *pb.UserDevice, dd *grpc.GetDeviceDefinitionItemResponse, integrationID string, odometer float64) {
-// 	event := &Event{
-// 		Type:    "com.dimo.zone.device.odometer.update",
-// 		Subject: device.Id,
-// 		Source:  "dimo/integration/" + integrationID,
-// 		Data: OdometerEvent{
-// 			Timestamp: time.Now(),
-// 			UserID:    device.UserId,
-// 			Device: odometerEventDevice{
-// 				ID:    device.Id,
-// 				Make:  dd.Make.Name,
-// 				Model: dd.Type.Model,
-// 				Year:  int(dd.Type.Year),
-// 			},
-// 			Odometer: odometer,
-// 		},
-// 	}
-// 	if err := i.eventService.Emit(event); err != nil {
-// 		i.log.Err(err).Msgf("Failed to emit odometer event for device %s", device.Id)
-// 	}
-// }
+func (i *DeviceStatusIngestService) emitOdometerEvent(device *pb.UserDevice, dd *grpc.GetDeviceDefinitionItemResponse, integrationID string, odometer float64) {
+	event := &Event{
+		Type:    "com.dimo.zone.device.odometer.update",
+		Subject: device.Id,
+		Source:  "dimo/integration/" + integrationID,
+		Data: OdometerEvent{
+			Timestamp: time.Now(),
+			UserID:    device.UserId,
+			Device: odometerEventDevice{
+				ID:    device.Id,
+				Make:  dd.Make.Name,
+				Model: dd.Type.Model,
+				Year:  int(dd.Type.Year),
+			},
+			Odometer: odometer,
+		},
+	}
+	if err := i.eventService.Emit(event); err != nil {
+		i.log.Err(err).Msgf("Failed to emit odometer event for device %s", device.Id)
+	}
+}
 
 func extractOdometer(data []byte) (float64, error) {
 	result := gjson.GetBytes(data, "odometer")
@@ -312,6 +309,14 @@ func extractOdometer(data []byte) (float64, error) {
 		return 0, errors.New("data payload did not have an odometer reading")
 	}
 	return result.Float(), nil
+}
+
+func extractOdometerTime(data []byte) (time.Time, error) {
+	result := gjson.GetBytes(data, "odometer.timestamp")
+	if !result.Exists() {
+		return time.Time{}, errors.New("data payload did not have an odometer timestamp")
+	}
+	return result.Time(), nil
 }
 
 func mergeSignals(currentData map[string]interface{}, newData map[string]interface{}, t time.Time) (map[string]interface{}, error) {
