@@ -50,8 +50,6 @@ type Settings struct {
 
 	DeviceFingerprintTopic         string `yaml:"DEVICE_FINGERPRINT_TOPIC"`
 	DeviceFingerprintConsumerGroup string `yaml:"DEVICE_FINGERPRINT_CONSUMER_GROUP"`
-	DIMORegistryChainID            int64  `yaml:"DIMO_REGISTRY_CHAIN_ID"`
-	IssuerPrivateKey               string `yaml:"ISSUER_PRIVATE_KEY"`
 }
 
 func (s *Settings) IsKafkaEnabled(logger *zerolog.Logger) bool {

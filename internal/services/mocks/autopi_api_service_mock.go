@@ -7,7 +7,7 @@ package mock_services
 import (
 	reflect "reflect"
 
-	gomock "github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 )
 
 // MockAutoPiAPIService is a mock of AutoPiAPIService interface.

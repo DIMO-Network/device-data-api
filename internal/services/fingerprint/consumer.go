@@ -51,7 +51,7 @@ func RunConsumer(ctx context.Context, settings *config.Settings, logger *zerolog
 		logger.Fatal().Err(err).Msg("couldn't start device fingerprint consumer")
 	}
 
-	logger.Info().Msg("Starting transaction request status listener.")
+	logger.Info().Msg("Starting fingerprint consumer to get VIN.")
 
 	return nil
 }
@@ -72,18 +72,18 @@ func (c *Consumer) HandleDeviceFingerprint(ctx context.Context, event *Event) er
 		return fmt.Errorf("recovered wrong address %s", recAddr)
 	}
 
-	VIN, err := ExtractVIN(event.Data)
+	vin, err := ExtractVIN(event.Data)
 	if err != nil {
 		if err == ErrNoVIN {
 			return nil
 		}
-		return fmt.Errorf("couldn't extract VIN: %w", err)
+		return fmt.Errorf("couldn't extract vin: %w", err)
 	}
 
 	ud, err := c.deviceAPIService.GetUserDeviceByEthAddr(ctx, addr.Bytes())
 
 	if err != nil {
-		return fmt.Errorf("failed querying for device: %w", err)
+		return fmt.Errorf("failed querying for device: %w addr %s", err, addr)
 	}
 
 	udd, err := models.UserDeviceData(
@@ -102,7 +102,13 @@ func (c *Consumer) HandleDeviceFingerprint(ctx context.Context, event *Event) er
 
 	if vinData, ok := signals["vin"].(map[string]interface{}); ok {
 		if _, exists := vinData["value"]; exists {
-			vinData["value"] = VIN
+			vinData["value"] = vin
+		}
+	}
+
+	if vinData, ok := signals["vin"].(map[string]interface{}); ok {
+		if _, exists := vinData["timestamp"]; exists {
+			vinData["timestamp"] = vin
 		}
 	}
 
