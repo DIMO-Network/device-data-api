@@ -23,6 +23,10 @@ env:
   AWS_BUCKET_NAME: dimo-network-device-data-export-prod
   NATS_URL: nats-prod:4222
   KAFKA_BROKERS: kafka-prod-dimo-kafka-kafka-brokers:9092
+  DIMO_REGISTRY_ADDR: '0x4De1bCf2B7E851E31216fC07989caA902A604784'
+  DIMO_REGISTRY_CHAIN_ID: 80001
+  DEVICE_FINGERPRINT_TOPIC: topic.device.fingerprint
+  DEVICE_FINGERPRINT_CONSUMER_GROUP: device-fingerprint-vc-issuer
 ingress:
   enabled: true
   className: nginx
