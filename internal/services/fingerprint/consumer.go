@@ -4,25 +4,21 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"github.com/DIMO-Network/device-data-api/internal/config"
 	"github.com/DIMO-Network/device-data-api/internal/helpers"
+	"github.com/DIMO-Network/device-data-api/internal/services"
 	"github.com/DIMO-Network/device-data-api/models"
-	deviceapi "github.com/DIMO-Network/devices-api/models"
-	"github.com/DIMO-Network/shared/kafka"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
-
-	"regexp"
-	"strings"
-	"time"
-
-	"github.com/DIMO-Network/device-data-api/internal/services/issuer"
 	"github.com/DIMO-Network/shared"
 	"github.com/DIMO-Network/shared/db"
+	"github.com/DIMO-Network/shared/kafka"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+	"github.com/volatiletech/sqlboiler/v4/boil"
+	"regexp"
+	"strings"
 )
 
 type Event struct {
@@ -31,21 +27,21 @@ type Event struct {
 }
 
 type Consumer struct {
-	logger *zerolog.Logger
-	iss    *issuer.Issuer
-	DBS    db.Store
+	logger           *zerolog.Logger
+	DBS              db.Store
+	deviceAPIService services.DeviceAPIService
 }
 
-func NewConsumer(dbs db.Store, iss *issuer.Issuer, log *zerolog.Logger) *Consumer {
+func NewConsumer(dbs db.Store, log *zerolog.Logger, deviceAPIService services.DeviceAPIService) *Consumer {
 	return &Consumer{
-		DBS:    dbs,
-		logger: log,
-		iss:    iss,
+		DBS:              dbs,
+		logger:           log,
+		deviceAPIService: deviceAPIService,
 	}
 }
 
-func RunConsumer(ctx context.Context, settings *config.Settings, logger *zerolog.Logger, i *issuer.Issuer, dbs db.Store) error {
-	consumer := NewConsumer(dbs, i, logger)
+func RunConsumer(ctx context.Context, settings *config.Settings, logger *zerolog.Logger, dbs db.Store, deviceAPIService services.DeviceAPIService) error {
+	consumer := NewConsumer(dbs, logger, deviceAPIService)
 
 	if err := kafka.Consume(ctx, kafka.Config{
 		Brokers: strings.Split(settings.KafkaBrokers, ","),
@@ -84,28 +80,18 @@ func (c *Consumer) HandleDeviceFingerprint(ctx context.Context, event *Event) er
 		return fmt.Errorf("couldn't extract VIN: %w", err)
 	}
 
-	ad, err := deviceapi.AftermarketDevices(
-		deviceapi.AftermarketDeviceWhere.EthereumAddress.EQ(addr.Bytes()),
-		qm.Load(qm.Rels(deviceapi.AftermarketDeviceRels.VehicleToken, deviceapi.VehicleNFTRels.Claim)),
-	).One(ctx, c.DBS.DBS().Reader)
-	if err != nil {
-		return fmt.Errorf("failed querying for device: %w", err)
-	}
-
-	ud, err := deviceapi.UserDevices(
-		deviceapi.UserDeviceWhere.UserID.EQ(ad.UserID.String),
-	).One(ctx, c.DBS.DBS().Reader)
+	ud, err := c.deviceAPIService.GetUserDeviceByEthAddr(ctx, addr.Bytes())
 
 	if err != nil {
 		return fmt.Errorf("failed querying for device: %w", err)
 	}
 
 	udd, err := models.UserDeviceData(
-		models.UserDeviceDatumWhere.UserDeviceID.EQ(ud.ID),
+		models.UserDeviceDatumWhere.UserDeviceID.EQ(ud.Id),
 	).One(ctx, c.DBS.DBS().Reader)
 
 	if err != nil {
-		return fmt.Errorf("failed querying for device: %w", err)
+		return fmt.Errorf("failed querying for device data: %w", err)
 	}
 
 	// extract signals with timestamps and persist to signals
@@ -128,13 +114,8 @@ func (c *Consumer) HandleDeviceFingerprint(ctx context.Context, event *Event) er
 		return fmt.Errorf("error upserting datum: %w", err)
 	}
 
-	c.logger.Info().Str("device-addr", event.Subject).Msg("issued vin credential")
-
 	return nil
 }
-
-var startTime = time.Date(2022, time.January, 31, 5, 0, 0, 0, time.UTC)
-var weekDuration = 7 * 24 * time.Hour
 
 var ErrNoVIN = errors.New("no VIN field")
 var basicVINExp = regexp.MustCompile(`^[A-Z0-9]{17}$`)
