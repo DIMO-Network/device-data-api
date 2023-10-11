@@ -14,6 +14,7 @@ require (
 	github.com/burdiyan/kafkautil v0.0.0-20190131162249-eaf83ed22d5b
 	github.com/docker/go-connections v0.4.0
 	github.com/elastic/go-elasticsearch/v8 v8.6.0
+	github.com/ericlagergren/decimal v0.0.0-20211103172832-aca2edc11f73
 	github.com/ethereum/go-ethereum v1.12.0
 	github.com/friendsofgo/errors v0.9.2
 	github.com/gofiber/contrib/jwt v1.0.2
@@ -43,6 +44,7 @@ require (
 	github.com/volatiletech/null/v8 v8.1.2
 	github.com/volatiletech/sqlboiler/v4 v4.14.2
 	github.com/volatiletech/strmangle v0.0.4
+	go.uber.org/mock v0.2.0
 	golang.org/x/exp v0.0.0-20230321023759-10a507213a29
 	google.golang.org/grpc v1.55.0
 )
@@ -81,7 +83,6 @@ require (
 	github.com/eapache/go-xerial-snappy v0.0.0-20230111030713-bf00bc1b83b6 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
 	github.com/elastic/elastic-transport-go/v8 v8.1.0 // indirect
-	github.com/ericlagergren/decimal v0.0.0-20211103172832-aca2edc11f73 // indirect
 	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/gofrs/uuid v4.3.0+incompatible // indirect

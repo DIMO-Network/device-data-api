@@ -60,9 +60,6 @@ func RunConsumer(ctx context.Context, settings *config.Settings, logger *zerolog
 	return nil
 }
 
-// defaultCredDuration is the default lifetime for VIN credentials. It's meant to cover the
-// current reward week, but contains an extra day for safety.
-var defaultCredDuration = 8 * 24 * time.Hour
 var userDeviceDataPrimaryKeyColumns = []string{models.UserDeviceDatumColumns.UserDeviceID, models.UserDeviceDatumColumns.IntegrationID}
 
 func (c *Consumer) HandleDeviceFingerprint(ctx context.Context, event *Event) error {
