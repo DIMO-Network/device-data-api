@@ -8,12 +8,12 @@ import (
 	mock_services "github.com/DIMO-Network/device-data-api/internal/services/mocks"
 	"github.com/DIMO-Network/device-data-api/internal/test"
 	"github.com/DIMO-Network/device-data-api/models"
-	"github.com/golang/mock/gomock"
 	"github.com/rs/zerolog"
 	"github.com/segmentio/ksuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/volatiletech/sqlboiler/v4/boil"
+	"go.uber.org/mock/gomock"
 )
 
 func Test_userDeviceData_GetSignals(t *testing.T) {

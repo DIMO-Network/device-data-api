@@ -11,16 +11,14 @@ import (
 
 	"github.com/DIMO-Network/device-data-api/internal/test"
 
-	"github.com/DIMO-Network/devices-api/models"
+	pb "github.com/DIMO-Network/devices-api/pkg/grpc"
 	"github.com/DIMO-Network/shared/db"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/rs/zerolog"
 	"github.com/segmentio/ksuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/volatiletech/null/v8"
 	"go.uber.org/mock/gomock"
 )
 
@@ -76,17 +74,17 @@ func TestConsumerTestSuite(t *testing.T) {
 func (s *ConsumerTestSuite) TestVinCredentialerHandler_DeviceFingerprint() {
 
 	deviceID := ksuid.New().String()
-	ownerAddress := null.BytesFrom(common.Hex2Bytes("448cF8Fd88AD914e3585401241BC434FbEA94bbb"))
+	//ownerAddress := null.BytesFrom(common.Hex2Bytes("448cF8Fd88AD914e3585401241BC434FbEA94bbb"))
 	vin := "W1N2539531F907299"
 	userDeviceID := "userDeviceID1"
 	deiceDefID := "deviceDefID"
 
-	userDevice := models.UserDevice{
-		ID:                 deviceID,
-		UserID:             userDeviceID,
-		DeviceDefinitionID: deiceDefID,
+	userDevice := pb.UserDevice{
+		Id:                 deviceID,
+		UserId:             userDeviceID,
+		DeviceDefinitionId: deiceDefID,
 		VinConfirmed:       true,
-		VinIdentifier:      null.StringFrom(vin),
+		Vin:                &vin,
 	}
 
 	msg :=
@@ -104,7 +102,7 @@ func (s *ConsumerTestSuite) TestVinCredentialerHandler_DeviceFingerprint() {
 		Name             string
 		ReturnsError     bool
 		ExpectedResponse string
-		UserDeviceTable  models.UserDevice
+		UserDeviceTable  pb.UserDevice
 	}{
 		{
 			Name:             "No corresponding aftermarket device for address",
@@ -131,7 +129,7 @@ func (s *ConsumerTestSuite) TestVinCredentialerHandler_DeviceFingerprint() {
 	for _, c := range cases {
 		s.T().Run(c.Name, func(t *testing.T) {
 
-			s.deviceSvc.EXPECT().GetUserDeviceByEthAddr(gomock.Any(), ownerAddress).Return(c.UserDeviceTable)
+			s.deviceSvc.EXPECT().GetUserDeviceByEthAddr(gomock.Any(), gomock.Any()).Return(&c.UserDeviceTable, nil)
 
 			var event Event
 			_ = json.Unmarshal([]byte(msg), &event)
