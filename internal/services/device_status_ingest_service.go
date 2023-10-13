@@ -211,9 +211,9 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 
 	i.processOdometer(datum, newOdometer, device, deviceDefinitionResponse, integration.Id)
 
-	i.processLastLocation(datum, newLastLocation, device, deviceDefinitionResponse, integration.Id)
+	i.processLastLocation(datum, newLastLocation)
 
-	i.processObd2(datum, newObd2, device, deviceDefinitionResponse, integration.Id)
+	i.processObd2(datum, newObd2)
 
 	// Not every update has every signal. Merge the new into the old.
 	compositeData := make(map[string]any)
@@ -295,7 +295,7 @@ func (i *DeviceStatusIngestService) processOdometer(datum *models.UserDeviceDatu
 	}
 }
 
-func (i *DeviceStatusIngestService) processLastLocation(datum *models.UserDeviceDatum, newLastLocation null.Float64, device *pb.UserDevice, dd *grpc.GetDeviceDefinitionItemResponse, integrationID string) {
+func (i *DeviceStatusIngestService) processLastLocation(datum *models.UserDeviceDatum, newLastLocation null.Float64) {
 	if !newLastLocation.Valid {
 		return
 	}
@@ -316,7 +316,7 @@ func (i *DeviceStatusIngestService) processLastLocation(datum *models.UserDevice
 	}
 }
 
-func (i *DeviceStatusIngestService) processObd2(datum *models.UserDeviceDatum, newObd2 null.Float64, device *pb.UserDevice, dd *grpc.GetDeviceDefinitionItemResponse, integrationID string) {
+func (i *DeviceStatusIngestService) processObd2(datum *models.UserDeviceDatum, newObd2 null.Float64) {
 	if !newObd2.Valid {
 		return
 	}
