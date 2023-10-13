@@ -56,7 +56,7 @@ env:
   DEVICE_STATUS_TOPIC: topic.device.status
   EVENTS_TOPIC: topic.event
   DEVICE_FINGERPRINT_TOPIC: topic.device.fingerprint
-  DEVICE_FINGERPRINT_CONSUMER_GROUP: device-fingerprint-vc-issuer
+  DEVICE_FINGERPRINT_CONSUMER_GROUP: device-fingerprint-vin-data
 service:
   type: ClusterIP
   ports:

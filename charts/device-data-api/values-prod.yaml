@@ -24,7 +24,7 @@ env:
   NATS_URL: nats-prod:4222
   KAFKA_BROKERS: kafka-prod-dimo-kafka-kafka-brokers:9092
   DEVICE_FINGERPRINT_TOPIC: topic.device.fingerprint
-  DEVICE_FINGERPRINT_CONSUMER_GROUP: device-fingerprint-vc-issuer
+  DEVICE_FINGERPRINT_CONSUMER_GROUP: device-fingerprint-vin-data
 ingress:
   enabled: true
   className: nginx
