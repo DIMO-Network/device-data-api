@@ -177,6 +177,16 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 		newOdometer = null.Float64From(0.0)
 	}
 
+	var newLastLocation null.Float64
+	if o, err := extractLastLocation(event.Data); err == nil {
+		newLastLocation = null.Float64From(o)
+	}
+
+	var newObd2 null.Float64
+	if o, err := extractObd2(event.Data); err == nil {
+		newObd2 = null.Float64From(o)
+	}
+
 	var datum *models.UserDeviceDatum
 
 	deviceData, err := models.UserDeviceData(
@@ -200,6 +210,10 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 	}
 
 	i.processOdometer(datum, newOdometer, device, deviceDefinitionResponse, integration.Id)
+
+	i.processLastLocation(datum, newLastLocation, device, deviceDefinitionResponse, integration.Id)
+
+	i.processObd2(datum, newObd2, device, deviceDefinitionResponse, integration.Id)
 
 	// Not every update has every signal. Merge the new into the old.
 	compositeData := make(map[string]any)
@@ -281,6 +295,50 @@ func (i *DeviceStatusIngestService) processOdometer(datum *models.UserDeviceDatu
 	}
 }
 
+func (i *DeviceStatusIngestService) processLastLocation(datum *models.UserDeviceDatum, newLastLocation null.Float64, device *pb.UserDevice, dd *grpc.GetDeviceDefinitionItemResponse, integrationID string) {
+	if !newLastLocation.Valid {
+		return
+	}
+	var oldLastLocation null.Float64
+
+	if datum.Signals.Valid {
+		if o, err := extractLastLocation(datum.Signals.JSON); err == nil {
+			oldLastLocation = null.Float64From(o)
+		}
+	}
+
+	now := time.Now()
+
+	locationChanged := !oldLastLocation.Valid || newLastLocation.Float64 > oldLastLocation.Float64
+
+	if locationChanged {
+		datum.LastLocationEventAt = null.TimeFrom(now)
+	}
+}
+
+func (i *DeviceStatusIngestService) processObd2(datum *models.UserDeviceDatum, newObd2 null.Float64, device *pb.UserDevice, dd *grpc.GetDeviceDefinitionItemResponse, integrationID string) {
+	if !newObd2.Valid {
+		return
+	}
+
+	var oldObd2 null.Float64
+
+	if datum.Signals.Valid {
+		if o, err := extractLastLocation(datum.Signals.JSON); err == nil {
+			oldObd2 = null.Float64From(o)
+		}
+	}
+
+	now := time.Now()
+
+	obd2Changed := !oldObd2.Valid || newObd2.Float64 > oldObd2.Float64
+
+	if obd2Changed {
+		datum.LastOdb2EventAt = null.TimeFrom(now)
+	}
+
+}
+
 func (i *DeviceStatusIngestService) emitOdometerEvent(device *pb.UserDevice, dd *grpc.GetDeviceDefinitionItemResponse, integrationID string, odometer float64) {
 	event := &Event{
 		Type:    "com.dimo.zone.device.odometer.update",
@@ -317,6 +375,34 @@ func extractOdometerTime(data []byte) (time.Time, error) {
 		return time.Time{}, errors.New("data payload did not have an odometer timestamp")
 	}
 	return result.Time(), nil
+}
+
+func extractLastLocation(data []byte) (float64, error) {
+	result := gjson.GetBytes(data, "location")
+	if !result.Exists() {
+		return 0, errors.New("data payload did not have a last_location reading")
+	}
+	return result.Float(), nil
+}
+
+func extractObd2(data []byte) (float64, error) {
+
+	possibleSignals := []string{"odometer", "speed", "engineLoad", "coolantTemp"}
+
+	var result gjson.Result
+
+	for _, signal := range possibleSignals {
+		result = gjson.GetBytes(data, signal)
+		if result.Exists() {
+			break
+		}
+	}
+
+	if !result.Exists() {
+		return 0, errors.New("data payload did not have an obd2 reading")
+	}
+
+	return result.Float(), nil
 }
 
 func mergeSignals(currentData map[string]interface{}, newData map[string]interface{}, t time.Time) (map[string]interface{}, error) {
