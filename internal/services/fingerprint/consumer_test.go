@@ -53,7 +53,7 @@ func (s *ConsumerTestSuite) SetupSuite() {
 
 	s.cons = &Consumer{
 		logger: &logger,
-		DBS:    s.pdb,
+		dbs:    s.pdb,
 	}
 
 }

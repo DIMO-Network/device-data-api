@@ -28,13 +28,13 @@ type Event struct {
 
 type Consumer struct {
 	logger           *zerolog.Logger
-	DBS              db.Store
+	dbs              db.Store
 	deviceAPIService services.DeviceAPIService
 }
 
 func NewConsumer(dbs db.Store, log *zerolog.Logger, deviceAPIService services.DeviceAPIService) *Consumer {
 	return &Consumer{
-		DBS:              dbs,
+		dbs:              dbs,
 		logger:           log,
 		deviceAPIService: deviceAPIService,
 	}
@@ -74,7 +74,7 @@ func (c *Consumer) HandleDeviceFingerprint(ctx context.Context, event *Event) er
 
 	vin, err := ExtractVIN(event.Data)
 	if err != nil {
-		if err == ErrNoVIN {
+		if errors.Is(err, ErrNoVIN) {
 			return nil
 		}
 		return fmt.Errorf("couldn't extract vin: %w", err)
@@ -86,9 +86,15 @@ func (c *Consumer) HandleDeviceFingerprint(ctx context.Context, event *Event) er
 		return fmt.Errorf("failed querying for device: %w addr %s", err, addr)
 	}
 
+	tx, err := c.dbs.DBS().Writer.BeginTx(ctx, nil)
+	defer tx.Rollback() // nolint
+	if err != nil {
+		return errors.Wrap(err, "unable to start transaction")
+	}
+
 	udd, err := models.UserDeviceData(
 		models.UserDeviceDatumWhere.UserDeviceID.EQ(ud.Id),
-	).One(ctx, c.DBS.DBS().Reader)
+	).One(ctx, tx)
 
 	if err != nil {
 		return fmt.Errorf("failed querying for device data: %w", err)
@@ -116,11 +122,11 @@ func (c *Consumer) HandleDeviceFingerprint(ctx context.Context, event *Event) er
 		return err
 	}
 
-	if err := udd.Upsert(ctx, c.DBS.DBS().Writer, true, userDeviceDataPrimaryKeyColumns, boil.Infer(), boil.Infer()); err != nil {
+	if err := udd.Upsert(ctx, tx, true, userDeviceDataPrimaryKeyColumns, boil.Infer(), boil.Infer()); err != nil {
 		return fmt.Errorf("error upserting datum: %w", err)
 	}
 
-	return nil
+	return tx.Commit()
 }
 
 var ErrNoVIN = errors.New("no VIN field")
