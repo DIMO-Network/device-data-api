@@ -2,9 +2,9 @@ package fingerprint
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
-
 	"github.com/DIMO-Network/device-data-api/internal/config"
 	"github.com/DIMO-Network/device-data-api/internal/helpers"
 	"github.com/DIMO-Network/device-data-api/internal/services"
@@ -16,9 +16,13 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
+	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"regexp"
 	"strings"
+	"time"
 )
 
 type Event struct {
@@ -58,6 +62,9 @@ func RunConsumer(ctx context.Context, settings *config.Settings, logger *zerolog
 
 var userDeviceDataPrimaryKeyColumns = []string{models.UserDeviceDatumColumns.UserDeviceID, models.UserDeviceDatumColumns.IntegrationID}
 
+const autoPiIntegrationId = "27qftVRWQYpVDcO5DltO5Ojbjxk"
+
+// HandleDeviceFingerprint extracts the VIN from the payload, and sets it in user_device_data.signals
 func (c *Consumer) HandleDeviceFingerprint(ctx context.Context, event *Event) error {
 	if !common.IsHexAddress(event.Subject) {
 		return fmt.Errorf("subject %q not a valid address", event.Subject)
@@ -94,39 +101,47 @@ func (c *Consumer) HandleDeviceFingerprint(ctx context.Context, event *Event) er
 
 	udd, err := models.UserDeviceData(
 		models.UserDeviceDatumWhere.UserDeviceID.EQ(ud.Id),
+		models.UserDeviceDatumWhere.IntegrationID.EQ(autoPiIntegrationId),
 	).One(ctx, tx)
 
 	if err != nil {
-		return fmt.Errorf("failed querying for device data: %w", err)
-	}
-
-	// extract signals with timestamps and persist to signals
-	signals := make(map[string]any)
-	if err := udd.Signals.Unmarshal(&signals); err != nil {
-		return err
-	}
-
-	if vinData, ok := signals["vin"].(map[string]interface{}); ok {
-		if _, exists := vinData["value"]; exists {
-			vinData["value"] = vin
+		if errors.Is(err, sql.ErrNoRows) {
+			// create new
+			udd = &models.UserDeviceDatum{
+				UserDeviceID:  ud.Id,
+				IntegrationID: autoPiIntegrationId,
+				Signals:       null.JSONFrom([]byte(`{}`)),
+			}
+		} else {
+			return fmt.Errorf("failed querying for device data: %w", err)
 		}
 	}
-
-	if vinData, ok := signals["vin"].(map[string]interface{}); ok {
-		if _, exists := vinData["timestamp"]; exists {
-			vinData["timestamp"] = vin
+	// set vin value in json
+	j, err := sjson.SetBytes(udd.Signals.JSON, "vin.value", vin)
+	if err != nil {
+		return errors.Wrap(err, "failed to set vin value in signals json")
+	}
+	// set vin timestamps in json
+	ts := gjson.GetBytes(event.Data, "timestamp").Int()
+	if ts > 0 {
+		j, err = sjson.SetBytes(j, "vin.timestamp", time.UnixMilli(ts).UTC().Format(time.RFC3339))
+		if err != nil {
+			return errors.Wrap(err, "failed to set timestamp value in signals json")
 		}
 	}
+	udd.Signals = null.JSONFrom(j)
 
-	if err := udd.Signals.Marshal(signals); err != nil {
-		return err
+	err = udd.Upsert(ctx, tx, true, userDeviceDataPrimaryKeyColumns, boil.Infer(), boil.Infer())
+	if err != nil {
+		return errors.Wrap(err, "failed to upsert device data for vin")
 	}
 
-	if err := udd.Upsert(ctx, tx, true, userDeviceDataPrimaryKeyColumns, boil.Infer(), boil.Infer()); err != nil {
-		return fmt.Errorf("error upserting datum: %w", err)
+	err = tx.Commit()
+	if err != nil {
+		return errors.Wrap(err, "failed to commit trx for device data")
 	}
 
-	return tx.Commit()
+	return nil
 }
 
 var ErrNoVIN = errors.New("no VIN field")

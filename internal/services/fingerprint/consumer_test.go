@@ -5,7 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	mock_services "github.com/DIMO-Network/device-data-api/internal/services/mocks"
-
+	"github.com/DIMO-Network/device-data-api/models"
+	"github.com/stretchr/testify/assert"
+	"github.com/tidwall/gjson"
+	"github.com/volatiletech/null/v8"
+	"github.com/volatiletech/sqlboiler/v4/boil"
 	"os"
 	"testing"
 
@@ -15,7 +19,6 @@ import (
 	"github.com/DIMO-Network/shared/db"
 	"github.com/rs/zerolog"
 	"github.com/segmentio/ksuid"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
@@ -52,8 +55,9 @@ func (s *ConsumerTestSuite) SetupSuite() {
 		Logger()
 
 	s.cons = &Consumer{
-		logger: &logger,
-		dbs:    s.pdb,
+		logger:           &logger,
+		dbs:              s.pdb,
+		deviceAPIService: s.deviceSvc,
 	}
 
 }
@@ -71,18 +75,16 @@ func TestConsumerTestSuite(t *testing.T) {
 	suite.Run(t, new(ConsumerTestSuite))
 }
 
-func (s *ConsumerTestSuite) TestVinCredentialerHandler_DeviceFingerprint() {
-
-	deviceID := ksuid.New().String()
+func (s *ConsumerTestSuite) TestConsumer_HandleDeviceFingerprint_insert() {
+	// validate that we can extract the VIN from the message, properly validate the ecrecover and set the vin in udd.signals
+	ctx := context.Background()
 	//ownerAddress := null.BytesFrom(common.Hex2Bytes("448cF8Fd88AD914e3585401241BC434FbEA94bbb"))
 	vin := "W1N2539531F907299"
-	userDeviceID := "userDeviceID1"
-	deiceDefID := "deviceDefID"
 
 	userDevice := pb.UserDevice{
-		Id:                 deviceID,
-		UserId:             userDeviceID,
-		DeviceDefinitionId: deiceDefID,
+		Id:                 ksuid.New().String(),
+		UserId:             "user123",
+		DeviceDefinitionId: ksuid.New().String(),
 		VinConfirmed:       true,
 		Vin:                &vin,
 	}
@@ -97,50 +99,60 @@ func (s *ConsumerTestSuite) TestVinCredentialerHandler_DeviceFingerprint() {
 	"subject": "0x448cF8Fd88AD914e3585401241BC434FbEA94bbb",
 	"type": "zone.dimo.aftermarket.device.fingerprint"
 }`
+	s.deviceSvc.EXPECT().GetUserDeviceByEthAddr(gomock.Any(), gomock.Any()).Return(&userDevice, nil)
 
-	cases := []struct {
-		Name             string
-		ReturnsError     bool
-		ExpectedResponse string
-		UserDeviceTable  pb.UserDevice
-	}{
-		{
-			Name:             "No corresponding aftermarket device for address",
-			ReturnsError:     true,
-			ExpectedResponse: "sql: no rows in result set",
-		},
-		{
-			Name:            "active credential",
-			ReturnsError:    false,
-			UserDeviceTable: userDevice,
-		},
-		{
-			Name:            "inactive credential",
-			ReturnsError:    false,
-			UserDeviceTable: userDevice,
-		},
-		{
-			Name:            "invalid token id",
-			ReturnsError:    false,
-			UserDeviceTable: userDevice,
-		},
+	var event Event
+	_ = json.Unmarshal([]byte(msg), &event)
+	err := s.cons.HandleDeviceFingerprint(s.ctx, &event)
+	require.NoError(s.T(), err)
+
+	datum, err := models.UserDeviceData(models.UserDeviceDatumWhere.UserDeviceID.EQ(userDevice.Id)).One(ctx, s.pdb.DBS().Writer)
+	require.NoError(s.T(), err)
+	assert.Equal(s.T(), vin, gjson.GetBytes(datum.Signals.JSON, "vin.value").String())
+	assert.Equal(s.T(), "2023-06-30T14:51:42Z", gjson.GetBytes(datum.Signals.JSON, "vin.timestamp").String())
+}
+
+func (s *ConsumerTestSuite) TestConsumer_HandleDeviceFingerprint_update() {
+	// validate that we can extract the VIN from the message, properly validate the ecrecover and set the vin in udd.signals
+	ctx := context.Background()
+	//ownerAddress := null.BytesFrom(common.Hex2Bytes("448cF8Fd88AD914e3585401241BC434FbEA94bbb"))
+	vin := "W1N2539531F907299"
+
+	userDevice := pb.UserDevice{
+		Id:                 ksuid.New().String(),
+		UserId:             "user123",
+		DeviceDefinitionId: ksuid.New().String(),
+		VinConfirmed:       true,
+		Vin:                &vin,
 	}
 
-	for _, c := range cases {
-		s.T().Run(c.Name, func(t *testing.T) {
-
-			s.deviceSvc.EXPECT().GetUserDeviceByEthAddr(gomock.Any(), gomock.Any()).Return(&c.UserDeviceTable, nil)
-
-			var event Event
-			_ = json.Unmarshal([]byte(msg), &event)
-			err := s.cons.HandleDeviceFingerprint(s.ctx, &event)
-
-			if c.ReturnsError {
-				assert.ErrorContains(t, err, c.ExpectedResponse)
-			} else {
-				require.NoError(t, err)
-			}
-		})
+	msg :=
+		`{
+	"data": {"rpiUptimeSecs":39,"batteryVoltage":13.49,"timestamp":1688136702634,"vin":"W1N2539531F907299","protocol":"7"},
+	"id": "2RvhwjUbtoePjmXN7q9qfjLQgwP",
+	"signature": "7c31e54ddcffc2a548ccaf10ed64b7e4bdd239bbaa3e5f6dba41d3e4051d930b7fbdf184724c2fb8d3b2ac8ac82662d2ed74e881dd01c09c4b2a9b4e62ede5db1b",
+	"source": "aftermarket/device/fingerprint",
+	"specversion": "1.0",
+	"subject": "0x448cF8Fd88AD914e3585401241BC434FbEA94bbb",
+	"type": "zone.dimo.aftermarket.device.fingerprint"
+}`
+	s.deviceSvc.EXPECT().GetUserDeviceByEthAddr(gomock.Any(), gomock.Any()).Return(&userDevice, nil)
+	// insert existing record, validate doesn't modifiy any existing data
+	udd := models.UserDeviceDatum{
+		UserDeviceID:  userDevice.Id,
+		IntegrationID: autoPiIntegrationId,
+		Signals:       null.JSONFrom([]byte(`{"odometer": {"value": 1234.5}}`)),
 	}
+	_ = udd.Insert(ctx, s.pdb.DBS().Writer, boil.Infer())
 
+	var event Event
+	_ = json.Unmarshal([]byte(msg), &event)
+	err := s.cons.HandleDeviceFingerprint(s.ctx, &event)
+	require.NoError(s.T(), err)
+
+	datum, err := models.UserDeviceData(models.UserDeviceDatumWhere.UserDeviceID.EQ(userDevice.Id)).One(ctx, s.pdb.DBS().Writer)
+	require.NoError(s.T(), err)
+	assert.Equal(s.T(), vin, gjson.GetBytes(datum.Signals.JSON, "vin.value").String())
+	assert.Equal(s.T(), "2023-06-30T14:51:42Z", gjson.GetBytes(datum.Signals.JSON, "vin.timestamp").String())
+	assert.Equal(s.T(), 1234.5, gjson.GetBytes(datum.Signals.JSON, "odometer.value").Float()) // check existing value wasn't modified
 }
