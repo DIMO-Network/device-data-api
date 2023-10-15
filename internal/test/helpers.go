@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"testing"
 
-	pb "github.com/DIMO-Network/users-api/pkg/grpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -21,6 +20,7 @@ import (
 	"github.com/DIMO-Network/device-data-api/internal/constants"
 	ddgrpc "github.com/DIMO-Network/device-definitions-api/pkg/grpc"
 	"github.com/DIMO-Network/shared/db"
+	pb "github.com/DIMO-Network/users-api/pkg/grpc"
 	"github.com/docker/go-connections/nat"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
