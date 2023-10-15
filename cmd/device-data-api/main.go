@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"flag"
-	"github.com/DIMO-Network/device-data-api/internal/services/fingerprint"
 	"os/signal"
 	"syscall"
+
+	"github.com/DIMO-Network/device-data-api/internal/services/fingerprint"
 
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 

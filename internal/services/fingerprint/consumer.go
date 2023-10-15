@@ -5,6 +5,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"regexp"
+	"strings"
+	"time"
+
 	"github.com/DIMO-Network/device-data-api/internal/config"
 	"github.com/DIMO-Network/device-data-api/internal/helpers"
 	"github.com/DIMO-Network/device-data-api/internal/services"
@@ -20,9 +24,6 @@ import (
 	"github.com/tidwall/sjson"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
-	"regexp"
-	"strings"
-	"time"
 )
 
 type Event struct {
@@ -62,7 +63,7 @@ func RunConsumer(ctx context.Context, settings *config.Settings, logger *zerolog
 
 var userDeviceDataPrimaryKeyColumns = []string{models.UserDeviceDatumColumns.UserDeviceID, models.UserDeviceDatumColumns.IntegrationID}
 
-const autoPiIntegrationId = "27qftVRWQYpVDcO5DltO5Ojbjxk"
+const autoPiIntegrationID = "27qftVRWQYpVDcO5DltO5Ojbjxk"
 
 // HandleDeviceFingerprint extracts the VIN from the payload, and sets it in user_device_data.signals
 func (c *Consumer) HandleDeviceFingerprint(ctx context.Context, event *Event) error {
@@ -101,7 +102,7 @@ func (c *Consumer) HandleDeviceFingerprint(ctx context.Context, event *Event) er
 
 	udd, err := models.UserDeviceData(
 		models.UserDeviceDatumWhere.UserDeviceID.EQ(ud.Id),
-		models.UserDeviceDatumWhere.IntegrationID.EQ(autoPiIntegrationId),
+		models.UserDeviceDatumWhere.IntegrationID.EQ(autoPiIntegrationID),
 	).One(ctx, tx)
 
 	if err != nil {
@@ -109,7 +110,7 @@ func (c *Consumer) HandleDeviceFingerprint(ctx context.Context, event *Event) er
 			// create new
 			udd = &models.UserDeviceDatum{
 				UserDeviceID:  ud.Id,
-				IntegrationID: autoPiIntegrationId,
+				IntegrationID: autoPiIntegrationID,
 				Signals:       null.JSONFrom([]byte(`{}`)),
 			}
 		} else {

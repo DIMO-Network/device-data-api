@@ -215,7 +215,6 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 	}
 
 	datum.ErrorData = null.JSON{}
-
 	// extract signals with timestamps and persist to signals
 	existingSignalData := make(map[string]any)
 	if err := datum.Signals.Unmarshal(&existingSignalData); err != nil {
@@ -230,6 +229,10 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 	newSignals, err := mergeSignals(existingSignalData, eventData, event.Time)
 	if err != nil {
 		return err
+	}
+	// if autopi, do not ingest VIN, remove vin from newSignals. vin comes from fingerprint now for AP.
+	if integration.Vendor == constants.AutoPiVendor {
+		delete(newSignals, "vin")
 	}
 	if err := datum.Signals.Marshal(newSignals); err != nil {
 		return err

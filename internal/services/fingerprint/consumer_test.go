@@ -4,14 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"testing"
+
 	mock_services "github.com/DIMO-Network/device-data-api/internal/services/mocks"
 	"github.com/DIMO-Network/device-data-api/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/gjson"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
-	"os"
-	"testing"
 
 	"github.com/DIMO-Network/device-data-api/internal/test"
 
@@ -140,7 +141,7 @@ func (s *ConsumerTestSuite) TestConsumer_HandleDeviceFingerprint_update() {
 	// insert existing record, validate doesn't modifiy any existing data
 	udd := models.UserDeviceDatum{
 		UserDeviceID:  userDevice.Id,
-		IntegrationID: autoPiIntegrationId,
+		IntegrationID: autoPiIntegrationID,
 		Signals:       null.JSONFrom([]byte(`{"odometer": {"value": 1234.5}}`)),
 	}
 	_ = udd.Insert(ctx, s.pdb.DBS().Writer, boil.Infer())
