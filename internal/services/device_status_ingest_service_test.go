@@ -10,9 +10,8 @@ import (
 
 	mock_services "github.com/DIMO-Network/device-data-api/internal/services/mocks"
 	pb "github.com/DIMO-Network/devices-api/pkg/grpc"
-	"github.com/golang/mock/gomock"
-
 	"github.com/tidwall/gjson"
+	"go.uber.org/mock/gomock"
 
 	"github.com/DIMO-Network/device-data-api/internal/test"
 	"github.com/DIMO-Network/device-data-api/models"

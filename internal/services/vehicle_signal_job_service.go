@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"database/sql"
+	"github.com/pkg/errors"
 	"math"
 	"time"
 
@@ -40,7 +41,7 @@ func (v vehicleSignalJobService) GetJobContext(ctx context.Context) (*internalmo
 
 	vehicleSignalsJob, err := models.VehicleSignalsJobs(queryMods...).One(ctx, v.db().Reader)
 	if err != nil {
-		if err != sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			v.log.Err(err).Msg("failed to find signal job")
 			return nil, err
 		}

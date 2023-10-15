@@ -48,7 +48,7 @@ func NewConsumer(dbs db.Store, log *zerolog.Logger, deviceAPIService services.De
 func RunConsumer(ctx context.Context, settings *config.Settings, logger *zerolog.Logger, dbs db.Store, deviceAPIService services.DeviceAPIService) error {
 	consumer := NewConsumer(dbs, logger, deviceAPIService)
 
-	if err := kafka.Consume(ctx, kafka.Config{
+	if err := kafka.Consume[*Event](ctx, kafka.Config{
 		Brokers: strings.Split(settings.KafkaBrokers, ","),
 		Topic:   settings.DeviceFingerprintTopic,
 		Group:   settings.DeviceFingerprintConsumerGroup,
