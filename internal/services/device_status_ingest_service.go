@@ -182,11 +182,6 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 		newLastLocation = null.Float64From(o)
 	}
 
-	var newObd2 null.Float64
-	if o, err := extractObd2(event.Data); err == nil {
-		newObd2 = null.Float64From(o)
-	}
-
 	var datum *models.UserDeviceDatum
 
 	deviceData, err := models.UserDeviceData(
@@ -213,7 +208,7 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 
 	i.processLastLocation(datum, newLastLocation)
 
-	i.processObd2(datum, newObd2)
+	i.processObd2(datum)
 
 	// Not every update has every signal. Merge the new into the old.
 	compositeData := make(map[string]any)
@@ -316,24 +311,19 @@ func (i *DeviceStatusIngestService) processLastLocation(datum *models.UserDevice
 	}
 }
 
-func (i *DeviceStatusIngestService) processObd2(datum *models.UserDeviceDatum, newObd2 null.Float64) {
-	if !newObd2.Valid {
-		return
-	}
+func (i *DeviceStatusIngestService) processObd2(datum *models.UserDeviceDatum) {
 
-	var oldObd2 null.Float64
+	var obd2Exists bool
 
 	if datum.Signals.Valid {
-		if o, err := extractLastLocation(datum.Signals.JSON); err == nil {
-			oldObd2 = null.Float64From(o)
+		if o, err := checkObd2Exists(datum.Signals.JSON); err == nil {
+			obd2Exists = o
 		}
 	}
 
 	now := time.Now()
 
-	obd2Changed := !oldObd2.Valid || newObd2.Float64 > oldObd2.Float64
-
-	if obd2Changed {
+	if obd2Exists {
 		datum.LastOdb2EventAt = null.TimeFrom(now)
 	}
 
@@ -385,7 +375,7 @@ func extractLastLocation(data []byte) (float64, error) {
 	return result.Float(), nil
 }
 
-func extractObd2(data []byte) (float64, error) {
+func checkObd2Exists(data []byte) (bool, error) {
 
 	possibleSignals := []string{"odometer", "speed", "engineLoad", "coolantTemp"}
 
@@ -399,10 +389,10 @@ func extractObd2(data []byte) (float64, error) {
 	}
 
 	if !result.Exists() {
-		return 0, errors.New("data payload did not have an obd2 reading")
+		return false, errors.New("data payload did not have an obd2 reading")
 	}
 
-	return result.Float(), nil
+	return true, nil
 }
 
 func mergeSignals(currentData map[string]interface{}, newData map[string]interface{}, t time.Time) (map[string]interface{}, error) {
