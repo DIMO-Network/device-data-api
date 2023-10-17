@@ -3,9 +3,10 @@ package services
 import (
 	"context"
 	"database/sql"
-	"github.com/pkg/errors"
 	"math"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/DIMO-Network/device-data-api/models"
 	"github.com/volatiletech/sqlboiler/v4/boil"
