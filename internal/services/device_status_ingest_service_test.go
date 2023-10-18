@@ -258,3 +258,61 @@ func TestUserDeviceIntegrationsDifferent(t *testing.T) {
 	assert.Equal(t, 45.22, gjson.GetBytes(updatedDataSmartCar.Signals.JSON, "odometer.value").Num, "odometer value should be updated from latest event")
 
 }
+
+func TestDeviceStatusIngestService_processEvent(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	deviceDefSvc := mock_services.NewMockDeviceDefinitionsAPIService(mockCtrl)
+	autoPISvc := mock_services.NewMockAutoPiAPIService(mockCtrl)
+	deviceSvc := mock_services.NewMockDeviceAPIService(mockCtrl)
+
+	logger := zerolog.New(os.Stdout).With().Timestamp().Logger()
+	ctx := context.Background()
+	pdb, container := test.StartContainerDatabase(ctx, t, migrationsDirRelPath)
+	defer func() {
+		if err := container.Terminate(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}()
+	ingest := NewDeviceStatusIngestService(pdb.DBS, &logger, nil, deviceDefSvc, autoPISvc, deviceSvc)
+	udID := ksuid.New().String()
+	vin := "vinny"
+
+	deviceSvc.EXPECT().GetUserDevice(gomock.Any(), udID).Return(&pb.UserDevice{
+		Id:                                  udID,
+		UserId:                              ksuid.New().String(), // todo check what is actually used here and ignore rest
+		TokenId:                             nil,
+		OptedInAt:                           nil,
+		OwnerAddress:                        nil,
+		AftermarketDeviceTokenId:            nil,
+		Integrations:                        nil,
+		Vin:                                 &vin,
+		DeviceDefinitionId:                  "",
+		DeviceStyleId:                       nil,
+		AftermarketDeviceBeneficiaryAddress: nil,
+		LatestVinCredential:                 nil,
+		VinConfirmed:                        true,
+		CountryCode:                         "",
+		PowerTrainType:                      "",
+		CANProtocol:                         "",
+		PostalCode:                          "",
+		GeoDecodedCountry:                   "",
+		GeoDecodedStateProv:                 "",
+		AftermarketDevice:                   nil,
+	}, nil)
+	// todo fill in expectations
+
+	err := ingest.processEvent(nil, &DeviceStatusEvent{
+		ID:          ksuid.New().String(),
+		Source:      "dimo/integration/27qftVRWQYpVDcO5DltO5Ojbjxk",
+		Specversion: "1.0.0",
+		Subject:     udID,
+		Time:        time.Now().UTC(),
+		Type:        "something",  // not sure if this needs to be updated
+		Data:        []byte(`{}`), // todo fill in sample data part of event, eg. odometer, vin, speed, engineSpeed
+	})
+	assert.NoError(t, err)
+
+	// todo: query models.user device data, and verify that signals was filled in
+	// todo verify that "vin" signal was not set.
+}
