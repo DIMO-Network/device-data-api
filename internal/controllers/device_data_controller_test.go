@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+
 	_ "embed"
 	"encoding/json"
 	"fmt"
@@ -19,7 +20,6 @@ import (
 	ddgrpc "github.com/DIMO-Network/device-definitions-api/pkg/grpc"
 	dagrpc "github.com/DIMO-Network/devices-api/pkg/grpc"
 	"github.com/gofiber/fiber/v2"
-	"github.com/golang/mock/gomock"
 	"github.com/rs/zerolog"
 	"github.com/segmentio/ksuid"
 	smartcar "github.com/smartcar/go-sdk"
@@ -29,6 +29,7 @@ import (
 	"github.com/tidwall/sjson"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
+	"go.uber.org/mock/gomock"
 )
 
 func TestDeviceDataController_addRangeIfNotExists(t *testing.T) {

@@ -7,6 +7,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/DIMO-Network/device-data-api/internal/services/fingerprint"
+
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 
 	pb "github.com/DIMO-Network/users-api/pkg/grpc"
@@ -96,6 +98,7 @@ func main() {
 		if settings.IsKafkaEnabled(&logger) {
 			eventService := services.NewEventService(&logger, &settings, deps.getKafkaProducer())
 			startDeviceStatusConsumer(logger, &settings, pdb, eventService, deviceDefsSvc, devicesSvc)
+			startDeviceFingerprint(logger, &settings, pdb, devicesSvc)
 		}
 		if settings.IsWebAPIEnabled(&logger) {
 			usersConn, err := grpc.Dial(settings.UsersAPIGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -190,6 +193,14 @@ func startDeviceStatusConsumer(logger zerolog.Logger, settings *config.Settings,
 	}()
 
 	logger.Info().Msg("Device status update consumer started")
+}
+
+func startDeviceFingerprint(logger zerolog.Logger, settings *config.Settings, pdb db.Store, deviceAPIService services.DeviceAPIService) {
+	ctx := context.Background()
+
+	if err := fingerprint.RunConsumer(ctx, settings, &logger, pdb, deviceAPIService); err != nil {
+		logger.Fatal().Err(err).Msg("Failed to create vin credentialer listener")
+	}
 }
 
 // ErrorHandler custom handler to log recovered errors using our logger and return json instead of string

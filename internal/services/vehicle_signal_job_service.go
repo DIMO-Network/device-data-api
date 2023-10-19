@@ -6,6 +6,8 @@ import (
 	"math"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/DIMO-Network/device-data-api/models"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
@@ -40,7 +42,7 @@ func (v vehicleSignalJobService) GetJobContext(ctx context.Context) (*internalmo
 
 	vehicleSignalsJob, err := models.VehicleSignalsJobs(queryMods...).One(ctx, v.db().Reader)
 	if err != nil {
-		if err != sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			v.log.Err(err).Msg("failed to find signal job")
 			return nil, err
 		}

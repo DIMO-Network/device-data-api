@@ -10,12 +10,12 @@ import (
 	"github.com/DIMO-Network/device-data-api/internal/test"
 	"github.com/DIMO-Network/device-data-api/models"
 	ddgrpc "github.com/DIMO-Network/device-definitions-api/pkg/grpc"
-	"github.com/golang/mock/gomock"
 	"github.com/segmentio/ksuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
 	"github.com/volatiletech/null/v8"
+	"go.uber.org/mock/gomock"
 )
 
 func Test_sortBySignalTimestampDesc(t *testing.T) {

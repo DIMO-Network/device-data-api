@@ -10,9 +10,8 @@ import (
 
 	mock_services "github.com/DIMO-Network/device-data-api/internal/services/mocks"
 	pb "github.com/DIMO-Network/devices-api/pkg/grpc"
-	"github.com/golang/mock/gomock"
-
 	"github.com/tidwall/gjson"
+	"go.uber.org/mock/gomock"
 
 	"github.com/DIMO-Network/device-data-api/internal/test"
 	"github.com/DIMO-Network/device-data-api/models"
@@ -259,5 +258,93 @@ func TestUserDeviceIntegrationsDifferent(t *testing.T) {
 	// assume UTC tz
 	assert.Equal(t, currentTime.Format("2006-01-02T15:04:05Z"), gjson.GetBytes(updatedDataSmartCar.Signals.JSON, "odometer.timestamp").Str, "odometer ts should be updated from latest event")
 	assert.Equal(t, 45.22, gjson.GetBytes(updatedDataSmartCar.Signals.JSON, "odometer.value").Num, "odometer value should be updated from latest event")
+
+}
+
+func TestDeviceStatusIngestService_processEvent(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	deviceDefSvc := mock_services.NewMockDeviceDefinitionsAPIService(mockCtrl)
+	autoPISvc := mock_services.NewMockAutoPiAPIService(mockCtrl)
+	deviceSvc := mock_services.NewMockDeviceAPIService(mockCtrl)
+
+	logger := zerolog.New(os.Stdout).With().Timestamp().Logger()
+	ctx := context.Background()
+	pdb, container := test.StartContainerDatabase(ctx, t, migrationsDirRelPath)
+	defer func() {
+		if err := container.Terminate(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	autopiInt := test.BuildIntegrationDefaultGRPC("AutoPi", 10, 10, true)
+	deviceDefSvc.EXPECT().GetIntegrations(gomock.Any()).Times(1).Return([]*ddgrpc.Integration{autopiInt}, nil)
+
+	mes := &testEventService{
+		Buffer: make([]*Event, 0),
+	}
+
+	ingest := NewDeviceStatusIngestService(pdb.DBS, &logger, mes, deviceDefSvc, autoPISvc, deviceSvc)
+	udID := ksuid.New().String()
+	deviceDefinitionID := ksuid.New().String()
+	vin := "4T3R6RFVXMU023395"
+	newVin := "4T3R6RFVXMU0233XX"
+
+	userDeviceData := test.SetupCreateUserDeviceData(t, udID, autopiInt.Id, vin, pdb)
+	assert.NotNil(t, userDeviceData)
+
+	deviceSvc.EXPECT().GetUserDevice(gomock.Any(), udID).Return(&pb.UserDevice{
+		Id:     udID,
+		UserId: ksuid.New().String(),
+		Integrations: []*pb.UserDeviceIntegration{
+			{
+				Id:         autopiInt.Id,
+				Status:     "Active",
+				ExternalId: "",
+			},
+		},
+		Vin:                &vin,
+		DeviceDefinitionId: deviceDefinitionID,
+		VinConfirmed:       true,
+	}, nil)
+
+	deviceDefSvc.EXPECT().GetDeviceDefinitionByID(gomock.Any(), deviceDefinitionID).Return(&ddgrpc.GetDeviceDefinitionItemResponse{
+		DeviceDefinitionId: deviceDefinitionID,
+		Name:               "Malibu",
+		Verified:           true,
+		Type: &ddgrpc.DeviceType{
+			Type:      "Vehicle",
+			Make:      "Chevrolet",
+			Model:     "Malibu",
+			Year:      2012,
+			MakeSlug:  "chevrolet",
+			ModelSlug: "malibu",
+		},
+		Make: &ddgrpc.DeviceMake{
+			Id:       ksuid.New().String(),
+			Name:     "Chevrolet",
+			NameSlug: "chevrolet",
+		},
+	}, nil)
+
+	var ctxGk goka.Context
+
+	err := ingest.processEvent(ctxGk, &DeviceStatusEvent{
+		ID:          ksuid.New().String(),
+		Source:      "dimo/integration/" + autopiInt.Id,
+		Specversion: "1.0.0",
+		Subject:     udID,
+		Time:        time.Now().UTC(),
+		Type:        deviceStatusEventType,
+		Data:        []byte(`{"vin": "` + newVin + `","odometer": 42431}`),
+	})
+	assert.NoError(t, err)
+
+	// todo: query models.user device data, and verify that signals was filled in
+	updatedDataAutoPi, err := models.FindUserDeviceDatum(ctx, pdb.DBS().Reader, userDeviceData.UserDeviceID, userDeviceData.IntegrationID)
+	require.NoError(t, err)
+
+	assert.Equal(t, "", gjson.GetBytes(updatedDataAutoPi.Signals.JSON, "vin.value").Str)
+	assert.Equal(t, 42431.0, gjson.GetBytes(updatedDataAutoPi.Signals.JSON, "odometer.value").Num)
 
 }
