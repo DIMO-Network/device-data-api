@@ -265,7 +265,7 @@ func (s *userDeviceData) GetSignals(ctx context.Context, req *pb.SignalRequest) 
 	for _, event := range allEvents {
 		requestCount := 0
 		for _, eventProperty := range eventProperties {
-			if eventProperty.Name == event.Name {
+			if strings.TrimSpace(eventProperty.Name) == strings.TrimSpace(event.Name) {
 				requestCount = int(eventProperty.TotalCount)
 				break
 			}
@@ -285,7 +285,7 @@ func (s *userDeviceData) GetSignals(ctx context.Context, req *pb.SignalRequest) 
 
 		for _, prop := range availableProperties {
 			s.logger.Info().Msgf("prop.ID => %s | event.Name => %s", prop.ID, signalItemResponse.Name)
-			if prop.ID == signalItemResponse.Name {
+			if strings.TrimSpace(prop.ID) == strings.TrimSpace(signalItemResponse.Name) {
 				signalItemResponse.PowerTrainType = prop.PowerTrainType
 				break
 			}
