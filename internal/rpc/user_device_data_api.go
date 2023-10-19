@@ -261,6 +261,11 @@ func (s *userDeviceData) GetSignals(ctx context.Context, req *pb.SignalRequest) 
 		return nil, status.Error(codes.Internal, "Internal error."+err.Error())
 	}
 
+	summaryData, err := s.GetSummaryConnected(ctx, &pb.SummaryConnectedRequest{
+		DateId:        req.DateId,
+		IntegrationId: req.IntegrationId,
+	})
+
 	result := &pb.SignalResponse{}
 	for _, event := range allEvents {
 		requestCount := 0
@@ -284,9 +289,24 @@ func (s *userDeviceData) GetSignals(ctx context.Context, req *pb.SignalRequest) 
 		}
 
 		for _, prop := range availableProperties {
-			s.logger.Info().Msgf("prop.ID => %s | event.Name => %s", prop.ID, signalItemResponse.Name)
+			//s.logger.Info().Msgf("prop.ID => %s | event.Name => %s", prop.ID, signalItemResponse.Name)
 			if strings.TrimSpace(prop.ID) == strings.TrimSpace(signalItemResponse.Name) {
 				signalItemResponse.PowerTrainType = prop.PowerTrainType
+				if len(signalItemResponse.PowerTrainType) > 0 {
+					var powerTrainTypeTotalCount int32
+					for _, powerTrainType := range signalItemResponse.PowerTrainType {
+
+						if len(summaryData.PowerTrainTypeCountTimeframe) > 0 {
+							for _, powerTrainTypeItem := range summaryData.PowerTrainTypeCountTimeframe {
+								if strings.TrimSpace(powerTrainType) == strings.TrimSpace(powerTrainTypeItem.Type) {
+									powerTrainTypeTotalCount += powerTrainTypeItem.Count
+								}
+							}
+							signalItemResponse.TotalCount = powerTrainTypeTotalCount
+						}
+					}
+
+				}
 				break
 			}
 		}
