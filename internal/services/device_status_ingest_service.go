@@ -159,7 +159,6 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 
 		i.memoryCache.Delete(userDeviceID + "_" + integration.Id)
 	}
-
 	// techdebt: could likely get rid of this with tweak in app so that people just see that data came through - not specific to odometer
 	// Null for most AutoPis.
 	var newOdometer null.Float64
@@ -230,6 +229,7 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 	if err != nil {
 		return err
 	}
+
 	// if autopi, do not ingest VIN, remove vin from newSignals. vin comes from fingerprint now for AP.
 	if integration.Vendor == constants.AutoPiVendor {
 		delete(newSignals, "vin")
@@ -281,6 +281,7 @@ func (i *DeviceStatusIngestService) processOdometer(datum *models.UserDeviceDatu
 			// if odometer value is 0 then it must have been fake
 			datum.RealLastOdometerEventAt = null.TimeFrom(now)
 		}
+
 		i.emitOdometerEvent(device, dd, integrationID, newOdometer.Float64)
 	}
 

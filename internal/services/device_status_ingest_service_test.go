@@ -274,45 +274,80 @@ func TestDeviceStatusIngestService_processEvent(t *testing.T) {
 			t.Fatal(err)
 		}
 	}()
-	ingest := NewDeviceStatusIngestService(pdb.DBS, &logger, nil, deviceDefSvc, autoPISvc, deviceSvc)
+
+	autopiInt := test.BuildIntegrationDefaultGRPC("AutoPi", 10, 10, true)
+	deviceDefSvc.EXPECT().GetIntegrations(gomock.Any()).Times(1).Return([]*ddgrpc.Integration{autopiInt}, nil)
+
+	mes := &testEventService{
+		Buffer: make([]*Event, 0),
+	}
+
+	ingest := NewDeviceStatusIngestService(pdb.DBS, &logger, mes, deviceDefSvc, autoPISvc, deviceSvc)
 	udID := ksuid.New().String()
-	vin := "vinny"
+	deviceDefinitionID := ksuid.New().String()
+	vin := "4T3R6RFVXMU023395"
+	newVin := "4T3R6RFVXMU0233XX"
+
+	userDeviceData := test.SetupCreateUserDeviceData(t, udID, autopiInt.Id, vin, pdb)
+	assert.NotNil(t, userDeviceData)
 
 	deviceSvc.EXPECT().GetUserDevice(gomock.Any(), udID).Return(&pb.UserDevice{
-		Id:                                  udID,
-		UserId:                              ksuid.New().String(), // todo check what is actually used here and ignore rest
-		TokenId:                             nil,
-		OptedInAt:                           nil,
-		OwnerAddress:                        nil,
-		AftermarketDeviceTokenId:            nil,
-		Integrations:                        nil,
-		Vin:                                 &vin,
-		DeviceDefinitionId:                  "",
-		DeviceStyleId:                       nil,
-		AftermarketDeviceBeneficiaryAddress: nil,
-		LatestVinCredential:                 nil,
-		VinConfirmed:                        true,
-		CountryCode:                         "",
-		PowerTrainType:                      "",
-		CANProtocol:                         "",
-		PostalCode:                          "",
-		GeoDecodedCountry:                   "",
-		GeoDecodedStateProv:                 "",
-		AftermarketDevice:                   nil,
+		Id:     udID,
+		UserId: ksuid.New().String(), // todo check what is actually used here and ignore rest
+		Integrations: []*pb.UserDeviceIntegration{
+			{
+				Id:         autopiInt.Id,
+				Status:     "Active",
+				ExternalId: "",
+			},
+		},
+		Vin:                 &vin,
+		DeviceDefinitionId:  deviceDefinitionID,
+		VinConfirmed:        true,
+		CountryCode:         "",
+		PowerTrainType:      "",
+		CANProtocol:         "",
+		PostalCode:          "",
+		GeoDecodedCountry:   "",
+		GeoDecodedStateProv: "",
 	}, nil)
-	// todo fill in expectations
 
-	err := ingest.processEvent(nil, &DeviceStatusEvent{
+	deviceDefSvc.EXPECT().GetDeviceDefinitionByID(gomock.Any(), deviceDefinitionID).Return(&ddgrpc.GetDeviceDefinitionItemResponse{
+		DeviceDefinitionId: deviceDefinitionID,
+		Name:               "Malibu",
+		Verified:           true,
+		Type: &ddgrpc.DeviceType{
+			Type:      "Vehicle",
+			Make:      "Chevrolet",
+			Model:     "Malibu",
+			Year:      2012,
+			MakeSlug:  "chevrolet",
+			ModelSlug: "malibu",
+		},
+		Make: &ddgrpc.DeviceMake{
+			Id:       ksuid.New().String(),
+			Name:     "Chevrolet",
+			NameSlug: "chevrolet",
+		},
+	}, nil)
+
+	var ctxGk goka.Context
+
+	err := ingest.processEvent(ctxGk, &DeviceStatusEvent{
 		ID:          ksuid.New().String(),
-		Source:      "dimo/integration/27qftVRWQYpVDcO5DltO5Ojbjxk",
+		Source:      "dimo/integration/" + autopiInt.Id,
 		Specversion: "1.0.0",
 		Subject:     udID,
 		Time:        time.Now().UTC(),
-		Type:        "something",  // not sure if this needs to be updated
-		Data:        []byte(`{}`), // todo fill in sample data part of event, eg. odometer, vin, speed, engineSpeed
+		Type:        deviceStatusEventType,                                 // not sure if this needs to be updated
+		Data:        []byte(`{"vin": "` + newVin + `","odometer": 42431}`), // todo fill in sample data part of event, eg. odometer, vin, speed, engineSpeed
 	})
 	assert.NoError(t, err)
 
 	// todo: query models.user device data, and verify that signals was filled in
-	// todo verify that "vin" signal was not set.
+	updatedDataAutoPi, err := models.FindUserDeviceDatum(ctx, pdb.DBS().Reader, userDeviceData.UserDeviceID, userDeviceData.IntegrationID)
+	require.NoError(t, err)
+
+	assert.Equal(t, "", gjson.GetBytes(updatedDataAutoPi.Signals.JSON, "vin.value").Str)
+
 }

@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/stretchr/testify/require"
+	"github.com/volatiletech/sqlboiler/v4/boil"
 	"testing"
 
 	"google.golang.org/grpc"
@@ -15,6 +17,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/DIMO-Network/device-data-api/models"
 
 	"github.com/DIMO-Network/device-data-api/internal/config"
 	"github.com/DIMO-Network/device-data-api/internal/constants"
@@ -349,4 +353,22 @@ func (c *UsersClient) GetUser(_ context.Context, in *pb.GetUserRequest, _ ...grp
 		return nil, status.Error(codes.NotFound, "No user with that id found.")
 	}
 	return u, nil
+}
+
+func SetupCreateUserDeviceData(t *testing.T, userDeviceID string, integrationID string, vin string, pdb db.Store) *models.UserDeviceDatum {
+	ud := models.UserDeviceDatum{
+		UserDeviceID:  userDeviceID,
+		IntegrationID: integrationID,
+	}
+
+	signals := make(map[string]any)
+
+	signals["vin"] = vin
+	signals["odometer"] = "123"
+
+	_ = ud.Signals.Marshal(signals)
+
+	err := ud.Insert(context.Background(), pdb.DBS().Writer, boil.Infer())
+	require.NoError(t, err, "no db error expected")
+	return &ud
 }
