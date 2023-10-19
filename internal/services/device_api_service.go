@@ -17,6 +17,7 @@ type DeviceAPIService interface {
 	GetUserDevice(ctx context.Context, userDeviceID string) (*pb.UserDevice, error)
 	UserDeviceBelongsToUserID(ctx context.Context, userID, userDeviceID string) (bool, error)
 	GetUserDeviceByTokenID(ctx context.Context, tokenID int64) (*pb.UserDevice, error)
+	GetUserDeviceByEthAddr(ctx context.Context, ethAddr []byte) (*pb.UserDevice, error)
 	UpdateStatus(ctx context.Context, userDeviceID string, integrationID string, status string) (*pb.UserDevice, error)
 }
 
@@ -29,6 +30,19 @@ func NewDeviceAPIService(devicesConn *grpc.ClientConn) DeviceAPIService {
 type deviceAPIService struct {
 	devicesConn *grpc.ClientConn
 	memoryCache *gocache.Cache
+}
+
+func (das *deviceAPIService) GetUserDeviceByEthAddr(ctx context.Context, ethAddr []byte) (*pb.UserDevice, error) {
+	deviceClient := pb.NewUserDeviceServiceClient(das.devicesConn)
+
+	devicesForUser, err := deviceClient.GetUserDeviceByEthAddr(ctx, &pb.GetUserDeviceByEthAddrRequest{
+		EthAddr: ethAddr,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return devicesForUser, nil
 }
 
 func (das *deviceAPIService) ListUserDevicesForUser(ctx context.Context, userID string) (*pb.ListUserDevicesForUserResponse, error) {

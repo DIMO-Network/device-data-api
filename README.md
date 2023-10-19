@@ -132,3 +132,9 @@ Add a migrations:
 
 Migrate DB to latest:
 `$ go run ./cmd/device-data-api migrate`
+
+# Go Ethereum issues
+
+if get ambiguous reference issue, try:
+- make sure latest go ethereum version: `go get github.com/ethereum/go-ethereum`
+- `go get github.com/btcsuite/btcd/chaincfg/chainhash`

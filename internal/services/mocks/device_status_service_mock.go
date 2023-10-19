@@ -10,7 +10,7 @@ import (
 
 	response "github.com/DIMO-Network/device-data-api/internal/response"
 	models "github.com/DIMO-Network/device-data-api/models"
-	gomock "github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 )
 
 // MockDeviceStatusService is a mock of DeviceStatusService interface.

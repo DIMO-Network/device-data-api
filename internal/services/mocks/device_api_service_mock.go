@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	grpc "github.com/DIMO-Network/devices-api/pkg/grpc"
-	gomock "github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 )
 
 // MockDeviceAPIService is a mock of DeviceAPIService interface.
@@ -48,6 +48,21 @@ func (m *MockDeviceAPIService) GetUserDevice(ctx context.Context, userDeviceID s
 func (mr *MockDeviceAPIServiceMockRecorder) GetUserDevice(ctx, userDeviceID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserDevice", reflect.TypeOf((*MockDeviceAPIService)(nil).GetUserDevice), ctx, userDeviceID)
+}
+
+// GetUserDeviceByEthAddr mocks base method.
+func (m *MockDeviceAPIService) GetUserDeviceByEthAddr(ctx context.Context, ethAddr []byte) (*grpc.UserDevice, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserDeviceByEthAddr", ctx, ethAddr)
+	ret0, _ := ret[0].(*grpc.UserDevice)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserDeviceByEthAddr indicates an expected call of GetUserDeviceByEthAddr.
+func (mr *MockDeviceAPIServiceMockRecorder) GetUserDeviceByEthAddr(ctx, ethAddr interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserDeviceByEthAddr", reflect.TypeOf((*MockDeviceAPIService)(nil).GetUserDeviceByEthAddr), ctx, ethAddr)
 }
 
 // GetUserDeviceByTokenID mocks base method.

@@ -47,6 +47,9 @@ type Settings struct {
 	DeviceStatusTopic         string      `yaml:"DEVICE_STATUS_TOPIC"`
 	KafkaBrokers              string      `yaml:"KAFKA_BROKERS"`
 	EventsTopic               string      `yaml:"EVENTS_TOPIC"`
+
+	DeviceFingerprintTopic         string `yaml:"DEVICE_FINGERPRINT_TOPIC"`
+	DeviceFingerprintConsumerGroup string `yaml:"DEVICE_FINGERPRINT_CONSUMER_GROUP"`
 }
 
 func (s *Settings) IsKafkaEnabled(logger *zerolog.Logger) bool {
