@@ -293,7 +293,7 @@ func TestDeviceStatusIngestService_processEvent(t *testing.T) {
 
 	deviceSvc.EXPECT().GetUserDevice(gomock.Any(), udID).Return(&pb.UserDevice{
 		Id:     udID,
-		UserId: ksuid.New().String(), // todo check what is actually used here and ignore rest
+		UserId: ksuid.New().String(),
 		Integrations: []*pb.UserDeviceIntegration{
 			{
 				Id:         autopiInt.Id,
@@ -301,15 +301,9 @@ func TestDeviceStatusIngestService_processEvent(t *testing.T) {
 				ExternalId: "",
 			},
 		},
-		Vin:                 &vin,
-		DeviceDefinitionId:  deviceDefinitionID,
-		VinConfirmed:        true,
-		CountryCode:         "",
-		PowerTrainType:      "",
-		CANProtocol:         "",
-		PostalCode:          "",
-		GeoDecodedCountry:   "",
-		GeoDecodedStateProv: "",
+		Vin:                &vin,
+		DeviceDefinitionId: deviceDefinitionID,
+		VinConfirmed:       true,
 	}, nil)
 
 	deviceDefSvc.EXPECT().GetDeviceDefinitionByID(gomock.Any(), deviceDefinitionID).Return(&ddgrpc.GetDeviceDefinitionItemResponse{
@@ -339,8 +333,8 @@ func TestDeviceStatusIngestService_processEvent(t *testing.T) {
 		Specversion: "1.0.0",
 		Subject:     udID,
 		Time:        time.Now().UTC(),
-		Type:        deviceStatusEventType,                                 // not sure if this needs to be updated
-		Data:        []byte(`{"vin": "` + newVin + `","odometer": 42431}`), // todo fill in sample data part of event, eg. odometer, vin, speed, engineSpeed
+		Type:        deviceStatusEventType,
+		Data:        []byte(`{"vin": "` + newVin + `","odometer": 42431}`),
 	})
 	assert.NoError(t, err)
 
@@ -349,5 +343,6 @@ func TestDeviceStatusIngestService_processEvent(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, "", gjson.GetBytes(updatedDataAutoPi.Signals.JSON, "vin.value").Str)
+	assert.Equal(t, 42431.0, gjson.GetBytes(updatedDataAutoPi.Signals.JSON, "odometer.value").Num)
 
 }
