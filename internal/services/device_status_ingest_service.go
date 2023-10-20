@@ -176,6 +176,11 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 		newOdometer = null.Float64From(0.0)
 	}
 
+	var newLastLocation null.Float64
+	if o, err := extractLastLocation(event.Data); err == nil {
+		newLastLocation = null.Float64From(o)
+	}
+
 	var datum *models.UserDeviceDatum
 
 	deviceData, err := models.UserDeviceData(
@@ -199,6 +204,10 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 	}
 
 	i.processOdometer(datum, newOdometer, device, deviceDefinitionResponse, integration.Id)
+
+	i.processLastLocation(datum, newLastLocation)
+
+	i.processObd2(datum)
 
 	// Not every update has every signal. Merge the new into the old.
 	compositeData := make(map[string]any)
@@ -264,25 +273,61 @@ func (i *DeviceStatusIngestService) processOdometer(datum *models.UserDeviceDatu
 	}
 
 	var oldOdometer null.Float64
+	var oldOdometerTimestamp null.Time
 	if datum.Signals.Valid {
 		if o, err := extractOdometer(datum.Signals.JSON); err == nil {
 			oldOdometer = null.Float64From(o)
 		}
+		if t, err := extractOdometerTime(datum.Signals.JSON); err == nil {
+			oldOdometerTimestamp = null.TimeFrom(t)
+		}
 	}
 
 	now := time.Now()
-	odometerOffCooldown := !datum.LastOdometerEventAt.Valid || now.Sub(datum.LastOdometerEventAt.Time) >= odometerCooldown
+	odometerOffCooldown := !oldOdometerTimestamp.Valid || now.Sub(oldOdometerTimestamp.Time) >= odometerCooldown
 	odometerChanged := !oldOdometer.Valid || newOdometer.Float64 > oldOdometer.Float64
 
 	if odometerOffCooldown && odometerChanged {
-		datum.LastOdometerEventAt = null.TimeFrom(now)
-		if newOdometer.Float64 > 0.01 {
-			// Since this function will always receive 0.0 for odo if not present
-			// if odometer value is 0 then it must have been fake
-			datum.RealLastOdometerEventAt = null.TimeFrom(now)
-		}
-
+    oldOdometerTimestamp = null.TimeFrom(now)
 		i.emitOdometerEvent(device, dd, integrationID, newOdometer.Float64)
+	}
+}
+
+func (i *DeviceStatusIngestService) processLastLocation(datum *models.UserDeviceDatum, newLastLocation null.Float64) {
+	if !newLastLocation.Valid {
+		return
+	}
+	var oldLastLocation null.Float64
+
+	if datum.Signals.Valid {
+		if o, err := extractLastLocation(datum.Signals.JSON); err == nil {
+			oldLastLocation = null.Float64From(o)
+		}
+	}
+
+	now := time.Now()
+
+	locationChanged := !oldLastLocation.Valid || newLastLocation.Float64 > oldLastLocation.Float64
+
+	if locationChanged {
+		datum.LastLocationEventAt = null.TimeFrom(now)
+	}
+}
+
+func (i *DeviceStatusIngestService) processObd2(datum *models.UserDeviceDatum) {
+
+	var obd2Exists bool
+
+	if datum.Signals.Valid {
+		if o, err := checkObd2Exists(datum.Signals.JSON); err == nil {
+			obd2Exists = o
+		}
+	}
+
+	now := time.Now()
+
+	if obd2Exists {
+		datum.LastOdb2EventAt = null.TimeFrom(now)
 	}
 
 }
@@ -315,6 +360,42 @@ func extractOdometer(data []byte) (float64, error) {
 		return 0, errors.New("data payload did not have an odometer reading")
 	}
 	return result.Float(), nil
+}
+
+func extractOdometerTime(data []byte) (time.Time, error) {
+	result := gjson.GetBytes(data, "odometer.timestamp")
+	if !result.Exists() {
+		return time.Time{}, errors.New("data payload did not have an odometer timestamp")
+	}
+	return result.Time(), nil
+}
+
+func extractLastLocation(data []byte) (float64, error) {
+	result := gjson.GetBytes(data, "location")
+	if !result.Exists() {
+		return 0, errors.New("data payload did not have a last_location reading")
+	}
+	return result.Float(), nil
+}
+
+func checkObd2Exists(data []byte) (bool, error) {
+
+	possibleSignals := []string{"odometer", "speed", "engineLoad", "coolantTemp"}
+
+	var result gjson.Result
+
+	for _, signal := range possibleSignals {
+		result = gjson.GetBytes(data, signal)
+		if result.Exists() {
+			break
+		}
+	}
+
+	if !result.Exists() {
+		return false, errors.New("data payload did not have an obd2 reading")
+	}
+
+	return true, nil
 }
 
 func mergeSignals(currentData map[string]interface{}, newData map[string]interface{}, t time.Time) (map[string]interface{}, error) {

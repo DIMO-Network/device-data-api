@@ -104,7 +104,8 @@ func TestAutoPiStatus(t *testing.T) {
 	dat1 := models.UserDeviceDatum{
 		UserDeviceID:        userDeviceID,
 		Signals:             null.JSONFrom([]byte(`{"signal_name_version_1": {"timestamp": "xx", "value": 23.4}}`)),
-		LastOdometerEventAt: null.TimeFrom(time.Now().Add(-10 * time.Second)),
+		LastLocationEventAt: null.TimeFrom(time.Now().Add(-10 * time.Hour)),
+		LastOdb2EventAt:     null.TimeFrom(time.Now().Add(-10 * time.Hour)),
 		IntegrationID:       integrationID,
 	}
 	err := dat1.Insert(ctx, pdb.DBS().Writer, boil.Infer())
@@ -113,7 +114,8 @@ func TestAutoPiStatus(t *testing.T) {
 	dat2 := models.UserDeviceDatum{
 		UserDeviceID:        userDeviceID,
 		Signals:             null.JSONFrom([]byte(`{"signal_name_version_2": {"timestamp": "xx", "value": 23.4}}`)),
-		LastOdometerEventAt: null.TimeFrom(time.Now().Add(-10 * time.Hour)),
+		LastLocationEventAt: null.TimeFrom(time.Now().Add(-10 * time.Hour)),
+		LastOdb2EventAt:     null.TimeFrom(time.Now().Add(-10 * time.Hour)),
 		IntegrationID:       ksuid.New().String(), // just any other integrationId
 	}
 	err = dat2.Insert(ctx, pdb.DBS().Writer, boil.Infer())
