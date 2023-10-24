@@ -290,7 +290,7 @@ func (s *userDeviceData) GetSignals(ctx context.Context, req *pb.SignalRequest) 
 		}
 
 		for _, prop := range availableProperties {
-			//s.logger.Info().Msgf("prop.ID => %s | event.Name => %s", prop.ID, signalItemResponse.Name)
+			// based count based on Powertrain
 			if strings.TrimSpace(prop.ID) == strings.TrimSpace(signalItemResponse.Name) {
 				signalItemResponse.PowerTrainType = prop.PowerTrainType
 				if len(signalItemResponse.PowerTrainType) > 0 {
@@ -306,7 +306,6 @@ func (s *userDeviceData) GetSignals(ctx context.Context, req *pb.SignalRequest) 
 							signalItemResponse.TotalCount = powerTrainTypeTotalCount
 						}
 					}
-
 				}
 				break
 			}
