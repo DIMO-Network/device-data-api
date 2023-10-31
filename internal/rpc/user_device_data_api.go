@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"context"
+	"sort"
 
 	"database/sql"
 	"fmt"
@@ -312,6 +313,18 @@ func (s *userDeviceData) GetSignals(ctx context.Context, req *pb.SignalRequest) 
 		}
 
 		result.Items = append(result.Items, signalItemResponse)
+	}
+
+	// Custom order
+	funcOrder := func(i, j int) bool {
+		if result.Items[i].RequestCount == result.Items[j].RequestCount {
+			return result.Items[i].Name < result.Items[j].Name
+		}
+		return result.Items[i].RequestCount > result.Items[j].RequestCount
+	}
+
+	if req.Level != nil && *req.Level != "0" {
+		sort.SliceStable(result.Items, func(i, j int) bool { return funcOrder(i, j) })
 	}
 
 	return result, nil
