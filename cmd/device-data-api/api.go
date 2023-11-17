@@ -94,14 +94,14 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 	vehicleAddr := common.HexToAddress(settings.VehicleNFTAddress)
 
 	// token based routes
-	vToken.Get("/history", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.AllTimeLocation}), deviceDataController.GetHistoricalRawPermissioned)
-	vToken.Get("/status", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.CurrentLocation, controllers.AllTimeLocation}), deviceDataController.GetVehicleStatus)
+	vToken.Get("/history", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.AllTimeLocation}), cacheHandler, deviceDataController.GetHistoricalRawPermissioned)
+	vToken.Get("/status", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.CurrentLocation, controllers.AllTimeLocation}), cacheHandler, deviceDataController.GetVehicleStatus)
 
 	v1Auth := app.Group("/v1", jwtAuth)
 
 	udMw := owner.New(usersClient, deviceAPIService, &logger)
 	udOwner := v1Auth.Group("/user/device-data/:userDeviceID", udMw)
-	udOwner.Get("/status", deviceDataController.GetUserDeviceStatus)
+	udOwner.Get("/status", cacheHandler, deviceDataController.GetUserDeviceStatus)
 	udOwner.Get("/historical", cacheHandler, deviceDataController.GetHistoricalRaw)
 	udOwner.Get("/distance-driven", cacheHandler, deviceDataController.GetDistanceDriven)
 	udOwner.Get("/daily-distance", cacheHandler, deviceDataController.GetDailyDistance)
