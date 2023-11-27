@@ -85,6 +85,8 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 			return fiber.DefaultErrorHandler(c, err)
 		},
 	})
+	// autopi specific endpoint,
+	app.Get("/v1/autopi/last-seen/:ethAddr", cacheHandler, deviceDataController.GetLastSeen)
 
 	vToken := app.Group("/v1/vehicle/:tokenID", privilegeAuth)
 

@@ -50,6 +50,8 @@ type Settings struct {
 
 	DeviceFingerprintTopic         string `yaml:"DEVICE_FINGERPRINT_TOPIC"`
 	DeviceFingerprintConsumerGroup string `yaml:"DEVICE_FINGERPRINT_CONSUMER_GROUP"`
+	// AutoPiPreSharedKey key for them to call our api to query basic info
+	AutoPiPreSharedKey string `yaml:"AUTO_PI_PRE_SHARED_KEY"`
 }
 
 func (s *Settings) IsKafkaEnabled(logger *zerolog.Logger) bool {
