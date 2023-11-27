@@ -546,7 +546,7 @@ func (d *DeviceDataController) GetLastSeen(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusUnauthorized)
 	}
 	ethAddr := c.Get("ethAddr")
-	if ethAddr[0:2] != "0x" {
+	if ethAddr[:2] != "0x" {
 		return fiber.NewError(fiber.StatusBadRequest, "no valid eth addr found in route, must start with 0x")
 	}
 	addr := common.HexToAddress(ethAddr)
