@@ -2,16 +2,17 @@ package controllers
 
 import (
 	"context"
+	"strconv"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
+	"golang.org/x/exp/slices"
 
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
 	"math/big"
-	"strconv"
 	"time"
 
 	"github.com/DIMO-Network/device-data-api/internal/config"
@@ -34,7 +35,6 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
-	"golang.org/x/exp/slices"
 )
 
 type DeviceDataController struct {
@@ -190,9 +190,9 @@ func (d *DeviceDataController) GetHistoricalRawPermissioned(c *fiber.Ctx) error 
 	var filter types.SourceFilter
 
 	if slices.Contains(privileges, AllTimeLocation) {
-		filter.Includes = append(filter.Includes, "data.latitude", "data.longitude", "location", "data.cell", "cell")
+		filter.Includes = append(filter.Includes, "data.latitude", "data.longitude", "location", "data.cell", "cell", "data.vehicle.currentLocation")
 	} else {
-		filter.Excludes = append(filter.Excludes, "data.latitude", "data.longitude", "location", "data.cell", "cell")
+		filter.Excludes = append(filter.Excludes, "data.latitude", "data.longitude", "location", "data.cell", "cell", "data.vehicle.currentLocation")
 	}
 
 	if slices.Contains(privileges, NonLocationData) {
@@ -215,10 +215,11 @@ func (d *DeviceDataController) getHistory(c *fiber.Ctx, userDevice *grpc.UserDev
 				Query: &types.Query{
 					Bool: &types.BoolQuery{
 						Filter: []types.Query{
-							{Term: map[string]types.TermQuery{"subject": {Value: userDevice.Id}}},
-							{Range: map[string]types.RangeQuery{"data.timestamp": types.DateRangeQuery{Gte: some.String(startDate), Lte: some.String(endDate)}}},
+							{Match: map[string]types.MatchQuery{"subject": {Query: userDevice.Id}}},
+							{Range: map[string]types.RangeQuery{"time": types.DateRangeQuery{Gte: some.String(startDate), Lte: some.String(endDate)}}},
 						},
 						Should: []types.Query{
+							{Exists: &types.ExistsQuery{Field: "data.vehicle"}},
 							{Exists: &types.ExistsQuery{Field: "data.odometer"}},
 							{Exists: &types.ExistsQuery{Field: "data.latitude"}},
 						},
