@@ -2,8 +2,9 @@ package controllers
 
 import (
 	"context"
-	"github.com/ethereum/go-ethereum/common"
 	"strings"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	"database/sql"
 	"encoding/json"

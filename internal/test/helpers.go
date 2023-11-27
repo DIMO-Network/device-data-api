@@ -4,9 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"testing"
+
 	"github.com/stretchr/testify/require"
 	"github.com/volatiletech/sqlboiler/v4/boil"
-	"testing"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
