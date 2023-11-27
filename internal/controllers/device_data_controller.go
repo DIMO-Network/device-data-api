@@ -2,6 +2,9 @@ package controllers
 
 import (
 	"context"
+	"strings"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	"database/sql"
 	"encoding/json"
@@ -11,15 +14,14 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/DIMO-Network/device-data-api/internal/config"
+	_ "github.com/DIMO-Network/device-data-api/internal/response" // needed for swagger gen
+	"github.com/DIMO-Network/device-data-api/internal/services"
 	"github.com/DIMO-Network/device-data-api/models"
+	"github.com/DIMO-Network/devices-api/pkg/grpc"
+	"github.com/DIMO-Network/shared"
 	"github.com/DIMO-Network/shared/db"
 
-	"github.com/DIMO-Network/shared"
-
-	"github.com/DIMO-Network/devices-api/pkg/grpc"
-
-	"github.com/DIMO-Network/device-data-api/internal/config"
-	"github.com/DIMO-Network/device-data-api/internal/services"
 	pr "github.com/DIMO-Network/shared/middleware/privilegetoken"
 	es8 "github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/core/search"
@@ -313,7 +315,7 @@ func (d *DeviceDataController) GetDistanceDriven(c *fiber.Ctx) error {
 // @Tags        device-data
 // @Produce     json
 // @Param       user_device_id path     string true "user device ID"
-// @Success     200            {object} controllers.DeviceSnapshot
+// @Success     200            {object} response.DeviceSnapshot
 // @Security    BearerAuth
 // @Router      /user/device-data/{userDeviceID}/status [get]
 func (d *DeviceDataController) GetUserDeviceStatus(c *fiber.Ctx) error {
@@ -348,7 +350,7 @@ func (d *DeviceDataController) GetUserDeviceStatus(c *fiber.Ctx) error {
 // @Tags        device-data
 // @Param       tokenId path int true "token id"
 // @Produce     json
-// @Success     200 {object} controllers.DeviceSnapshot
+// @Success     200 {object} response.DeviceSnapshot
 // @Failure     404
 // @Router      /vehicle/{tokenId}/status [get]
 func (d *DeviceDataController) GetVehicleStatus(c *fiber.Ctx) error {
@@ -517,6 +519,50 @@ func (d *DeviceDataController) GetDailyDistance(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(DailyDistanceResp{Days: days})
+}
+
+// GetLastSeen godoc
+// @Description  Specific for AutoPi - get when a device last sent data
+// @Tags         autopi
+// @Produce      json
+// @Success      200
+// @Failure      404 "no device found with eth addr or no data found"
+// @Failure      400 "invalid eth addr"
+// @Failure      500 "no device found or no data found, or other transient error"
+// @Param        ethAddr  path   string  true   "device ethereum address"
+// @Security     PreSharedKey
+// @Router       /autopi/last-seen/{ethAddr} [get]
+func (d *DeviceDataController) GetLastSeen(c *fiber.Ctx) error {
+	authed := false
+	for h, v := range c.GetReqHeaders() {
+		if strings.EqualFold("Authorization", h) {
+			if v == d.Settings.AutoPiPreSharedKey {
+				authed = true
+				break
+			}
+		}
+	}
+	if !authed {
+		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+	ethAddr := c.Get("ethAddr")
+	if ethAddr[0:2] != "0x" {
+		return fiber.NewError(fiber.StatusBadRequest, "no valid eth addr found in route, must start with 0x")
+	}
+	addr := common.HexToAddress(ethAddr)
+
+	ud, err := d.deviceAPI.GetUserDeviceByEthAddr(c.Context(), addr.Bytes())
+	if err != nil {
+		return err
+	}
+	udd, err := models.UserDeviceData(
+		models.UserDeviceDatumWhere.UserDeviceID.EQ(ud.Id)).One(c.Context(), d.dbs().Reader)
+	if err != nil {
+		return err
+	}
+	return c.JSON(fiber.Map{
+		"last_data_seen": udd.UpdatedAt.Format(time.RFC3339),
+	})
 }
 
 // queryOdometer gets the lowest or highest odometer reading depending on order - asc = lowest, desc = highest

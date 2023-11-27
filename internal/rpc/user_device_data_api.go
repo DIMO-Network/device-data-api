@@ -267,6 +267,9 @@ func (s *userDeviceData) GetSignals(ctx context.Context, req *pb.SignalRequest) 
 		DateId:        req.DateId,
 		IntegrationId: req.IntegrationId,
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	result := &pb.SignalResponse{}
 	for _, event := range allEvents {

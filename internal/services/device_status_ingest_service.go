@@ -288,7 +288,7 @@ func (i *DeviceStatusIngestService) processOdometer(datum *models.UserDeviceDatu
 	odometerChanged := !oldOdometer.Valid || newOdometer.Float64 > oldOdometer.Float64
 
 	if odometerOffCooldown && odometerChanged {
-    oldOdometerTimestamp = null.TimeFrom(now)
+		oldOdometerTimestamp = null.TimeFrom(now)
 		i.emitOdometerEvent(device, dd, integrationID, newOdometer.Float64)
 	}
 }

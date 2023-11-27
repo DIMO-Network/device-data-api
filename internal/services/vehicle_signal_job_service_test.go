@@ -1,8 +1,9 @@
 package services
 
 import (
-	"github.com/golang/mock/gomock"
 	"testing"
+
+	"github.com/golang/mock/gomock"
 )
 
 // User device data is getting a different row for all incoming integrations

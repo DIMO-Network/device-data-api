@@ -7,6 +7,45 @@
     },
     "basePath": "/v1",
     "paths": {
+        "/autopi/last-seen/{ethAddr}": {
+            "get": {
+                "security": [
+                    {
+                        "PreSharedKey": []
+                    }
+                ],
+                "description": "Specific for AutoPi - get when a device last sent data",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "autopi"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "device ethereum address",
+                        "name": "ethAddr",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "invalid eth addr"
+                    },
+                    "404": {
+                        "description": "no device found with eth addr or no data found"
+                    },
+                    "500": {
+                        "description": "no device found or no data found, or other transient error"
+                    }
+                }
+            }
+        },
         "/user/device-data/{userDeviceID}/daily-distance": {
             "get": {
                 "security": [
@@ -168,7 +207,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "user-devices"
+                    "device-data"
                 ],
                 "parameters": [
                     {
@@ -183,7 +222,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_controllers.DeviceSnapshot"
+                            "$ref": "#/definitions/github_com_DIMO-Network_device-data-api_internal_response.DeviceSnapshot"
                         }
                     }
                 }
@@ -238,7 +277,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "permission"
+                    "device-data"
                 ],
                 "parameters": [
                     {
@@ -253,7 +292,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_controllers.DeviceSnapshot"
+                            "$ref": "#/definitions/github_com_DIMO-Network_device-data-api_internal_response.DeviceSnapshot"
                         }
                     },
                     "404": {
@@ -264,29 +303,7 @@
         }
     },
     "definitions": {
-        "internal_controllers.DailyDistanceDay": {
-            "type": "object",
-            "properties": {
-                "date": {
-                    "type": "string"
-                },
-                "distance": {
-                    "type": "number"
-                }
-            }
-        },
-        "internal_controllers.DailyDistanceResp": {
-            "type": "object",
-            "properties": {
-                "days": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/internal_controllers.DailyDistanceDay"
-                    }
-                }
-            }
-        },
-        "internal_controllers.DeviceSnapshot": {
+        "github_com_DIMO-Network_device-data-api_internal_response.DeviceSnapshot": {
             "type": "object",
             "properties": {
                 "ambientTemp": {
@@ -333,6 +350,28 @@
                 },
                 "tirePressure": {
                     "$ref": "#/definitions/smartcar.TirePressure"
+                }
+            }
+        },
+        "internal_controllers.DailyDistanceDay": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string"
+                },
+                "distance": {
+                    "type": "number"
+                }
+            }
+        },
+        "internal_controllers.DailyDistanceResp": {
+            "type": "object",
+            "properties": {
+                "days": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_controllers.DailyDistanceDay"
+                    }
                 }
             }
         },

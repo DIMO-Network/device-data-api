@@ -1,20 +1,6 @@
 basePath: /v1
 definitions:
-  internal_controllers.DailyDistanceDay:
-    properties:
-      date:
-        type: string
-      distance:
-        type: number
-    type: object
-  internal_controllers.DailyDistanceResp:
-    properties:
-      days:
-        items:
-          $ref: '#/definitions/internal_controllers.DailyDistanceDay'
-        type: array
-    type: object
-  internal_controllers.DeviceSnapshot:
+  github_com_DIMO-Network_device-data-api_internal_response.DeviceSnapshot:
     properties:
       ambientTemp:
         type: number
@@ -46,6 +32,20 @@ definitions:
         type: number
       tirePressure:
         $ref: '#/definitions/smartcar.TirePressure'
+    type: object
+  internal_controllers.DailyDistanceDay:
+    properties:
+      date:
+        type: string
+      distance:
+        type: number
+    type: object
+  internal_controllers.DailyDistanceResp:
+    properties:
+      days:
+        items:
+          $ref: '#/definitions/internal_controllers.DailyDistanceDay'
+        type: array
     type: object
   smartcar.TirePressure:
     properties:
@@ -80,6 +80,30 @@ info:
   title: DIMO Device Data API
   version: "1.0"
 paths:
+  /autopi/last-seen/{ethAddr}:
+    get:
+      description: Specific for AutoPi - get when a device last sent data
+      parameters:
+      - description: device ethereum address
+        in: path
+        name: ethAddr
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: invalid eth addr
+        "404":
+          description: no device found with eth addr or no data found
+        "500":
+          description: no device found or no data found, or other transient error
+      security:
+      - PreSharedKey: []
+      tags:
+      - autopi
   /user/device-data/{userDeviceID}/daily-distance:
     get:
       description: Get kilometers driven for a userDeviceID each day.
@@ -195,11 +219,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_controllers.DeviceSnapshot'
+            $ref: '#/definitions/github_com_DIMO-Network_device-data-api_internal_response.DeviceSnapshot'
       security:
       - BearerAuth: []
       tags:
-      - user-devices
+      - device-data
   /vehicle/{tokenID}/history:
     get:
       description: Get all historical data for a tokenID, within start and end range
@@ -242,11 +266,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_controllers.DeviceSnapshot'
+            $ref: '#/definitions/github_com_DIMO-Network_device-data-api_internal_response.DeviceSnapshot'
         "404":
           description: Not Found
       tags:
-      - permission
+      - device-data
 securityDefinitions:
   BearerAuth:
     in: header
