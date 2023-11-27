@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/DIMO-Network/device-data-api/internal/config"
-	_ "github.com/DIMO-Network/device-data-api/internal/response"
+	_ "github.com/DIMO-Network/device-data-api/internal/response" // needed for swagger gen
 	"github.com/DIMO-Network/device-data-api/internal/services"
 	"github.com/DIMO-Network/device-data-api/models"
 	"github.com/DIMO-Network/devices-api/pkg/grpc"
