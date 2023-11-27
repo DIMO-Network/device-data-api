@@ -14,15 +14,14 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/DIMO-Network/device-data-api/internal/config"
+	_ "github.com/DIMO-Network/device-data-api/internal/response"
+	"github.com/DIMO-Network/device-data-api/internal/services"
 	"github.com/DIMO-Network/device-data-api/models"
+	"github.com/DIMO-Network/devices-api/pkg/grpc"
+	"github.com/DIMO-Network/shared"
 	"github.com/DIMO-Network/shared/db"
 
-	"github.com/DIMO-Network/shared"
-
-	"github.com/DIMO-Network/devices-api/pkg/grpc"
-
-	"github.com/DIMO-Network/device-data-api/internal/config"
-	"github.com/DIMO-Network/device-data-api/internal/services"
 	pr "github.com/DIMO-Network/shared/middleware/privilegetoken"
 	es8 "github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/core/search"
@@ -316,7 +315,7 @@ func (d *DeviceDataController) GetDistanceDriven(c *fiber.Ctx) error {
 // @Tags        device-data
 // @Produce     json
 // @Param       user_device_id path     string true "user device ID"
-// @Success     200            {object} controllers.DeviceSnapshot
+// @Success     200            {object} response.DeviceSnapshot
 // @Security    BearerAuth
 // @Router      /user/device-data/{userDeviceID}/status [get]
 func (d *DeviceDataController) GetUserDeviceStatus(c *fiber.Ctx) error {
@@ -351,7 +350,7 @@ func (d *DeviceDataController) GetUserDeviceStatus(c *fiber.Ctx) error {
 // @Tags        device-data
 // @Param       tokenId path int true "token id"
 // @Produce     json
-// @Success     200 {object} controllers.DeviceSnapshot
+// @Success     200 {object} response.DeviceSnapshot
 // @Failure     404
 // @Router      /vehicle/{tokenId}/status [get]
 func (d *DeviceDataController) GetVehicleStatus(c *fiber.Ctx) error {
@@ -526,10 +525,10 @@ func (d *DeviceDataController) GetDailyDistance(c *fiber.Ctx) error {
 // @Description  Specific for AutoPi - get when a device last sent data
 // @Tags         autopi
 // @Produce      json
-// @Success      200 {object}
+// @Success      200
 // @Failure      404 "no device found with eth addr or no data found"
 // @Failure      400 "invalid eth addr"
-// @Failure      500 "no device foudn or no data found, or other transient error"
+// @Failure      500 "no device found or no data found, or other transient error"
 // @Param        ethAddr  path   string  true   "device ethereum address"
 // @Security     PreSharedKey
 // @Router       /autopi/last-seen/{ethAddr} [get]
@@ -562,7 +561,7 @@ func (d *DeviceDataController) GetLastSeen(c *fiber.Ctx) error {
 		return err
 	}
 	return c.JSON(fiber.Map{
-		"last_seen": udd.UpdatedAt.Format(time.RFC3339),
+		"last_data_seen": udd.UpdatedAt.Format(time.RFC3339),
 	})
 }
 
