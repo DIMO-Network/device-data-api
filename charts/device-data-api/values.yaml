@@ -4,12 +4,12 @@ image:
   pullPolicy: IfNotPresent
   tag: fd4ec4a
 imagePullSecrets: []
-nameOverride: ''
-fullnameOverride: ''
+nameOverride: ""
+fullnameOverride: ""
 serviceAccount:
   create: true
   annotations: {}
-  name: ''
+  name: ""
 podAnnotations: {}
 podSecurityContext:
   runAsNonRoot: true
@@ -25,33 +25,35 @@ cronJob:
   schedule: 0 0 * * 0
 env:
   ENVIRONMENT: dev
-  PORT: '8080'
-  GRPC_PORT: '8086'
+  PORT: "8080"
+  GRPC_PORT: "8086"
   LOG_LEVEL: info
   SERVICE_NAME: device-data-api
   JWT_KEY_SET_URL: https://auth.dev.dimo.zone/keys
   DEPLOYMENT_BASE_URL: https://device-data-api.dev.dimo.zone
-  DEVICE_DATA_INDEX_NAME: device-status-dev*
+  DEVICE_DATA_INDEX_NAME:
+    v1: device-status-dev*
+    v2: vss-status-dev*
   ELASTIC_INDEX: device-status-dev*
   DEVICES_APIGRPC_ADDR: devices-api-dev:8086
-  EMAIL_PORT: '587'
+  EMAIL_PORT: "587"
   AWS_BUCKET_NAME: dimo-network-device-data-export-dev
   AWS_REGION: us-east-2
   EMAIL_FROM: hello@dimo.zone
   USERS_API_GRPC_ADDR: users-api-dev:8086
   ENABLE_PRIVILEGES: true
   TOKEN_EXCHANGE_JWK_KEY_SET_URL: http://dex-roles-rights.dev.svc.cluster.local:5556/keys
-  VEHICLE_NFT_ADDRESS: '0x90C4D6113Ec88dd4BDf12f26DB2b3998fd13A144'
+  VEHICLE_NFT_ADDRESS: "0x90C4D6113Ec88dd4BDf12f26DB2b3998fd13A144"
   NATS_URL: nats-dev:4222
   NATS_STREAM_NAME: DATA_EXPORT_TASKS
   NATS_DATA_DOWNLOAD_SUBJECT: data_export_tasks
   NATS_DURABLE_CONSUMER: data-export-task-consumer
   NATS_ACK_TIMEOUT: 2m
   DEVICE_DEFINITIONS_GRPC_ADDR: device-definitions-api-dev:8086
-  DB_PORT: '5432'
+  DB_PORT: "5432"
   DB_NAME: device_data_api
-  DB_MAX_OPEN_CONNECTIONS: '10'
-  DB_MAX_IDLE_CONNECTIONS: '3'
+  DB_MAX_OPEN_CONNECTIONS: "10"
+  DB_MAX_IDLE_CONNECTIONS: "3"
   KAFKA_BROKERS: kafka-dev-dimo-kafka-kafka-brokers:9092
   DEVICE_STATUS_TOPIC: topic.device.status
   EVENTS_TOPIC: topic.event
@@ -87,10 +89,10 @@ ingress:
   className: nginx
   annotations:
     nginx.ingress.kubernetes.io/auth-tls-secret: ingress/cf-origin-ca
-    nginx.ingress.kubernetes.io/auth-tls-verify-client: 'on'
-    nginx.ingress.kubernetes.io/enable-cors: 'true'
+    nginx.ingress.kubernetes.io/auth-tls-verify-client: "on"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
     nginx.ingress.kubernetes.io/cors-allow-origin: https://app.dev.dimo.zone
-    nginx.ingress.kubernetes.io/limit-rps: '3'
+    nginx.ingress.kubernetes.io/limit-rps: "3"
     external-dns.alpha.kubernetes.io/hostname: device-data-api.dev.dimo.zone
   hosts:
     - host: device-data-api.dev.dimo.zone

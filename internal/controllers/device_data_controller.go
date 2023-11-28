@@ -192,7 +192,7 @@ func (d *DeviceDataController) GetHistoricalRawPermissioned(c *fiber.Ctx) error 
 	if slices.Contains(privileges, AllTimeLocation) {
 		filter.Includes = append(filter.Includes, "data.latitude", "data.longitude", "location", "data.cell", "cell", "data.vehicle.currentLocation")
 	} else {
-		filter.Excludes = append(filter.Excludes, "data.latitude", "data.longitude", "location", "data.cell", "cell", "data.vehicle.currentLocation")
+		filter.Excludes = append(filter.Excludes, "data.latitude", "data.longitude", "location", "data.cell", "cell", "data.vehicle.currentLocation.latitude", "data.vehicle.currentLocation.longitude")
 	}
 
 	if slices.Contains(privileges, NonLocationData) {
@@ -205,17 +205,17 @@ func (d *DeviceDataController) GetHistoricalRawPermissioned(c *fiber.Ctx) error 
 }
 
 func (d *DeviceDataController) getHistory(c *fiber.Ctx, userDevice *grpc.UserDevice, startDate, endDate string, filter types.SourceFilter) error {
-	msm := types.MinimumShouldMatch(1)
+	idx := d.Settings.DeviceDataIndexName[strings.Split(c.OriginalURL(), "/")[1]]
 
 	var source types.SourceConfig = filter
-
+	msm := types.MinimumShouldMatch(1)
 	req := search.Request{
 		Query: &types.Query{
 			FunctionScore: &types.FunctionScoreQuery{
 				Query: &types.Query{
 					Bool: &types.BoolQuery{
 						Filter: []types.Query{
-							{Match: map[string]types.MatchQuery{"subject": {Query: userDevice.Id}}},
+							{Term: map[string]types.TermQuery{"subject": {Value: userDevice.Id}}},
 							{Range: map[string]types.RangeQuery{"time": types.DateRangeQuery{Gte: some.String(startDate), Lte: some.String(endDate)}}},
 						},
 						Should: []types.Query{
@@ -233,7 +233,7 @@ func (d *DeviceDataController) getHistory(c *fiber.Ctx, userDevice *grpc.UserDev
 		Source_: &source,
 	}
 
-	res, err := d.es8Client.Search().Index(d.Settings.DeviceDataIndexName).Request(&req).Do(c.Context())
+	res, err := d.es8Client.Search().Index(idx).Request(&req).Do(c.Context())
 	if err != nil {
 		return err
 	}
@@ -294,12 +294,12 @@ func removeOdometerIfInvalid(body []byte) []byte {
 // @Router       /user/device-data/{userDeviceID}/distance-driven [get]
 func (d *DeviceDataController) GetDistanceDriven(c *fiber.Ctx) error {
 	userDeviceID := c.Params("userDeviceID")
-
-	odoStart, err := d.queryOdometer(c.Context(), sortorder.Asc, userDeviceID)
+	esIdx := d.Settings.DeviceDataIndexName[strings.Split(c.OriginalURL(), "/")[1]]
+	odoStart, err := d.queryOdometer(c.Context(), sortorder.Asc, userDeviceID, esIdx)
 	if err != nil {
 		return errors.Wrap(err, "error querying odometer")
 	}
-	odoEnd, err := d.queryOdometer(c.Context(), sortorder.Desc, userDeviceID)
+	odoEnd, err := d.queryOdometer(c.Context(), sortorder.Desc, userDeviceID, esIdx)
 	if err != nil {
 		return errors.Wrap(err, "error querying odometer")
 	}
@@ -438,6 +438,7 @@ type DailyDistanceResp struct {
 // @Security     BearerAuth
 // @Router       /user/device-data/{userDeviceID}/daily-distance [get]
 func (d *DeviceDataController) GetDailyDistance(c *fiber.Ctx) error {
+	idx := d.Settings.DeviceDataIndexName[strings.Split(c.OriginalURL(), "/")[1]]
 	userDeviceID := c.Params("userDeviceID")
 
 	tz := c.Query("time_zone")
@@ -477,7 +478,7 @@ func (d *DeviceDataController) GetDailyDistance(c *fiber.Ctx) error {
 		},
 	}
 
-	resp, err := d.es8Client.Search().Index(d.Settings.DeviceDataIndexName).Request(query).Do(c.Context())
+	resp, err := d.es8Client.Search().Index(idx).Request(query).Do(c.Context())
 	if err != nil {
 		return err
 	}
@@ -570,7 +571,7 @@ func (d *DeviceDataController) GetLastSeen(c *fiber.Ctx) error {
 }
 
 // queryOdometer gets the lowest or highest odometer reading depending on order - asc = lowest, desc = highest
-func (d *DeviceDataController) queryOdometer(ctx context.Context, order sortorder.SortOrder, userDeviceID string) (float64, error) {
+func (d *DeviceDataController) queryOdometer(ctx context.Context, order sortorder.SortOrder, userDeviceID, esIdx string) (float64, error) {
 	req := search.Request{
 		Query: &types.Query{
 			Bool: &types.BoolQuery{
@@ -584,7 +585,7 @@ func (d *DeviceDataController) queryOdometer(ctx context.Context, order sortorde
 		Sort: []types.SortCombinations{types.SortOptions{SortOptions: map[string]types.FieldSort{"data.odometer": {Order: &order}}}},
 	}
 
-	res, err := d.es8Client.Search().Index(d.Settings.DeviceDataIndexName).Request(&req).Do(ctx)
+	res, err := d.es8Client.Search().Index(esIdx).Request(&req).Do(ctx)
 	if err != nil {
 		return 0, err
 	}

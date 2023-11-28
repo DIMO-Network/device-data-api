@@ -63,7 +63,7 @@ func NewQueryStorageService(es *elasticsearch.TypedClient, settings *config.Sett
 		es:                      es,
 		storageSvcClient:        s3Client,
 		AWSBucket:               settings.AWSBucketName,
-		ElasticIndex:            settings.DeviceDataIndexName,
+		ElasticIndex:            settings.DeviceDataIndexName["v1"],
 		NATSDataDownloadSubject: settings.NATSDataDownloadSubject,
 		MaxFileSize:             settings.MaxFileSize,
 		log:                     log,

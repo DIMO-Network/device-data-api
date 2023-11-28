@@ -22,7 +22,9 @@ ELASTIC_SEARCH_APP_SEARCH_TOKEN:
 ELASTIC_SEARCH_ANALYTICS_HOST: https://dimo.es.us-east-2.aws.elastic-cloud.com
 ELASTIC_SEARCH_ANALYTICS_USERNAME: device-analytics
 ELASTIC_SEARCH_ANALYTICS_PASSWORD:
-DEVICE_DATA_INDEX_NAME: device-status-dev*
+DEVICE_DATA_INDEX_NAME:
+  v1: device-status-dev*
+  v2: vss-status-dev*
 
 IPFS_ADDRESS: localhost:5001
 

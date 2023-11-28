@@ -99,15 +99,6 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 	vToken.Get("/history", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.AllTimeLocation}), cacheHandler, deviceDataController.GetHistoricalRawPermissioned)
 	vToken.Get("/status", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.CurrentLocation, controllers.AllTimeLocation}), cacheHandler, deviceDataController.GetVehicleStatus)
 
-	// vss schema, v2
-	if settings.Environment != "prod" {
-		vehTokenV2 := app.Group("/v2/vehicle/:tokenID")
-		vssSettings := *settings
-		vssSettings.DeviceDataIndexName = "vss-status-dev*"
-		ddControllerVSS := controllers.NewDeviceDataController(&vssSettings, &logger, deviceAPIService, esClient8, definitionsAPIService, deviceStatusSvc, dbs)
-		vehTokenV2.Get("/history", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.AllTimeLocation}), cacheHandler, ddControllerVSS.GetHistoricalRawPermissioned)
-	}
-
 	v1Auth := app.Group("/v1", jwtAuth)
 
 	udMw := owner.New(usersClient, deviceAPIService, &logger)
@@ -116,6 +107,9 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 	udOwner.Get("/historical", cacheHandler, deviceDataController.GetHistoricalRaw)
 	udOwner.Get("/distance-driven", cacheHandler, deviceDataController.GetDistanceDriven)
 	udOwner.Get("/daily-distance", cacheHandler, deviceDataController.GetDailyDistance)
+
+	vehTokenV2 := app.Group("/v2/vehicle/:tokenID")
+	vehTokenV2.Get("/history", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.AllTimeLocation}), cacheHandler, deviceDataController.GetHistoricalRawPermissioned)
 
 	dataDownloadController, err := controllers.NewDataDownloadController(settings, &logger, esClient8, deviceAPIService)
 	if err != nil {
