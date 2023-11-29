@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"github.com/pkg/errors"
+	"strings"
 	"time"
 
 	"github.com/DIMO-Network/device-data-api/internal/config"
@@ -129,4 +131,38 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 		}
 	}()
 	return app
+}
+
+// ErrorHandler custom handler to log recovered errors using our logger and return json instead of string
+func ErrorHandler(c *fiber.Ctx, err error, logger zerolog.Logger) error {
+	code := fiber.StatusInternalServerError // Default 500 statuscode
+	message := "Internal error."
+
+	var e *fiber.Error
+	if errors.As(err, &e) {
+		code = e.Code
+		message = e.Message
+	}
+	if strings.Contains(err.Error(), "code = NotFound") {
+		code = fiber.StatusNotFound
+	}
+	const descPrefix = "desc = "
+	if strings.Contains(err.Error(), descPrefix) {
+		// pull out desc from message - typically grpc errors
+		start := strings.Index(err.Error(), descPrefix)
+		start += len(descPrefix)
+		message = err.Error()[start:]
+	}
+
+	// don't log not found errors
+	if code != fiber.StatusNotFound {
+		logger.Err(err).Int("code", code).Str("path", strings.TrimPrefix(c.Path(), "/")).Msg("Failed request.")
+	}
+
+	return c.Status(code).JSON(CodeResp{Code: code, Message: message})
+}
+
+type CodeResp struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
 }

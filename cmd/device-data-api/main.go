@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"os/signal"
 	"syscall"
@@ -201,30 +200,6 @@ func startDeviceFingerprint(logger zerolog.Logger, settings *config.Settings, pd
 	if err := fingerprint.RunConsumer(ctx, settings, &logger, pdb, deviceAPIService); err != nil {
 		logger.Fatal().Err(err).Msg("Failed to create vin credentialer listener")
 	}
-}
-
-// ErrorHandler custom handler to log recovered errors using our logger and return json instead of string
-func ErrorHandler(c *fiber.Ctx, err error, logger zerolog.Logger) error {
-	code := fiber.StatusInternalServerError // Default 500 statuscode
-	message := "Internal error."
-
-	var e *fiber.Error
-	if errors.As(err, &e) {
-		code = e.Code
-		message = e.Message
-	}
-
-	// don't log not found errors
-	if code != fiber.StatusNotFound {
-		logger.Err(err).Int("code", code).Str("path", strings.TrimPrefix(c.Path(), "/")).Msg("Failed request.")
-	}
-
-	return c.Status(code).JSON(CodeResp{Code: code, Message: message})
-}
-
-type CodeResp struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
 }
 
 func healthCheck(c *fiber.Ctx) error {

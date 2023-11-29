@@ -556,6 +556,7 @@ func (d *DeviceDataController) GetLastSeen(c *fiber.Ctx) error {
 
 	ud, err := d.deviceAPI.GetUserDeviceByEthAddr(c.Context(), addr.Bytes())
 	if err != nil {
+
 		return err
 	}
 	udd, err := models.UserDeviceData(
