@@ -104,7 +104,7 @@ func (d *DeviceDataController) GetHistoricalRaw(c *fiber.Ctx) error {
 		return err
 	}
 
-	return d.getHistory(c, userDevice, startDate, endDate, types.SourceFilter{})
+	return d.getHistoryV1(c, userDevice, startDate, endDate, types.SourceFilter{})
 }
 
 // addRangeIfNotExists will add range based on mpg and fuelTankCapacity to the json body, only if there are no existing range entries (eg. smartcar added)
@@ -190,9 +190,9 @@ func (d *DeviceDataController) GetHistoricalRawPermissioned(c *fiber.Ctx) error 
 	var filter types.SourceFilter
 
 	if slices.Contains(privileges, AllTimeLocation) {
-		filter.Includes = append(filter.Includes, "data.latitude", "data.longitude", "location", "data.cell", "cell", "data.vehicle.currentLocation")
+		filter.Includes = append(filter.Includes, "*.latitude", "*.longitude", "*.vehicle.currentLocation")
 	} else {
-		filter.Excludes = append(filter.Excludes, "data.latitude", "data.longitude", "location", "data.cell", "cell", "data.vehicle.currentLocation.latitude", "data.vehicle.currentLocation.longitude")
+		filter.Excludes = append(filter.Excludes, "*.latitude", "*.longitude", "location", "data.cell", "cell", "*.vehicle.currentLocation")
 	}
 
 	if slices.Contains(privileges, NonLocationData) {
@@ -201,10 +201,14 @@ func (d *DeviceDataController) GetHistoricalRawPermissioned(c *fiber.Ctx) error 
 		filter.Includes = append(filter.Includes, "*")
 	}
 
-	return d.getHistory(c, userDevice, startDate, endDate, filter)
+	if strings.HasPrefix(c.OriginalURL(), "/v1") {
+		return d.getHistoryV1(c, userDevice, startDate, endDate, filter)
+	}
+
+	return d.getHistoryV2(c, userDevice, startDate, endDate, filter)
 }
 
-func (d *DeviceDataController) getHistory(c *fiber.Ctx, userDevice *grpc.UserDevice, startDate, endDate string, filter types.SourceFilter) error {
+func (d *DeviceDataController) getHistoryV1(c *fiber.Ctx, userDevice *grpc.UserDevice, startDate, endDate string, filter types.SourceFilter) error {
 	var source types.SourceConfig = filter
 	msm := types.MinimumShouldMatch(1)
 	req := search.Request{
@@ -231,7 +235,76 @@ func (d *DeviceDataController) getHistory(c *fiber.Ctx, userDevice *grpc.UserDev
 		Source_: &source,
 	}
 
-	res, err := d.es8Client.Search().Index(d.Settings.DeviceDataIndexName).Request(&req).Do(c.Context())
+	res, err := d.es8Client.Search().Index(d.Settings.DeviceDataIndexNameV1).Request(&req).Do(c.Context())
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	localLog := d.log.With().Str("userDeviceId", userDevice.Id).
+		Str("deviceDefinitionId", userDevice.DeviceDefinitionId).Interface("response", res).Logger()
+	if res.StatusCode >= fiber.StatusBadRequest {
+		localLog.Error().Str("userDeviceId", userDevice.Id).Interface("response", res).Msgf("Got status code %d from Elastic.", res.StatusCode)
+		return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
+	}
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		localLog.Err(err).Str("userDeviceId", userDevice.Id).Msg("Failed to read Elastic response body.")
+		return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
+	}
+
+	body, err = addRangeIfNotExists(c.Context(), d.definitionsAPI, body, userDevice.DeviceDefinitionId, userDevice.DeviceStyleId)
+	if err != nil {
+		localLog.Warn().Err(err).Msg("could not add range calculation to document")
+	}
+	body = removeOdometerIfInvalid(body)
+
+	c.Set("Content-Type", fiber.MIMEApplicationJSON)
+	return c.Status(fiber.StatusOK).Send(body)
+}
+
+func (d *DeviceDataController) getHistoryV2(c *fiber.Ctx, userDevice *grpc.UserDevice, startDate, endDate string, filter types.SourceFilter) error {
+	fmt.Println(1)
+	var source types.SourceConfig = filter
+	timeFilter := "time"
+	msm := types.MinimumShouldMatch(1)
+	min := 1
+	req := search.Request{
+		Query: &types.Query{
+			Bool: &types.BoolQuery{
+				Filter: []types.Query{
+					{Match: map[string]types.MatchQuery{"subject": {Query: "2N6nMGUdOHtmZ8GouD7E2e69sV7"}}},
+					{Range: map[string]types.RangeQuery{"time": types.DateRangeQuery{Gte: some.String(startDate), Lte: some.String(endDate)}}},
+				},
+				Should: []types.Query{
+					{Exists: &types.ExistsQuery{Field: "data.vehicle"}},
+					{Exists: &types.ExistsQuery{Field: "data.odometer"}},
+					{Exists: &types.ExistsQuery{Field: "data.latitude"}},
+				},
+				MinimumShouldMatch: &msm,
+			},
+		},
+		Aggregations: map[string]types.Aggregations{
+			"documents_by_hour": {
+				DateHistogram: &types.DateHistogramAggregation{
+					Field:            &timeFilter,
+					CalendarInterval: &calendarinterval.Hour,
+					MinDocCount:      &min,
+				},
+				Aggregations: map[string]types.Aggregations{
+					"select_single_doc": {
+						TopHits: &types.TopHitsAggregation{
+							Size:    &min,
+							Source_: &source,
+						},
+					},
+				},
+			},
+		},
+		Size: some.Int(0),
+	}
+
+	res, err := d.es8Client.Search().Index(d.Settings.DeviceDataIndexNameV2).Request(&req).Do(c.Context())
 	if err != nil {
 		return err
 	}
@@ -292,11 +365,11 @@ func removeOdometerIfInvalid(body []byte) []byte {
 // @Router       /user/device-data/{userDeviceID}/distance-driven [get]
 func (d *DeviceDataController) GetDistanceDriven(c *fiber.Ctx) error {
 	userDeviceID := c.Params("userDeviceID")
-	odoStart, err := d.queryOdometer(c.Context(), sortorder.Asc, userDeviceID, d.Settings.DeviceDataIndexName)
+	odoStart, err := d.queryOdometer(c.Context(), sortorder.Asc, userDeviceID, d.Settings.DeviceDataIndexNameV1)
 	if err != nil {
 		return errors.Wrap(err, "error querying odometer")
 	}
-	odoEnd, err := d.queryOdometer(c.Context(), sortorder.Desc, userDeviceID, d.Settings.DeviceDataIndexName)
+	odoEnd, err := d.queryOdometer(c.Context(), sortorder.Desc, userDeviceID, d.Settings.DeviceDataIndexNameV1)
 	if err != nil {
 		return errors.Wrap(err, "error querying odometer")
 	}
@@ -474,7 +547,7 @@ func (d *DeviceDataController) GetDailyDistance(c *fiber.Ctx) error {
 		},
 	}
 
-	resp, err := d.es8Client.Search().Index(d.Settings.DeviceDataIndexName).Request(query).Do(c.Context())
+	resp, err := d.es8Client.Search().Index(d.Settings.DeviceDataIndexNameV1).Request(query).Do(c.Context())
 	if err != nil {
 		return err
 	}

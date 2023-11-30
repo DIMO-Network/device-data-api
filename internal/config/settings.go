@@ -17,7 +17,8 @@ type Settings struct {
 	ElasticSearchAnalyticsHost     string `yaml:"ELASTIC_SEARCH_ANALYTICS_HOST"`
 	ElasticSearchAnalyticsUsername string `yaml:"ELASTIC_SEARCH_ANALYTICS_USERNAME"`
 	ElasticSearchAnalyticsPassword string `yaml:"ELASTIC_SEARCH_ANALYTICS_PASSWORD"`
-	DeviceDataIndexName            string `yaml:"DEVICE_DATA_INDEX_NAME"`
+	DeviceDataIndexNameV1          string `yaml:"DEVICE_DATA_INDEX_NAME_V1"`
+	DeviceDataIndexNameV2          string `yaml:"DEVICE_DATA_INDEX_NAME_V2"`
 	DevicesAPIGRPCAddr             string `yaml:"DEVICES_APIGRPC_ADDR"`
 	EmailHost                      string `yaml:"EMAIL_HOST"`
 	EmailPort                      string `yaml:"EMAIL_PORT"`
