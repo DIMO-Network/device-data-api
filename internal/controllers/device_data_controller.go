@@ -273,7 +273,7 @@ func (d *DeviceDataController) getHistoryV2(c *fiber.Ctx, userDevice *grpc.UserD
 		Query: &types.Query{
 			Bool: &types.BoolQuery{
 				Filter: []types.Query{
-					{Match: map[string]types.MatchQuery{"subject": {Query: "2N6nMGUdOHtmZ8GouD7E2e69sV7"}}},
+					{Term: map[string]types.TermQuery{"subject": {Value: userDevice.Id}}},
 					{Range: map[string]types.RangeQuery{"time": types.DateRangeQuery{Gte: some.String(startDate), Lte: some.String(endDate)}}},
 				},
 				Should: []types.Query{
