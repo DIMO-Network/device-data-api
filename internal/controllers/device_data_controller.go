@@ -264,7 +264,6 @@ func (d *DeviceDataController) getHistoryV1(c *fiber.Ctx, userDevice *grpc.UserD
 }
 
 func (d *DeviceDataController) getHistoryV2(c *fiber.Ctx, userDevice *grpc.UserDevice, startDate, endDate string, filter types.SourceFilter) error {
-	fmt.Println(1)
 	var source types.SourceConfig = filter
 	timeFilter := "time"
 	msm := types.MinimumShouldMatch(1)
@@ -322,11 +321,12 @@ func (d *DeviceDataController) getHistoryV2(c *fiber.Ctx, userDevice *grpc.UserD
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
 	}
 
-	body, err = addRangeIfNotExists(c.Context(), d.definitionsAPI, body, userDevice.DeviceDefinitionId, userDevice.DeviceStyleId)
-	if err != nil {
-		localLog.Warn().Err(err).Msg("could not add range calculation to document")
-	}
-	body = removeOdometerIfInvalid(body)
+	// TODO: must be updated to work with modified query
+	// body, err = addRangeIfNotExists(c.Context(), d.definitionsAPI, body, userDevice.DeviceDefinitionId, userDevice.DeviceStyleId)
+	// if err != nil {
+	// 	localLog.Warn().Err(err).Msg("could not add range calculation to document")
+	// }
+	// body = removeOdometerIfInvalid(body)
 
 	c.Set("Content-Type", fiber.MIMEApplicationJSON)
 	return c.Status(fiber.StatusOK).Send(body)
