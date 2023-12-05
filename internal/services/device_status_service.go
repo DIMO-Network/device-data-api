@@ -21,6 +21,7 @@ type deviceStatusService struct {
 
 type DeviceStatusService interface {
 	PrepareDeviceStatusInformation(ctx context.Context, deviceData models.UserDeviceDatumSlice, deviceDefinitionID string, deviceStyleID *string, privilegeIDs []int64) response.DeviceSnapshot
+	PrepareDeviceStatusInformationV2(ctx context.Context, deviceData models.UserDeviceDatumSlice, deviceDefinitionID string, deviceStyleID *string, privilegeIDs []int64) response.Device
 	CalculateRange(ctx context.Context, deviceDefinitionID string, deviceStyleID *string, fuelPercentRemaining float64) (*float64, error)
 }
 

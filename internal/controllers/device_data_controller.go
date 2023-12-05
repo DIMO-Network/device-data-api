@@ -339,6 +339,12 @@ func (d *DeviceDataController) GetUserDeviceStatus(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusNotFound, "No status updates yet.")
 	}
 
+	if strings.Contains(c.OriginalURL(), "/v2") {
+		snapshot := d.deviceStatusSvc.PrepareDeviceStatusInformationV2(c.Context(), deviceData, userDevice.DeviceDefinitionId,
+			userDevice.DeviceStyleId, []int64{NonLocationData, CurrentLocation, AllTimeLocation})
+		return c.JSON(snapshot)
+	}
+
 	ds := d.deviceStatusSvc.PrepareDeviceStatusInformation(c.Context(), deviceData, userDevice.DeviceDefinitionId,
 		userDevice.DeviceStyleId, []int64{NonLocationData, CurrentLocation, AllTimeLocation})
 
