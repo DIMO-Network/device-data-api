@@ -102,9 +102,8 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 	vTokenV2 := app.Group("/v2/vehicle/:tokenID", privilegeAuth)
 	vTokenV2.Get("/history", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.AllTimeLocation}), cacheHandler, deviceDataController.GetHistoricalPermissionedV2)
 
-	udMw := owner.New(usersClient, deviceAPIService, &logger)
 	v1Auth := app.Group("/v1", jwtAuth)
-
+	udMw := owner.New(usersClient, deviceAPIService, &logger)
 	udOwner := v1Auth.Group("/user/device-data/:userDeviceID", udMw)
 	udOwner.Get("/status", cacheHandler, deviceDataController.GetUserDeviceStatus)
 	udOwner.Get("/historical", cacheHandler, deviceDataController.GetHistoricalRaw)
