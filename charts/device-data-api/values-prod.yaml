@@ -13,7 +13,7 @@ env:
   SERVICE_NAME: device-data-api
   JWT_KEY_SET_URL: https://auth.dimo.zone/keys
   DEPLOYMENT_BASE_URL: https://device-data-api.dimo.zone
-  DEVICE_DATA_INDEX_NAME_V1: device-status-prod*
+  DEVICE_DATA_INDEX_NAME: device-status-prod*
   DEVICE_DATA_INDEX_NAME_V2: vss-status-prod*
   DEVICES_APIGRPC_ADDR: devices-api-prod:8086
   ENABLE_PRIVILEGES: true

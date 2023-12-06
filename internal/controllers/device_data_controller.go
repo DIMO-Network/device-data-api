@@ -203,7 +203,7 @@ func (d *DeviceDataController) GetHistoricalRawPermissioned(c *fiber.Ctx) error 
 	return d.getHistoryV1(c, userDevice, startDate, endDate, filter)
 }
 
-// GetHistoricalRawPermissionedV2 godoc
+// GetHistoricalPermissionedV2 godoc
 // @Description  Get all historical data for a tokenID, within start and end range
 // @Tags         device-data
 // @Produce      json
@@ -213,7 +213,7 @@ func (d *DeviceDataController) GetHistoricalRawPermissioned(c *fiber.Ctx) error 
 // @Param        endDate       query  string  false  "endDate eg 2022-03-01. if empty today"
 // @Security     BearerAuth
 // @Router       /v2/vehicle/{tokenID}/history [get]
-func (d *DeviceDataController) GetHistoricalRawPermissionedV2(c *fiber.Ctx) error {
+func (d *DeviceDataController) GetHistoricalPermissionedV2(c *fiber.Ctx) error {
 	const dateLayout = "2006-01-02" // date layout support by elastic
 	tokenID := c.Params("tokenID")
 	startDate := c.Query("startDate")
@@ -291,7 +291,7 @@ func (d *DeviceDataController) getHistoryV1(c *fiber.Ctx, userDevice *grpc.UserD
 		Source_: &source,
 	}
 
-	res, err := d.es8Client.Search().Index(d.Settings.DeviceDataIndexNameV1).Request(&req).Do(c.Context())
+	res, err := d.es8Client.Search().Index(d.Settings.DeviceDataIndexName).Request(&req).Do(c.Context())
 	if err != nil {
 		return err
 	}
@@ -419,11 +419,11 @@ func removeOdometerIfInvalid(body []byte) []byte {
 // @Router       /v1/user/device-data/{userDeviceID}/distance-driven [get]
 func (d *DeviceDataController) GetDistanceDriven(c *fiber.Ctx) error {
 	userDeviceID := c.Params("userDeviceID")
-	odoStart, err := d.queryOdometer(c.Context(), sortorder.Asc, userDeviceID, d.Settings.DeviceDataIndexNameV1)
+	odoStart, err := d.queryOdometer(c.Context(), sortorder.Asc, userDeviceID, d.Settings.DeviceDataIndexName)
 	if err != nil {
 		return errors.Wrap(err, "error querying odometer")
 	}
-	odoEnd, err := d.queryOdometer(c.Context(), sortorder.Desc, userDeviceID, d.Settings.DeviceDataIndexNameV1)
+	odoEnd, err := d.queryOdometer(c.Context(), sortorder.Desc, userDeviceID, d.Settings.DeviceDataIndexName)
 	if err != nil {
 		return errors.Wrap(err, "error querying odometer")
 	}
@@ -601,7 +601,7 @@ func (d *DeviceDataController) GetDailyDistance(c *fiber.Ctx) error {
 		},
 	}
 
-	resp, err := d.es8Client.Search().Index(d.Settings.DeviceDataIndexNameV1).Request(query).Do(c.Context())
+	resp, err := d.es8Client.Search().Index(d.Settings.DeviceDataIndexName).Request(query).Do(c.Context())
 	if err != nil {
 		return err
 	}
