@@ -107,6 +107,46 @@ func (d *DeviceDataController) GetHistoricalRaw(c *fiber.Ctx) error {
 	return d.getHistoryV1(c, userDevice, startDate, endDate, types.SourceFilter{})
 }
 
+// GetHistoricalRawV2 godoc
+// @Description  Get all historical data for a userDeviceID, within start and end range
+// @Tags         device-data
+// @Produce      json
+// @Success      200
+// @Param        userDeviceID  path   string  true   "user id"
+// @Param        startDate     query  string  false  "startDate eg 2022-01-02. if empty two weeks back"
+// @Param        endDate       query  string  false  "endDate eg 2022-03-01. if empty today"
+// @Security     BearerAuth
+// @Router       /user/device-data/{userDeviceID}/historical [get]
+func (d *DeviceDataController) GetHistoricalRawV2(c *fiber.Ctx) error {
+	const dateLayout = "2006-01-02" // date layout support by elastic
+	userDeviceID := c.Params("userDeviceID")
+	startDate := c.Query("startDate")
+	if startDate == "" {
+		startDate = time.Now().Add(-1 * (time.Hour * 24 * 14)).Format(dateLayout) // if no start date default to 2 weeks
+	} else {
+		_, err := time.Parse(dateLayout, startDate)
+		if err != nil {
+			return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		}
+	}
+	endDate := c.Query("endDate")
+	if endDate == "" {
+		endDate = time.Now().Format(dateLayout)
+	} else {
+		_, err := time.Parse(dateLayout, endDate)
+		if err != nil {
+			return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		}
+	}
+
+	userDevice, err := d.deviceAPI.GetUserDevice(c.Context(), userDeviceID)
+	if err != nil {
+		return err
+	}
+
+	return d.getHistoryV2(c, userDevice, startDate, endDate, types.SourceFilter{})
+}
+
 // addRangeIfNotExists will add range based on mpg and fuelTankCapacity to the json body, only if there are no existing range entries (eg. smartcar added)
 func addRangeIfNotExists(ctx context.Context, deviceDefSvc services.DeviceDefinitionsAPIService, body []byte, deviceDefinitionID string, deviceStyleID *string) ([]byte, error) {
 	if len(body) == 0 {
@@ -190,9 +230,9 @@ func (d *DeviceDataController) GetHistoricalRawPermissioned(c *fiber.Ctx) error 
 	var filter types.SourceFilter
 
 	if slices.Contains(privileges, AllTimeLocation) {
-		filter.Includes = append(filter.Includes, "*.latitude", "*.longitude", "*.vehicle.currentLocation")
+		filter.Includes = append(filter.Includes, "*.latitude", "*.longitude")
 	} else {
-		filter.Excludes = append(filter.Excludes, "*.latitude", "*.longitude", "location", "data.cell", "cell", "*.vehicle.currentLocation")
+		filter.Excludes = append(filter.Excludes, "*.latitude", "*.longitude", "location", "data.cell", "cell")
 	}
 
 	if slices.Contains(privileges, NonLocationData) {
@@ -200,9 +240,66 @@ func (d *DeviceDataController) GetHistoricalRawPermissioned(c *fiber.Ctx) error 
 		// has AllTimeLocation.
 		filter.Includes = append(filter.Includes, "*")
 	}
+	return d.getHistoryV1(c, userDevice, startDate, endDate, filter)
+}
 
-	if strings.HasPrefix(c.OriginalURL(), "/v1") {
-		return d.getHistoryV1(c, userDevice, startDate, endDate, filter)
+// GetHistoricalRawPermissionedV2 godoc
+// @Description  Get all historical data for a tokenID, within start and end range
+// @Tags         device-data
+// @Produce      json
+// @Success      200
+// @Param        tokenID  path   int64  true   "token id"
+// @Param        startDate     query  string  false  "startDate eg 2022-01-02. if empty two weeks back"
+// @Param        endDate       query  string  false  "endDate eg 2022-03-01. if empty today"
+// @Security     BearerAuth
+// @Router       /vehicle/{tokenID}/history [get]
+func (d *DeviceDataController) GetHistoricalRawPermissionedV2(c *fiber.Ctx) error {
+	const dateLayout = "2006-01-02" // date layout support by elastic
+	tokenID := c.Params("tokenID")
+	startDate := c.Query("startDate")
+	if startDate == "" {
+		startDate = time.Now().Add(-1 * (time.Hour * 24 * 14)).Format(dateLayout) // if no startdate default to 2 weeks
+	} else {
+		_, err := time.Parse(dateLayout, startDate)
+		if err != nil {
+			return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		}
+	}
+	endDate := c.Query("endDate")
+	if endDate == "" {
+		endDate = time.Now().Format(dateLayout)
+	} else {
+		_, err := time.Parse(dateLayout, endDate)
+		if err != nil {
+			return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		}
+	}
+
+	i, err := strconv.ParseInt(tokenID, 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+
+	userDevice, err := d.deviceAPI.GetUserDeviceByTokenID(c.Context(), i)
+	if err != nil {
+		return err
+	}
+
+	claims := c.Locals("tokenClaims").(pr.CustomClaims)
+	privileges := claims.PrivilegeIDs
+
+	var filter types.SourceFilter
+
+	if slices.Contains(privileges, AllTimeLocation) {
+		filter.Includes = append(filter.Includes, "*.vehicle.currentLocation")
+	} else {
+		filter.Excludes = append(filter.Excludes, "*.misc.cell", "*.vehicle.currentLocation")
+	}
+
+	if slices.Contains(privileges, NonLocationData) {
+		// Overrides the more limited Includes entries from above if the token also
+		// has AllTimeLocation.
+		filter.Includes = append(filter.Includes, "*")
 	}
 
 	return d.getHistoryV2(c, userDevice, startDate, endDate, filter)
@@ -221,7 +318,6 @@ func (d *DeviceDataController) getHistoryV1(c *fiber.Ctx, userDevice *grpc.UserD
 							{Range: map[string]types.RangeQuery{"time": types.DateRangeQuery{Gte: some.String(startDate), Lte: some.String(endDate)}}},
 						},
 						Should: []types.Query{
-							{Exists: &types.ExistsQuery{Field: "data.vehicle"}},
 							{Exists: &types.ExistsQuery{Field: "data.odometer"}},
 							{Exists: &types.ExistsQuery{Field: "data.latitude"}},
 						},
@@ -277,8 +373,6 @@ func (d *DeviceDataController) getHistoryV2(c *fiber.Ctx, userDevice *grpc.UserD
 				},
 				Should: []types.Query{
 					{Exists: &types.ExistsQuery{Field: "data.vehicle"}},
-					{Exists: &types.ExistsQuery{Field: "data.odometer"}},
-					{Exists: &types.ExistsQuery{Field: "data.latitude"}},
 				},
 				MinimumShouldMatch: &msm,
 			},

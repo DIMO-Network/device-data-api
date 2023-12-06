@@ -88,7 +88,8 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 	// autopi specific endpoint,
 	app.Get("/v1/autopi/last-seen/:ethAddr", cacheHandler, deviceDataController.GetLastSeen)
 
-	vToken := app.Group("/v1/vehicle/:tokenID", privilegeAuth)
+	vTokenV1 := app.Group("/v1/vehicle/:tokenID", privilegeAuth)
+	vTokenV2 := app.Group("/v2/vehicle/:tokenID", privilegeAuth)
 
 	tk := privilegetoken.New(privilegetoken.Config{
 		Log: &logger,
@@ -96,20 +97,23 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 	vehicleAddr := common.HexToAddress(settings.VehicleNFTAddress)
 
 	// token based routes
-	vToken.Get("/history", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.AllTimeLocation}), cacheHandler, deviceDataController.GetHistoricalRawPermissioned)
-	vToken.Get("/status", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.CurrentLocation, controllers.AllTimeLocation}), cacheHandler, deviceDataController.GetVehicleStatus)
+	vTokenV1.Get("/history", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.AllTimeLocation}), cacheHandler, deviceDataController.GetHistoricalRawPermissioned)
+	vTokenV1.Get("/status", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.CurrentLocation, controllers.AllTimeLocation}), cacheHandler, deviceDataController.GetVehicleStatus)
 
-	v1Auth := app.Group("/v1", jwtAuth)
+	vTokenV2.Get("/history", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.AllTimeLocation}), cacheHandler, deviceDataController.GetHistoricalRawPermissionedV2)
 
 	udMw := owner.New(usersClient, deviceAPIService, &logger)
+	v1Auth := app.Group("/v1", jwtAuth)
+	v2Auth := app.Group("/v2", jwtAuth)
+
 	udOwner := v1Auth.Group("/user/device-data/:userDeviceID", udMw)
 	udOwner.Get("/status", cacheHandler, deviceDataController.GetUserDeviceStatus)
 	udOwner.Get("/historical", cacheHandler, deviceDataController.GetHistoricalRaw)
 	udOwner.Get("/distance-driven", cacheHandler, deviceDataController.GetDistanceDriven)
 	udOwner.Get("/daily-distance", cacheHandler, deviceDataController.GetDailyDistance)
 
-	vehTokenV2 := app.Group("/v2/vehicle/:tokenID")
-	vehTokenV2.Get("/history", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.AllTimeLocation}), cacheHandler, deviceDataController.GetHistoricalRawPermissioned)
+	udOwnerV2 := v2Auth.Group("/user/device-data/:userDeviceID", udMw)
+	udOwnerV2.Get("/historical", cacheHandler, deviceDataController.GetHistoricalRawV2)
 
 	dataDownloadController, err := controllers.NewDataDownloadController(settings, &logger, esClient8, deviceAPIService)
 	if err != nil {
