@@ -31,7 +31,7 @@ env:
   SERVICE_NAME: device-data-api
   JWT_KEY_SET_URL: https://auth.dev.dimo.zone/keys
   DEPLOYMENT_BASE_URL: https://device-data-api.dev.dimo.zone
-  DEVICE_DATA_INDEX_NAME_V1: device-status-dev*
+  DEVICE_DATA_INDEX_NAME: device-status-dev*
   DEVICE_DATA_INDEX_NAME_V2: vss-status-dev*
   ELASTIC_INDEX: device-status-dev*
   DEVICES_APIGRPC_ADDR: devices-api-dev:8086
