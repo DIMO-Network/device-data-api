@@ -91,7 +91,8 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 	// autopi specific endpoint,
 	app.Get("/v1/autopi/last-seen/:ethAddr", cacheHandler, deviceDataController.GetLastSeen)
 
-	vToken := app.Group("/v1/vehicle/:tokenID", privilegeAuth)
+	vTokenV1 := app.Group("/v1/vehicle/:tokenID", privilegeAuth)
+	vTokenV2 := app.Group("/v2/vehicle/:tokenID", privilegeAuth)
 
 	tk := privilegetoken.New(privilegetoken.Config{
 		Log: &logger,
@@ -99,11 +100,14 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 	vehicleAddr := common.HexToAddress(settings.VehicleNFTAddress)
 
 	// token based routes
-	vToken.Get("/history", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.AllTimeLocation}), cacheHandler, deviceDataController.GetHistoricalRawPermissioned)
-	vToken.Get("/status", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.CurrentLocation, controllers.AllTimeLocation}), cacheHandler, deviceDataController.GetVehicleStatus)
+	vTokenV1.Get("/history", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.AllTimeLocation}), cacheHandler, deviceDataController.GetHistoricalRawPermissioned)
+	vTokenV1.Get("/status", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.CurrentLocation, controllers.AllTimeLocation}), cacheHandler, deviceDataController.GetVehicleStatus)
+
+	vTokenV2.Get("/status", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.CurrentLocation, controllers.AllTimeLocation}), cacheHandler, deviceDataController.GetVehicleStatusV2)
 
 	udMw := owner.New(usersClient, deviceAPIService, &logger)
 	v1Auth := app.Group("/v1", jwtAuth)
+	v2Auth := app.Group("/v2", jwtAuth)
 
 	udOwner := v1Auth.Group("/user/device-data/:userDeviceID", udMw)
 	udOwner.Get("/status", cacheHandler, deviceDataController.GetUserDeviceStatus)
@@ -111,7 +115,6 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 	udOwner.Get("/distance-driven", cacheHandler, deviceDataController.GetDistanceDriven)
 	udOwner.Get("/daily-distance", cacheHandler, deviceDataController.GetDailyDistance)
 
-	v2Auth := app.Group("/v2", jwtAuth)
 	udOwnerV2 := v2Auth.Group("/user/device-data/:userDeviceID", udMw)
 	udOwnerV2.Get("/status", cacheHandler, deviceDataController.GetUserDeviceStatusV2)
 
