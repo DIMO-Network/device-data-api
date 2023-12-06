@@ -72,3 +72,9 @@ func (m *MockDeviceStatusService) PrepareDeviceStatusInformationV2(ctx context.C
 	ret0, _ := ret[0].(response.Device)
 	return ret0
 }
+
+// PrepareDeviceStatusInformationV2 indicates an expected call of PrepareDeviceStatusInformation.
+func (mr *MockDeviceStatusServiceMockRecorder) PrepareDeviceStatusInformationV2(ctx, deviceData, deviceDefinitionID, deviceStyleID, privilegeIDs interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PrepareDeviceStatusInformationV2", reflect.TypeOf((*MockDeviceStatusService)(nil).PrepareDeviceStatusInformationV2), ctx, deviceData, deviceDefinitionID, deviceStyleID, privilegeIDs)
+}

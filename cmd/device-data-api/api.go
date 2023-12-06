@@ -113,7 +113,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 
 	v2Auth := app.Group("/v2", jwtAuth)
 	udOwnerV2 := v2Auth.Group("/user/device-data/:userDeviceID", udMw)
-	udOwnerV2.Get("/status", cacheHandler, deviceDataController.GetUserDeviceStatus)
+	udOwnerV2.Get("/status", cacheHandler, deviceDataController.GetUserDeviceStatusV2)
 
 	dataDownloadController, err := controllers.NewDataDownloadController(settings, &logger, esClient8, deviceAPIService)
 	if err != nil {

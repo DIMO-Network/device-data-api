@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"time"
 
 	"github.com/DIMO-Network/device-data-api/internal/response"
 	"github.com/DIMO-Network/device-data-api/models"
@@ -190,7 +191,8 @@ func (dss *deviceStatusService) PrepareDeviceStatusInformationV2(ctx context.Con
 		batteryCapacity := findMostRecentSignal(deviceData, "batteryCapacity", false)
 		if batteryCapacity.Exists() {
 			b := batteryCapacity.Get("value").Float()
-			status.PowerTrain.TractionBattery.StateOfCharge.Current = null.Float64From(b)
+			status.PowerTrain.TractionBattery.GrossCapacity = null.Float64From(b)
+			status.PowerTrain.TractionBattery.GrossCapacity = null.Float64From(b)
 		}
 		oilLevel := findMostRecentSignal(deviceData, "oil", false)
 		if oilLevel.Exists() {
@@ -210,6 +212,7 @@ func (dss *deviceStatusService) PrepareDeviceStatusInformationV2(ctx context.Con
 		if stateOfCharge.Exists() {
 			o := stateOfCharge.Get("value").Float()
 			status.PowerTrain.TractionBattery.StateOfCharge.Displayed = null.Float64From(o)
+			status.PowerTrain.TractionBattery.StateOfCharge.Current = null.Float64From(o)
 		}
 		chargeLimit := findMostRecentSignal(deviceData, "chargeLimit", false)
 		if chargeLimit.Exists() {
@@ -231,6 +234,8 @@ func (dss *deviceStatusService) PrepareDeviceStatusInformationV2(ctx context.Con
 		rangeG := findMostRecentSignal(deviceData, "range", false)
 		if rangeG.Exists() {
 			r := rangeG.Get("value").Float()
+			status.PowerTrain.Range = null.Float64From(r)
+			status.PowerTrain.FuelSystem.Range = null.Float64From(r)
 			status.PowerTrain.TractionBattery.Range = null.Float64From(r)
 		}
 		batteryVoltage := findMostRecentSignal(deviceData, "batteryVoltage", false)
@@ -272,6 +277,7 @@ func (dss *deviceStatusService) PrepareDeviceStatusInformationV2(ctx context.Con
 			}
 			l := latitude.Get("value").Float()
 			status.CurrentLocation.Latitude = null.Float64From(l)
+			status.CurrentLocation.Timestamp = null.StringFrom(ts.Format(time.RFC3339))
 		}
 		longitude := findMostRecentSignal(deviceData, "longitude", false)
 		if longitude.Exists() {

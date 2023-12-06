@@ -339,16 +339,45 @@ func (d *DeviceDataController) GetUserDeviceStatus(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusNotFound, "No status updates yet.")
 	}
 
-	if strings.Contains(c.OriginalURL(), "/v2") {
-		snapshot := d.deviceStatusSvc.PrepareDeviceStatusInformationV2(c.Context(), deviceData, userDevice.DeviceDefinitionId,
-			userDevice.DeviceStyleId, []int64{NonLocationData, CurrentLocation, AllTimeLocation})
-		return c.JSON(snapshot)
-	}
-
 	ds := d.deviceStatusSvc.PrepareDeviceStatusInformation(c.Context(), deviceData, userDevice.DeviceDefinitionId,
 		userDevice.DeviceStyleId, []int64{NonLocationData, CurrentLocation, AllTimeLocation})
 
 	return c.JSON(ds)
+}
+
+// GetUserDeviceStatusV2 godoc
+// @Description Returns the latest status update for the device. May return 404 if the
+// @Description user does not have a device with the ID, or if no status updates have come.
+// @Tags        device-data
+// @Produce     json
+// @Param       user_device_id path     string true "user device ID"
+// @Success     200            {object} response.Device
+// @Security    BearerAuth
+// @Router      /user/device-data/{userDeviceID}/status [get]
+func (d *DeviceDataController) GetUserDeviceStatusV2(c *fiber.Ctx) error {
+	userDeviceID := c.Params("userDeviceID")
+	userDevice, err := d.deviceAPI.GetUserDevice(c.Context(), userDeviceID)
+	if err != nil {
+		return err
+	}
+
+	deviceData, err := models.UserDeviceData(
+		models.UserDeviceDatumWhere.UserDeviceID.EQ(userDevice.Id),
+		models.UserDeviceDatumWhere.Signals.IsNotNull(),
+		models.UserDeviceDatumWhere.UpdatedAt.GT(time.Now().Add(-90*24*time.Hour)),
+	).All(c.Context(), d.dbs().Reader)
+	if err != nil {
+		return err
+	}
+
+	if len(deviceData) == 0 {
+		return fiber.NewError(fiber.StatusNotFound, "No status updates yet.")
+	}
+
+	snapshot := d.deviceStatusSvc.PrepareDeviceStatusInformationV2(c.Context(), deviceData, userDevice.DeviceDefinitionId,
+		userDevice.DeviceStyleId, []int64{NonLocationData, CurrentLocation, AllTimeLocation})
+
+	return c.JSON(snapshot)
 }
 
 // GetVehicleStatus godoc
