@@ -1,4 +1,3 @@
-basePath: /v1
 definitions:
   github_com_DIMO-Network_device-data-api_internal_response.DeviceSnapshot:
     properties:
@@ -80,7 +79,7 @@ info:
   title: DIMO Device Data API
   version: "1.0"
 paths:
-  /autopi/last-seen/{ethAddr}:
+  /v1/autopi/last-seen/{ethAddr}:
     get:
       description: Specific for AutoPi - get when a device last sent data
       parameters:
@@ -104,7 +103,7 @@ paths:
       - PreSharedKey: []
       tags:
       - autopi
-  /user/device-data/{userDeviceID}/daily-distance:
+  /v1/user/device-data/{userDeviceID}/daily-distance:
     get:
       description: Get kilometers driven for a userDeviceID each day.
       parameters:
@@ -131,7 +130,7 @@ paths:
       - BearerAuth: []
       tags:
       - device-data
-  /user/device-data/{userDeviceID}/distance-driven:
+  /v1/user/device-data/{userDeviceID}/distance-driven:
     get:
       description: |-
         Get kilometers driven for a userDeviceID since connected (ie. since we have data available)
@@ -153,7 +152,7 @@ paths:
       - BearerAuth: []
       tags:
       - device-data
-  /user/device-data/{userDeviceID}/export/json/email:
+  /v1/user/device-data/{userDeviceID}/export/json/email:
     post:
       description: |-
         Enqueues a data export job for the specified device. A link to download
@@ -175,7 +174,7 @@ paths:
       - BearerAuth: []
       tags:
       - device-data
-  /user/device-data/{userDeviceID}/historical:
+  /v1/user/device-data/{userDeviceID}/historical:
     get:
       description: Get all historical data for a userDeviceID, within start and end
         range
@@ -202,7 +201,7 @@ paths:
       - BearerAuth: []
       tags:
       - device-data
-  /user/device-data/{userDeviceID}/status:
+  /v1/user/device-data/{userDeviceID}/status:
     get:
       description: |-
         Returns the latest status update for the device. May return 404 if the
@@ -224,7 +223,7 @@ paths:
       - BearerAuth: []
       tags:
       - device-data
-  /vehicle/{tokenID}/history:
+  /v1/vehicle/{tokenID}/history:
     get:
       description: Get all historical data for a tokenID, within start and end range
       parameters:
@@ -250,7 +249,7 @@ paths:
       - BearerAuth: []
       tags:
       - device-data
-  /vehicle/{tokenId}/status:
+  /v1/vehicle/{tokenId}/status:
     get:
       description: Returns the latest status update for the vehicle with a given token
         id.
@@ -269,6 +268,32 @@ paths:
             $ref: '#/definitions/github_com_DIMO-Network_device-data-api_internal_response.DeviceSnapshot'
         "404":
           description: Not Found
+      tags:
+      - device-data
+  /v2/vehicle/{tokenID}/history:
+    get:
+      description: Get all historical data for a tokenID, within start and end range
+      parameters:
+      - description: token id
+        in: path
+        name: tokenID
+        required: true
+        type: integer
+      - description: startDate eg 2022-01-02. if empty two weeks back
+        in: query
+        name: startDate
+        type: string
+      - description: endDate eg 2022-03-01. if empty today
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerAuth: []
       tags:
       - device-data
 securityDefinitions:

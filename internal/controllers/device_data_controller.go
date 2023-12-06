@@ -76,7 +76,7 @@ func NewDeviceDataController(settings *config.Settings, logger *zerolog.Logger, 
 // @Param        startDate     query  string  false  "startDate eg 2022-01-02. if empty two weeks back"
 // @Param        endDate       query  string  false  "endDate eg 2022-03-01. if empty today"
 // @Security     BearerAuth
-// @Router       /user/device-data/{userDeviceID}/historical [get]
+// @Router       /v1/user/device-data/{userDeviceID}/historical [get]
 func (d *DeviceDataController) GetHistoricalRaw(c *fiber.Ctx) error {
 	const dateLayout = "2006-01-02" // date layout support by elastic
 	userDeviceID := c.Params("userDeviceID")
@@ -105,46 +105,6 @@ func (d *DeviceDataController) GetHistoricalRaw(c *fiber.Ctx) error {
 	}
 
 	return d.getHistoryV1(c, userDevice, startDate, endDate, types.SourceFilter{})
-}
-
-// GetHistoricalRawV2 godoc
-// @Description  Get all historical data for a userDeviceID, within start and end range
-// @Tags         device-data
-// @Produce      json
-// @Success      200
-// @Param        userDeviceID  path   string  true   "user id"
-// @Param        startDate     query  string  false  "startDate eg 2022-01-02. if empty two weeks back"
-// @Param        endDate       query  string  false  "endDate eg 2022-03-01. if empty today"
-// @Security     BearerAuth
-// @Router       /user/device-data/{userDeviceID}/historical [get]
-func (d *DeviceDataController) GetHistoricalRawV2(c *fiber.Ctx) error {
-	const dateLayout = "2006-01-02" // date layout support by elastic
-	userDeviceID := c.Params("userDeviceID")
-	startDate := c.Query("startDate")
-	if startDate == "" {
-		startDate = time.Now().Add(-1 * (time.Hour * 24 * 14)).Format(dateLayout) // if no start date default to 2 weeks
-	} else {
-		_, err := time.Parse(dateLayout, startDate)
-		if err != nil {
-			return fiber.NewError(fiber.StatusBadRequest, err.Error())
-		}
-	}
-	endDate := c.Query("endDate")
-	if endDate == "" {
-		endDate = time.Now().Format(dateLayout)
-	} else {
-		_, err := time.Parse(dateLayout, endDate)
-		if err != nil {
-			return fiber.NewError(fiber.StatusBadRequest, err.Error())
-		}
-	}
-
-	userDevice, err := d.deviceAPI.GetUserDevice(c.Context(), userDeviceID)
-	if err != nil {
-		return err
-	}
-
-	return d.getHistoryV2(c, userDevice, startDate, endDate, types.SourceFilter{})
 }
 
 // addRangeIfNotExists will add range based on mpg and fuelTankCapacity to the json body, only if there are no existing range entries (eg. smartcar added)
@@ -191,7 +151,7 @@ func addRangeIfNotExists(ctx context.Context, deviceDefSvc services.DeviceDefini
 // @Param        startDate     query  string  false  "startDate eg 2022-01-02. if empty two weeks back"
 // @Param        endDate       query  string  false  "endDate eg 2022-03-01. if empty today"
 // @Security     BearerAuth
-// @Router       /vehicle/{tokenID}/history [get]
+// @Router       /v1/vehicle/{tokenID}/history [get]
 func (d *DeviceDataController) GetHistoricalRawPermissioned(c *fiber.Ctx) error {
 	const dateLayout = "2006-01-02" // date layout support by elastic
 	tokenID := c.Params("tokenID")
@@ -252,7 +212,7 @@ func (d *DeviceDataController) GetHistoricalRawPermissioned(c *fiber.Ctx) error 
 // @Param        startDate     query  string  false  "startDate eg 2022-01-02. if empty two weeks back"
 // @Param        endDate       query  string  false  "endDate eg 2022-03-01. if empty today"
 // @Security     BearerAuth
-// @Router       /vehicle/{tokenID}/history [get]
+// @Router       /v2/vehicle/{tokenID}/history [get]
 func (d *DeviceDataController) GetHistoricalRawPermissionedV2(c *fiber.Ctx) error {
 	const dateLayout = "2006-01-02" // date layout support by elastic
 	tokenID := c.Params("tokenID")
@@ -456,7 +416,7 @@ func removeOdometerIfInvalid(body []byte) []byte {
 // @Failure      404 "no device found for user with provided parameters"
 // @Param        userDeviceID  path   string  true   "user device id"
 // @Security     BearerAuth
-// @Router       /user/device-data/{userDeviceID}/distance-driven [get]
+// @Router       /v1/user/device-data/{userDeviceID}/distance-driven [get]
 func (d *DeviceDataController) GetDistanceDriven(c *fiber.Ctx) error {
 	userDeviceID := c.Params("userDeviceID")
 	odoStart, err := d.queryOdometer(c.Context(), sortorder.Asc, userDeviceID, d.Settings.DeviceDataIndexNameV1)
@@ -482,7 +442,7 @@ func (d *DeviceDataController) GetDistanceDriven(c *fiber.Ctx) error {
 // @Param       user_device_id path     string true "user device ID"
 // @Success     200            {object} response.DeviceSnapshot
 // @Security    BearerAuth
-// @Router      /user/device-data/{userDeviceID}/status [get]
+// @Router      /v1/user/device-data/{userDeviceID}/status [get]
 func (d *DeviceDataController) GetUserDeviceStatus(c *fiber.Ctx) error {
 	userDeviceID := c.Params("userDeviceID")
 
@@ -517,7 +477,7 @@ func (d *DeviceDataController) GetUserDeviceStatus(c *fiber.Ctx) error {
 // @Produce     json
 // @Success     200 {object} response.DeviceSnapshot
 // @Failure     404
-// @Router      /vehicle/{tokenId}/status [get]
+// @Router      /v1/vehicle/{tokenId}/status [get]
 func (d *DeviceDataController) GetVehicleStatus(c *fiber.Ctx) error {
 	tis := c.Params("tokenID")
 	claims := c.Locals("tokenClaims").(pr.CustomClaims)
@@ -600,7 +560,7 @@ type DailyDistanceResp struct {
 // @Param        userDeviceID  path   string  true   "user device id"
 // @Param	     time_zone query string true "IANAS time zone id, e.g., America/Los_Angeles"
 // @Security     BearerAuth
-// @Router       /user/device-data/{userDeviceID}/daily-distance [get]
+// @Router       /v1/user/device-data/{userDeviceID}/daily-distance [get]
 func (d *DeviceDataController) GetDailyDistance(c *fiber.Ctx) error {
 	userDeviceID := c.Params("userDeviceID")
 
@@ -696,7 +656,7 @@ func (d *DeviceDataController) GetDailyDistance(c *fiber.Ctx) error {
 // @Failure      500 "no device found or no data found, or other transient error"
 // @Param        ethAddr  path   string  true   "device ethereum address"
 // @Security     PreSharedKey
-// @Router       /autopi/last-seen/{ethAddr} [get]
+// @Router       /v1/autopi/last-seen/{ethAddr} [get]
 func (d *DeviceDataController) GetLastSeen(c *fiber.Ctx) error {
 	authed := false
 	for h, v := range c.GetReqHeaders() {
