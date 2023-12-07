@@ -8,16 +8,17 @@ cronJob:
   schedule: 0 0 * * 0
 env:
   ENVIRONMENT: prod
-  PORT: '8080'
+  PORT: "8080"
   LOG_LEVEL: info
   SERVICE_NAME: device-data-api
   JWT_KEY_SET_URL: https://auth.dimo.zone/keys
   DEPLOYMENT_BASE_URL: https://device-data-api.dimo.zone
   DEVICE_DATA_INDEX_NAME: device-status-prod*
+  DEVICE_DATA_INDEX_NAME_V2: vss-status-prod*
   DEVICES_APIGRPC_ADDR: devices-api-prod:8086
   ENABLE_PRIVILEGES: true
   TOKEN_EXCHANGE_JWK_KEY_SET_URL: http://dex-roles-rights-prod.prod.svc.cluster.local:5556/keys
-  VEHICLE_NFT_ADDRESS: '0xba5738a18d83d41847dffbdc6101d37c69c9b0cf'
+  VEHICLE_NFT_ADDRESS: "0xba5738a18d83d41847dffbdc6101d37c69c9b0cf"
   DEVICE_DEFINITIONS_GRPC_ADDR: device-definitions-api-prod:8086
   USERS_API_GRPC_ADDR: users-api-prod:8086
   AWS_BUCKET_NAME: dimo-network-device-data-export-prod
@@ -30,10 +31,10 @@ ingress:
   className: nginx
   annotations:
     nginx.ingress.kubernetes.io/auth-tls-secret: ingress/cf-origin-ca
-    nginx.ingress.kubernetes.io/auth-tls-verify-client: 'on'
-    nginx.ingress.kubernetes.io/enable-cors: 'true'
+    nginx.ingress.kubernetes.io/auth-tls-verify-client: "on"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
     nginx.ingress.kubernetes.io/cors-allow-origin: https://app.dimo.zone
-    nginx.ingress.kubernetes.io/limit-rps: '9'
+    nginx.ingress.kubernetes.io/limit-rps: "9"
     external-dns.alpha.kubernetes.io/hostname: device-data-api.dimo.zone
   hosts:
     - host: device-data-api.dimo.zone
@@ -62,5 +63,5 @@ job:
   - name: generate-report-vehicle-signals-event
     schedule: 0 0 * * 0
     args:
-      - '-c'
+      - "-c"
       - /device-data-api generate-report-vehicle-signals; CODE=$?; echo "weekly vehicle data dashboard report"; wget -q --post-data "hello=shutdown" http://localhost:4191/shutdown &> /dev/null; exit $CODE;

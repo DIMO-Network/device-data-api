@@ -50,7 +50,7 @@ func NewDataDownloadController(settings *config.Settings, log *zerolog.Logger, e
 // @Success      200
 // @Security     BearerAuth
 // @Param        userDeviceID  path   string  true   "Device id" Example(2OQjmqUt9dguQbJt1WImuVfje3W)
-// @Router       /user/device-data/{userDeviceID}/export/json/email [post]
+// @Router       /v1/user/device-data/{userDeviceID}/export/json/email [post]
 func (d *DataDownloadController) DataDownloadHandler(c *fiber.Ctx) error {
 	userID := GetUserID(c)
 	userDeviceID := c.Params("userDeviceID")
