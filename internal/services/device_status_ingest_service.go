@@ -234,15 +234,15 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 	if err != nil {
 		return errors.Wrap(err, "could not unmarshall event data")
 	}
+	// if autopi, do not ingest VIN, remove vin from eventData. vin comes from fingerprint now for AP.
+	if integration.Vendor == constants.AutoPiVendor {
+		delete(eventData, "vin")
+	}
 	newSignals, err := mergeSignals(existingSignalData, eventData, event.Time)
 	if err != nil {
 		return err
 	}
 
-	// if autopi, do not ingest VIN, remove vin from newSignals. vin comes from fingerprint now for AP.
-	if integration.Vendor == constants.AutoPiVendor {
-		delete(newSignals, "vin")
-	}
 	if err := datum.Signals.Marshal(newSignals); err != nil {
 		return err
 	}
