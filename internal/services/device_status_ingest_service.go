@@ -238,7 +238,7 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 	if integration.Vendor == constants.AutoPiVendor {
 		delete(eventData, "vin")
 	}
-	newSignals, err := mergeSignals(existingSignalData, eventData, event.Time)
+	newSignals, err := mergeSignals(existingSignalData, eventData, event.Time, "dimo/integration/"+integration.Id)
 	if err != nil {
 		return err
 	}
@@ -398,7 +398,7 @@ func checkObd2Exists(data []byte) (bool, error) {
 	return true, nil
 }
 
-func mergeSignals(currentData map[string]interface{}, newData map[string]interface{}, t time.Time) (map[string]interface{}, error) {
+func mergeSignals(currentData map[string]interface{}, newData map[string]interface{}, t time.Time, source string) (map[string]interface{}, error) {
 
 	merged := make(map[string]interface{})
 	for k, v := range currentData {
@@ -409,6 +409,7 @@ func mergeSignals(currentData map[string]interface{}, newData map[string]interfa
 		merged[k] = map[string]interface{}{
 			"timestamp": t.Format("2006-01-02T15:04:05Z"), // utc tz RFC3339
 			"value":     v,
+			"source":    source,
 		}
 	}
 	return merged, nil

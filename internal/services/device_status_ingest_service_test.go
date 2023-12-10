@@ -346,5 +346,5 @@ func TestDeviceStatusIngestService_processEvent(t *testing.T) {
 
 	assert.Equal(t, "", gjson.GetBytes(updatedDataAutoPi.Signals.JSON, "vin.value").Str)
 	assert.Equal(t, 42431.0, gjson.GetBytes(updatedDataAutoPi.Signals.JSON, "odometer.value").Num)
-
+	assert.Equal(t, "dimo/integration/"+autopiInt.Id, gjson.GetBytes(updatedDataAutoPi.Signals.JSON, "odometer.source").Str)
 }
