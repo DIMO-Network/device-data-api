@@ -29,7 +29,7 @@ type DeviceSnapshot struct {
 
 type Device struct {
 	// VSS status data
-	Status []Status `json:"status,omitempty"`
+	Status Status `json:"status,omitempty"`
 	// Other
 	Misc            map[string]interface{} `json:"misc,omitempty"`
 	RecordUpdatedAt *time.Time             `json:"recordUpdatedAt,omitempty"`

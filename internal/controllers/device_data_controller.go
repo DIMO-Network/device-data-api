@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/volatiletech/null/v8"
 	"golang.org/x/exp/slices"
 
 	"database/sql"
@@ -16,6 +17,7 @@ import (
 	"time"
 
 	"github.com/DIMO-Network/device-data-api/internal/config"
+	"github.com/DIMO-Network/device-data-api/internal/response"
 	_ "github.com/DIMO-Network/device-data-api/internal/response" // needed for swagger gen
 	"github.com/DIMO-Network/device-data-api/internal/services"
 	"github.com/DIMO-Network/device-data-api/models"
@@ -499,10 +501,44 @@ func (d *DeviceDataController) GetUserDeviceStatusV2(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusNotFound, "No status updates yet.")
 	}
 
-	snapshot := d.deviceStatusSvc.PrepareDeviceStatusInformationV2(c.Context(), deviceData, userDevice.DeviceDefinitionId,
+	ds := d.deviceStatusSvc.PrepareDeviceStatusInformation(c.Context(), deviceData, userDevice.DeviceDefinitionId,
 		userDevice.DeviceStyleId, []int64{NonLocationData, CurrentLocation, AllTimeLocation})
 
-	return c.JSON(snapshot)
+	var dsv2 response.Device
+	dsv2.RecordCreatedAt = ds.RecordCreatedAt
+	dsv2.RecordUpdatedAt = ds.RecordUpdatedAt
+	dsv2.Status.PowerTrain.TractionBattery.Charging.IsCharging = null.BoolFrom(*ds.Charging)
+	dsv2.Status.PowerTrain.FuelSystem.Level = null.Float64From(*ds.FuelPercentRemaining)
+	dsv2.Status.PowerTrain.TractionBattery.GrossCapacity = null.Float64From(float64(*ds.BatteryCapacity))
+	dsv2.Status.PowerTrain.TractionBattery.GrossCapacity = null.Float64From(float64(*ds.BatteryCapacity))
+	if *ds.OilLevel > 0.75 {
+		dsv2.Status.PowerTrain.CombustionEngine.EngineOilLevel = null.StringFrom("CRITICALLY_HIGH")
+	} else if *ds.OilLevel >= 0.5 {
+		dsv2.Status.PowerTrain.CombustionEngine.EngineOilLevel = null.StringFrom("NORMAL")
+	} else if *ds.OilLevel >= 0.25 {
+		dsv2.Status.PowerTrain.CombustionEngine.EngineOilLevel = null.StringFrom("LOW_NORMAL")
+	} else if *ds.OilLevel > 0 {
+		dsv2.Status.PowerTrain.CombustionEngine.EngineOilLevel = null.StringFrom("CRITICALLY_LOW")
+	}
+	dsv2.Status.PowerTrain.TractionBattery.StateOfCharge.Displayed = null.Float64From(*ds.StateOfCharge)
+	dsv2.Status.PowerTrain.TractionBattery.StateOfCharge.Current = null.Float64From(*ds.StateOfCharge)
+	dsv2.Status.PowerTrain.TractionBattery.Charging.ChargeLimit = null.Float64From(*ds.ChargeLimit)
+	dsv2.Status.TravelledDistance = null.Float64From(*ds.Odometer)
+	dsv2.Status.PowerTrain.Transmission.TravelledDistance = null.Float64From(*ds.Odometer)
+	dsv2.Status.PowerTrain.Range = null.Float64From(*ds.Range)
+	dsv2.Status.PowerTrain.FuelSystem.Range = null.Float64From(*ds.Range)
+	dsv2.Status.PowerTrain.TractionBattery.Range = null.Float64From(*ds.Range)
+	dsv2.Status.LowVoltageBattery.CurrentVoltage = null.Float64From(*ds.BatteryVoltage)
+	dsv2.Status.Exterior.AirTemperature = null.Float64From(*ds.AmbientTemp)
+	dsv2.Status.Chasis.Axle.Row1.Wheel.Left.Tire.Pressure = null.Float64From(ds.TirePressure.FrontLeft)
+	dsv2.Status.Chasis.Axle.Row1.Wheel.Right.Tire.Pressure = null.Float64From(ds.TirePressure.FrontRight)
+	dsv2.Status.Chasis.Axle.Row2.Wheel.Left.Tire.Pressure = null.Float64From(ds.TirePressure.BackLeft)
+	dsv2.Status.Chasis.Axle.Row2.Wheel.Right.Tire.Pressure = null.Float64From(ds.TirePressure.BackRight)
+	dsv2.Status.CurrentLocation.Latitude = null.Float64From(*ds.Latitude)
+	dsv2.Status.CurrentLocation.Timestamp = null.StringFrom(ds.RecordUpdatedAt.Format(time.RFC3339))
+	dsv2.Status.CurrentLocation.Longitude = null.Float64From(*ds.Longitude)
+
+	return c.JSON(dsv2)
 }
 
 // GetVehicleStatus godoc
@@ -611,10 +647,44 @@ func (d *DeviceDataController) GetVehicleStatusV2(c *fiber.Ctx) error {
 		return err
 	}
 
-	ds := d.deviceStatusSvc.PrepareDeviceStatusInformationV2(c.Context(), deviceData, userDeviceNFT.DeviceDefinitionId,
+	ds := d.deviceStatusSvc.PrepareDeviceStatusInformation(c.Context(), deviceData, userDeviceNFT.DeviceDefinitionId,
 		userDeviceNFT.DeviceStyleId, privileges)
 
-	return c.JSON(ds)
+	var dsv2 response.Device
+	dsv2.RecordCreatedAt = ds.RecordCreatedAt
+	dsv2.RecordUpdatedAt = ds.RecordUpdatedAt
+	dsv2.Status.PowerTrain.TractionBattery.Charging.IsCharging = null.BoolFrom(*ds.Charging)
+	dsv2.Status.PowerTrain.FuelSystem.Level = null.Float64From(*ds.FuelPercentRemaining)
+	dsv2.Status.PowerTrain.TractionBattery.GrossCapacity = null.Float64From(float64(*ds.BatteryCapacity))
+	dsv2.Status.PowerTrain.TractionBattery.GrossCapacity = null.Float64From(float64(*ds.BatteryCapacity))
+	if *ds.OilLevel > 0.75 {
+		dsv2.Status.PowerTrain.CombustionEngine.EngineOilLevel = null.StringFrom("CRITICALLY_HIGH")
+	} else if *ds.OilLevel >= 0.5 {
+		dsv2.Status.PowerTrain.CombustionEngine.EngineOilLevel = null.StringFrom("NORMAL")
+	} else if *ds.OilLevel >= 0.25 {
+		dsv2.Status.PowerTrain.CombustionEngine.EngineOilLevel = null.StringFrom("LOW_NORMAL")
+	} else if *ds.OilLevel > 0 {
+		dsv2.Status.PowerTrain.CombustionEngine.EngineOilLevel = null.StringFrom("CRITICALLY_LOW")
+	}
+	dsv2.Status.PowerTrain.TractionBattery.StateOfCharge.Displayed = null.Float64From(*ds.StateOfCharge)
+	dsv2.Status.PowerTrain.TractionBattery.StateOfCharge.Current = null.Float64From(*ds.StateOfCharge)
+	dsv2.Status.PowerTrain.TractionBattery.Charging.ChargeLimit = null.Float64From(*ds.ChargeLimit)
+	dsv2.Status.TravelledDistance = null.Float64From(*ds.Odometer)
+	dsv2.Status.PowerTrain.Transmission.TravelledDistance = null.Float64From(*ds.Odometer)
+	dsv2.Status.PowerTrain.Range = null.Float64From(*ds.Range)
+	dsv2.Status.PowerTrain.FuelSystem.Range = null.Float64From(*ds.Range)
+	dsv2.Status.PowerTrain.TractionBattery.Range = null.Float64From(*ds.Range)
+	dsv2.Status.LowVoltageBattery.CurrentVoltage = null.Float64From(*ds.BatteryVoltage)
+	dsv2.Status.Exterior.AirTemperature = null.Float64From(*ds.AmbientTemp)
+	dsv2.Status.Chasis.Axle.Row1.Wheel.Left.Tire.Pressure = null.Float64From(ds.TirePressure.FrontLeft)
+	dsv2.Status.Chasis.Axle.Row1.Wheel.Right.Tire.Pressure = null.Float64From(ds.TirePressure.FrontRight)
+	dsv2.Status.Chasis.Axle.Row2.Wheel.Left.Tire.Pressure = null.Float64From(ds.TirePressure.BackLeft)
+	dsv2.Status.Chasis.Axle.Row2.Wheel.Right.Tire.Pressure = null.Float64From(ds.TirePressure.BackRight)
+	dsv2.Status.CurrentLocation.Latitude = null.Float64From(*ds.Latitude)
+	dsv2.Status.CurrentLocation.Timestamp = null.StringFrom(ds.RecordUpdatedAt.Format(time.RFC3339))
+	dsv2.Status.CurrentLocation.Longitude = null.Float64From(*ds.Longitude)
+
+	return c.JSON(dsv2)
 }
 
 type odomValue struct {

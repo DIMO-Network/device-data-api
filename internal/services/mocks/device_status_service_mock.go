@@ -64,17 +64,3 @@ func (mr *MockDeviceStatusServiceMockRecorder) PrepareDeviceStatusInformation(ct
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PrepareDeviceStatusInformation", reflect.TypeOf((*MockDeviceStatusService)(nil).PrepareDeviceStatusInformation), ctx, deviceData, deviceDefinitionID, deviceStyleID, privilegeIDs)
 }
-
-// PrepareDeviceStatusInformationV2 mock
-func (m *MockDeviceStatusService) PrepareDeviceStatusInformationV2(ctx context.Context, deviceData models.UserDeviceDatumSlice, deviceDefinitionID string, deviceStyleID *string, privilegeIDs []int64) response.Device {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PrepareDeviceStatusInformationV2", ctx, deviceData, deviceDefinitionID, deviceStyleID, privilegeIDs)
-	ret0, _ := ret[0].(response.Device)
-	return ret0
-}
-
-// PrepareDeviceStatusInformationV2 indicates an expected call of PrepareDeviceStatusInformation.
-func (mr *MockDeviceStatusServiceMockRecorder) PrepareDeviceStatusInformationV2(ctx, deviceData, deviceDefinitionID, deviceStyleID, privilegeIDs interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PrepareDeviceStatusInformationV2", reflect.TypeOf((*MockDeviceStatusService)(nil).PrepareDeviceStatusInformationV2), ctx, deviceData, deviceDefinitionID, deviceStyleID, privilegeIDs)
-}
