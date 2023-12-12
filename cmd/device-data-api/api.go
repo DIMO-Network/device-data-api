@@ -108,16 +108,12 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 
 	udMw := owner.New(usersClient, deviceAPIService, &logger)
 	v1Auth := app.Group("/v1", jwtAuth)
-	v2Auth := app.Group("/v2", jwtAuth)
 
 	udOwner := v1Auth.Group("/user/device-data/:userDeviceID", udMw)
 	udOwner.Get("/status", cacheHandler, deviceDataController.GetUserDeviceStatus)
 	udOwner.Get("/historical", cacheHandler, deviceDataController.GetHistoricalRaw)
 	udOwner.Get("/distance-driven", cacheHandler, deviceDataController.GetDistanceDriven)
 	udOwner.Get("/daily-distance", cacheHandler, deviceDataController.GetDailyDistance)
-
-	udOwnerV2 := v2Auth.Group("/user/device-data/:userDeviceID", udMw)
-	udOwnerV2.Get("/status", cacheHandler, deviceDataController.GetUserDeviceStatusV2)
 
 	dataDownloadController, err := controllers.NewDataDownloadController(settings, &logger, esClient8, deviceAPIService)
 	if err != nil {
