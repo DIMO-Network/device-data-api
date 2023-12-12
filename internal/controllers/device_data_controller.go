@@ -604,7 +604,7 @@ func (d *DeviceDataController) GetVehicleStatus(c *fiber.Ctx) error {
 // @Produce     json
 // @Success     200 {object} response.Device
 // @Failure     404
-// @Router      /vehicle/{tokenId}/status [get]
+// @Router      /v2/vehicle/{tokenId}/status [get]
 func (d *DeviceDataController) GetVehicleStatusV2(c *fiber.Ctx) error {
 	tis := c.Params("tokenID")
 	claims := c.Locals("tokenClaims").(pr.CustomClaims)
