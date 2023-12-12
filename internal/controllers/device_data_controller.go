@@ -54,6 +54,10 @@ const (
 	AllTimeLocation int64 = 4
 )
 
+type historyResp struct {
+	Status []interface{} `json:"statuses"`
+}
+
 // NewDeviceDataController constructor
 func NewDeviceDataController(settings *config.Settings, logger *zerolog.Logger, deviceAPIService services.DeviceAPIService, es8Client *es8.TypedClient, definitionsAPIService services.DeviceDefinitionsAPIService, deviceStatusSvc services.DeviceStatusService, dbs func() *db.ReaderWriter) DeviceDataController {
 	return DeviceDataController{
@@ -375,6 +379,15 @@ func (d *DeviceDataController) getHistoryV2(c *fiber.Ctx, userDevice *grpc.UserD
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
 	}
 
+	var resp historyResp
+	gjson.GetBytes(body, "aggregations.documents_by_hour.buckets").ForEach(func(key, v gjson.Result) bool {
+		gjson.Get(v.Raw, "select_single_doc.hits.hits").ForEach(func(key, value gjson.Result) bool {
+			resp.Status = append(resp.Status, value.Get("_source").Value())
+			return true
+		})
+		return true
+	})
+
 	// TODO: must be updated to work with modified query
 	// body, err = addRangeIfNotExists(c.Context(), d.definitionsAPI, body, userDevice.DeviceDefinitionId, userDevice.DeviceStyleId)
 	// if err != nil {
@@ -383,7 +396,7 @@ func (d *DeviceDataController) getHistoryV2(c *fiber.Ctx, userDevice *grpc.UserD
 	// body = removeOdometerIfInvalid(body)
 
 	c.Set("Content-Type", fiber.MIMEApplicationJSON)
-	return c.Status(fiber.StatusOK).Send(body)
+	return c.Status(fiber.StatusOK).JSON(resp)
 }
 
 // removeOdometerIfInvalid removes the odometer json properties we consider invalid
