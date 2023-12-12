@@ -31,9 +31,8 @@ type Device struct {
 	// VSS status data
 	Status Status `json:"status,omitempty"`
 	// Other
-	Misc            map[string]interface{} `json:"misc,omitempty"`
-	RecordUpdatedAt *time.Time             `json:"recordUpdatedAt,omitempty"`
-	RecordCreatedAt *time.Time             `json:"recordCreatedAt,omitempty"`
+	RecordUpdatedAt *time.Time `json:"recordUpdatedAt,omitempty"`
+	RecordCreatedAt *time.Time `json:"recordCreatedAt,omitempty"`
 }
 
 type Status struct {
@@ -157,7 +156,7 @@ type Status struct {
 	} `json:"vehicleIdentification,omitempty"`
 
 	// All data concerning steering, suspension, wheels, and brakes.
-	Chasis struct {
+	Chassis struct {
 		// Axle signals
 		Axle struct {
 			Row1 struct {
