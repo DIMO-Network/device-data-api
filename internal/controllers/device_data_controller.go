@@ -57,7 +57,7 @@ const (
 )
 
 type historyResp struct {
-	Status []interface{} `json:"statuses"`
+	Status []any `json:"statuses"`
 }
 
 // NewDeviceDataController constructor
@@ -363,6 +363,13 @@ func (d *DeviceDataController) getHistoryV2(c *fiber.Ctx, userDevice *grpc.UserD
 		Size: some.Int(0),
 	}
 
+	reqb, err := json.Marshal(req)
+	if err != nil {
+		return err
+	}
+
+	d.log.Info().RawJSON("request", reqb).Str("index", d.Settings.DeviceDataIndexNameV2).Msg("V2 request")
+
 	res, err := d.es8Client.Search().Index(d.Settings.DeviceDataIndexNameV2).Request(&req).Do(c.Context())
 	if err != nil {
 		return err
@@ -381,7 +388,7 @@ func (d *DeviceDataController) getHistoryV2(c *fiber.Ctx, userDevice *grpc.UserD
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
 	}
 
-	var resp historyResp
+	resp := historyResp{Status: []any{}}
 	gjson.GetBytes(body, "aggregations.documents_by_hour.buckets").ForEach(func(key, v gjson.Result) bool {
 		gjson.Get(v.Raw, "select_single_doc.hits.hits").ForEach(func(key, value gjson.Result) bool {
 			resp.Status = append(resp.Status, value.Get("_source").Value())
