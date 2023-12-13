@@ -92,6 +92,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 	app.Get("/v1/autopi/last-seen/:ethAddr", cacheHandler, deviceDataController.GetLastSeen)
 
 	vTokenV1 := app.Group("/v1/vehicle/:tokenID", privilegeAuth)
+	vTokenV2 := app.Group("/v2/vehicle/:tokenID", privilegeAuth)
 
 	tk := privilegetoken.New(privilegetoken.Config{
 		Log: &logger,
@@ -102,11 +103,12 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 	vTokenV1.Get("/history", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.AllTimeLocation}), cacheHandler, deviceDataController.GetHistoricalRawPermissioned)
 	vTokenV1.Get("/status", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.CurrentLocation, controllers.AllTimeLocation}), cacheHandler, deviceDataController.GetVehicleStatus)
 
-	vTokenV2 := app.Group("/v2/vehicle/:tokenID", privilegeAuth)
+	vTokenV2.Get("/status", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.CurrentLocation, controllers.AllTimeLocation}), cacheHandler, deviceDataController.GetVehicleStatusV2)
 	vTokenV2.Get("/history", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.AllTimeLocation}), cacheHandler, deviceDataController.GetHistoricalPermissionedV2)
 
-	v1Auth := app.Group("/v1", jwtAuth)
 	udMw := owner.New(usersClient, deviceAPIService, &logger)
+	v1Auth := app.Group("/v1", jwtAuth)
+
 	udOwner := v1Auth.Group("/user/device-data/:userDeviceID", udMw)
 	udOwner.Get("/status", cacheHandler, deviceDataController.GetUserDeviceStatus)
 	udOwner.Get("/historical", cacheHandler, deviceDataController.GetHistoricalRaw)

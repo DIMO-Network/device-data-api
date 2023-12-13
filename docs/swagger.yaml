@@ -1,4 +1,16 @@
 definitions:
+  github_com_DIMO-Network_device-data-api_internal_response.Device:
+    properties:
+      recordCreatedAt:
+        type: string
+      recordUpdatedAt:
+        description: Other
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/github_com_DIMO-Network_device-data-api_internal_response.Status'
+        description: VSS status data
+    type: object
   github_com_DIMO-Network_device-data-api_internal_response.DeviceSnapshot:
     properties:
       ambientTemp:
@@ -32,6 +44,304 @@ definitions:
       tirePressure:
         $ref: '#/definitions/smartcar.TirePressure'
     type: object
+  github_com_DIMO-Network_device-data-api_internal_response.Status:
+    properties:
+      chassis:
+        description: All data concerning steering, suspension, wheels, and brakes.
+        properties:
+          axle:
+            description: Axle signals
+            properties:
+              row1:
+                properties:
+                  wheel:
+                    description: Wheel signals for axle
+                    properties:
+                      left:
+                        description: Wheel signals for axle
+                        properties:
+                          left:
+                            description: Tire signals for wheel.
+                            properties:
+                              pressure:
+                                allOf:
+                                - $ref: '#/definitions/null.Float64'
+                                description: Tire pressure in kilo-Pascal.
+                            type: object
+                        type: object
+                      right:
+                        description: Wheel signals for axle
+                        properties:
+                          right:
+                            description: Tire signals for wheel.
+                            properties:
+                              pressure:
+                                allOf:
+                                - $ref: '#/definitions/null.Float64'
+                                description: Tire pressure in kilo-Pascal.
+                            type: object
+                        type: object
+                    type: object
+                type: object
+              row2:
+                properties:
+                  wheel:
+                    description: Wheel signals for axle
+                    properties:
+                      left:
+                        description: Wheel signals for axle
+                        properties:
+                          left:
+                            description: Tire signals for wheel.
+                            properties:
+                              pressure:
+                                allOf:
+                                - $ref: '#/definitions/null.Float64'
+                                description: Tire pressure in kilo-Pascal.
+                            type: object
+                        type: object
+                      right:
+                        description: Wheel signals for axle
+                        properties:
+                          right:
+                            description: Tire signals for wheel.
+                            properties:
+                              pressure:
+                                allOf:
+                                - $ref: '#/definitions/null.Float64'
+                                description: Tire pressure in kilo-Pascal.
+                            type: object
+                        type: object
+                    type: object
+                type: object
+            type: object
+        type: object
+      currentLocation:
+        properties:
+          altitude:
+            allOf:
+            - $ref: '#/definitions/null.Float64'
+            description: Current altitude relative to WGS 84 reference ellipsoid,
+              as measured at the position of GNSS receiver antenna.
+          latitude:
+            allOf:
+            - $ref: '#/definitions/null.Float64'
+            description: Current latitude of vehicle in WGS 84 geodetic coordinates,
+              as measured at the position of GNSS receiver antenna.
+          longitude:
+            allOf:
+            - $ref: '#/definitions/null.Float64'
+            description: Current longitude of vehicle in WGS 84 geodetic coordinates,
+              as measured at the position of GNSS receiver antenna.
+          timestamp:
+            allOf:
+            - $ref: '#/definitions/null.String'
+            description: Timestamp from GNSS system for current location, formatted
+              according to ISO 8601 with UTC time zone.
+        type: object
+      exterior:
+        description: Information about exterior measured by vehicle.
+        properties:
+          airTemperature:
+            allOf:
+            - $ref: '#/definitions/null.Float64'
+            description: Air temperature outside the vehicle.
+        type: object
+      fuelSystem:
+        description: Powertrain data for battery management, etc.
+        properties:
+          combustionEngine:
+            description: Engine-specific data, stopping at the bell housing.
+            properties:
+              ect:
+                allOf:
+                - $ref: '#/definitions/null.Float64'
+                description: Engine coolant temperature.
+              engineOilLevel:
+                allOf:
+                - $ref: '#/definitions/null.String'
+                description: 'Engine oil level. Must be one of: [''CRITICALLY_LOW'',
+                  ''LOW'', ''NORMAL'', ''HIGH'', ''CRITICALLY_HIGH'']'
+              speed:
+                allOf:
+                - $ref: '#/definitions/null.Float64'
+                description: Engine speed measured as rotations per minute.
+              tps:
+                allOf:
+                - $ref: '#/definitions/null.Float64'
+                description: Current throttle position.
+            type: object
+          fuelSystem:
+            description: Fuel system data.
+            properties:
+              level:
+                allOf:
+                - $ref: '#/definitions/null.Float64'
+                description: Level in fuel tank as percent of capacity. 0 = empty.
+                  100 = full.
+              range:
+                allOf:
+                - $ref: '#/definitions/null.Float64'
+                description: Remaining range in meters using only liquid fuel.
+              supportedFuel:
+                description: 'Detailed information on fuels supported by the vehicle.
+                  Identifiers originating from DIN EN 16942:2021-08, appendix B, with
+                  additional suffix for octane (RON) where relevant. RON 95 is sometimes
+                  referred to as Super, RON 98 as Super Plus. Must be one of: [''E5_95'',
+                  ''E5_98'', ''E10_95'', ''E10_98'', ''E85'', ''B7'', ''B10'', ''B20'',
+                  ''B30'', ''B100'', ''XTL'', ''LPG'', ''CNG'', ''LNG'', ''H2'', ''OTHER'']'
+                items:
+                  $ref: '#/definitions/null.String'
+                type: array
+              supportedFuelTypes:
+                description: 'High level information of fuel types supported If a
+                  vehicle also has an electric drivetrain (e.g. hybrid) that will
+                  be obvious from the PowerTrain.Type signal. Must be one of: [''GASOLINE'',
+                  ''DIESEL'', ''E85'', ''LPG'', ''CNG'', ''LNG'', ''H2'', ''OTHER'']'
+                items:
+                  $ref: '#/definitions/null.String'
+                type: array
+            type: object
+          range:
+            allOf:
+            - $ref: '#/definitions/null.Float64'
+            description: Remaining range in meters using all energy sources available
+              in the vehicle.
+          tractionBattery:
+            description: Battery Management data.
+            properties:
+              charging:
+                description: Properties related to battery charging.
+                properties:
+                  chargeLimit:
+                    allOf:
+                    - $ref: '#/definitions/null.Float64'
+                    description: Target charge limit (state of charge) for battery.
+                  isCharging:
+                    allOf:
+                    - $ref: '#/definitions/null.Bool'
+                    description: True if charging is ongoing. Charging is considered
+                      to be ongoing if energy is flowing from charger to vehicle.
+                type: object
+              grossCapacity:
+                allOf:
+                - $ref: '#/definitions/null.Float64'
+                description: Gross capacity of the battery.
+              netCapacity:
+                allOf:
+                - $ref: '#/definitions/null.Float64'
+                description: Total net capacity of the battery considering aging.
+              range:
+                allOf:
+                - $ref: '#/definitions/null.Float64'
+                description: Remaining range in meters using only battery.
+              stateOfCharge:
+                description: Information on the state of charge of the vehicle's high
+                  voltage battery.
+                properties:
+                  current:
+                    allOf:
+                    - $ref: '#/definitions/null.Float64'
+                    description: Physical state of charge of the high voltage battery,
+                      relative to net capacity. This is not necessarily the state
+                      of charge being displayed to the customer.
+                  displayed:
+                    allOf:
+                    - $ref: '#/definitions/null.Float64'
+                    description: State of charge displayed to the customer.
+                type: object
+            type: object
+          transmission:
+            description: Transmission-specific data, stopping at the drive shafts.
+            properties:
+              travelledDistance:
+                allOf:
+                - $ref: '#/definitions/null.Float64'
+                description: Odometer reading, total distance travelled during the
+                  lifetime of the transmission.
+            type: object
+          type:
+            allOf:
+            - $ref: '#/definitions/null.String'
+            description: 'Defines the powertrain type of the vehicle. For vehicles
+              with a combustion engine (including hybrids) more detailed information
+              on fuels supported can be found in FuelSystem.SupportedFuelTypes and
+              FuelSystem.SupportedFuels. Must be one of: [''COMBUSTION'', ''HYBRID'',
+              ''ELECTRIC'']'
+        type: object
+      lowVoltageBattery:
+        description: Signals related to low voltage battery.
+        properties:
+          currentVoltage:
+            allOf:
+            - $ref: '#/definitions/null.Float64'
+            description: Current Voltage of the low voltage battery.
+        type: object
+      obd:
+        description: OBD data.
+        properties:
+          barometricPressure:
+            allOf:
+            - $ref: '#/definitions/null.Float64'
+            description: PID 33 - Barometric pressure
+          engineLoad:
+            allOf:
+            - $ref: '#/definitions/null.Float64'
+            description: PID 04 - Engine load in percent - 0 = no load, 100 = full
+              load
+          engineSpeed:
+            allOf:
+            - $ref: '#/definitions/null.Float64'
+            description: PID 0C - Engine speed measured as rotations per minute
+          fuelType:
+            allOf:
+            - $ref: '#/definitions/null.String'
+            description: PID 51 - Fuel type
+          intakeTemp:
+            allOf:
+            - $ref: '#/definitions/null.Float64'
+            description: PID 0F - Intake temperature
+          runTime:
+            allOf:
+            - $ref: '#/definitions/null.Float64'
+            description: PID 1F - Engine run time
+          throttlePosition:
+            allOf:
+            - $ref: '#/definitions/null.Float64'
+            description: PID 11 - Throttle position - 0 = closed throttle, 100 = open
+              throttle
+        type: object
+      speed:
+        allOf:
+        - $ref: '#/definitions/null.Float64'
+        description: Vehicle speed.
+      travelledDistance:
+        allOf:
+        - $ref: '#/definitions/null.Float64'
+        description: Odometer reading, total distance travelled during the lifetime
+          of the vehicle.
+      vehicleIdentification:
+        description: Attributes that identify a vehicle.
+        properties:
+          brand:
+            allOf:
+            - $ref: '#/definitions/null.String'
+            description: Vehicle brand or manufacturer.
+          model:
+            allOf:
+            - $ref: '#/definitions/null.String'
+            description: Vehicle model.
+          vin:
+            allOf:
+            - $ref: '#/definitions/null.String'
+            description: 17-character Vehicle Identification Number (VIN) as defined
+              by ISO 3779.
+          year:
+            allOf:
+            - $ref: '#/definitions/null.Int64'
+            description: Model year of the vehicle.
+        type: object
+    type: object
   internal_controllers.DailyDistanceDay:
     properties:
       date:
@@ -45,6 +355,34 @@ definitions:
         items:
           $ref: '#/definitions/internal_controllers.DailyDistanceDay'
         type: array
+    type: object
+  null.Bool:
+    properties:
+      bool:
+        type: boolean
+      valid:
+        type: boolean
+    type: object
+  null.Float64:
+    properties:
+      float64:
+        type: number
+      valid:
+        type: boolean
+    type: object
+  null.Int64:
+    properties:
+      int64:
+        type: integer
+      valid:
+        type: boolean
+    type: object
+  null.String:
+    properties:
+      string:
+        type: string
+      valid:
+        type: boolean
     type: object
   smartcar.TirePressure:
     properties:
@@ -294,6 +632,27 @@ paths:
           description: OK
       security:
       - BearerAuth: []
+      tags:
+      - device-data
+  /v2/vehicle/{tokenId}/status:
+    get:
+      description: Returns the latest status update for the vehicle with a given token
+        id.
+      parameters:
+      - description: token id
+        in: path
+        name: tokenId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_DIMO-Network_device-data-api_internal_response.Device'
+        "404":
+          description: Not Found
       tags:
       - device-data
 securityDefinitions:

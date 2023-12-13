@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/volatiletech/null/v8"
 	"golang.org/x/exp/slices"
 
 	"database/sql"
@@ -16,6 +17,7 @@ import (
 	"time"
 
 	"github.com/DIMO-Network/device-data-api/internal/config"
+	"github.com/DIMO-Network/device-data-api/internal/response"
 	_ "github.com/DIMO-Network/device-data-api/internal/response" // needed for swagger gen
 	"github.com/DIMO-Network/device-data-api/internal/services"
 	"github.com/DIMO-Network/device-data-api/models"
@@ -537,6 +539,104 @@ func (d *DeviceDataController) GetVehicleStatus(c *fiber.Ctx) error {
 		userDeviceNFT.DeviceStyleId, privileges)
 
 	return c.JSON(ds)
+}
+
+// GetVehicleStatusV2 godoc
+// @Description Returns the latest status update for the vehicle with a given token id.
+// @Tags        device-data
+// @Param       tokenId path int true "token id"
+// @Produce     json
+// @Success     200 {object} response.Device
+// @Failure     404
+// @Router      /v2/vehicle/{tokenId}/status [get]
+func (d *DeviceDataController) GetVehicleStatusV2(c *fiber.Ctx) error {
+	claims := c.Locals("tokenClaims").(pr.CustomClaims)
+	privileges := claims.PrivilegeIDs
+
+	tokenIDStr := c.Params("tokenID")
+	tokenID, err := strconv.ParseInt(tokenIDStr, 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Couldn't parse token id %q.", tokenIDStr))
+	}
+
+	//tid := pgtypes.NewNullDecimal(new(decimal.Big).SetBigMantScale(ti, 0))
+	userDeviceNFT, err := d.deviceAPI.GetUserDeviceByTokenID(c.Context(), tokenID)
+	if err != nil {
+		return err
+	}
+
+	if userDeviceNFT == nil {
+		return fiber.NewError(fiber.StatusNotFound, "NFT not found.")
+	}
+
+	deviceData, err := models.UserDeviceData(
+		models.UserDeviceDatumWhere.UserDeviceID.EQ(userDeviceNFT.Id),
+		models.UserDeviceDatumWhere.Signals.IsNotNull(),
+		models.UserDeviceDatumWhere.UpdatedAt.GT(time.Now().Add(-90*24*time.Hour)),
+	).All(c.Context(), d.dbs().Reader)
+	if err != nil {
+		return err
+	}
+
+	if len(deviceData) == 0 {
+		return fiber.NewError(fiber.StatusNotFound, "No status updates yet.")
+	}
+
+	ds := d.deviceStatusSvc.PrepareDeviceStatusInformation(c.Context(), deviceData, userDeviceNFT.DeviceDefinitionId, userDeviceNFT.DeviceStyleId, privileges)
+
+	var dsv2 response.Device
+	dsv2.RecordCreatedAt = ds.RecordCreatedAt
+	dsv2.RecordUpdatedAt = ds.RecordUpdatedAt
+	dsv2.Status.PowerTrain.TractionBattery.Charging.IsCharging = null.BoolFromPtr(ds.Charging)
+	dsv2.Status.PowerTrain.FuelSystem.Level = null.Float64FromPtr(ds.FuelPercentRemaining)
+
+	if ds.BatteryCapacity != nil {
+		dsv2.Status.PowerTrain.TractionBattery.GrossCapacity = null.Float64From(float64(*ds.BatteryCapacity))
+	}
+
+	if ds.OilLevel != nil {
+		switch ol := *ds.OilLevel; {
+		case ol > 0.75:
+			dsv2.Status.PowerTrain.CombustionEngine.EngineOilLevel = null.StringFrom("CRITICALLY_HIGH")
+		case ol >= 0.5:
+			dsv2.Status.PowerTrain.CombustionEngine.EngineOilLevel = null.StringFrom("NORMAL")
+		case ol > 0.25:
+			dsv2.Status.PowerTrain.CombustionEngine.EngineOilLevel = null.StringFrom("LOW_NORMAL")
+		default:
+			dsv2.Status.PowerTrain.CombustionEngine.EngineOilLevel = null.StringFrom("CRITICALLY_LOW")
+		}
+	}
+
+	dsv2.Status.PowerTrain.TractionBattery.StateOfCharge.Displayed = multNull(null.Float64FromPtr(ds.StateOfCharge), 100)
+	dsv2.Status.PowerTrain.TractionBattery.StateOfCharge.Current = multNull(null.Float64FromPtr(ds.StateOfCharge), 100)
+	dsv2.Status.PowerTrain.TractionBattery.Charging.ChargeLimit = multNull(null.Float64FromPtr(ds.ChargeLimit), 100)
+
+	dsv2.Status.TravelledDistance = null.Float64FromPtr(ds.Odometer)
+	dsv2.Status.PowerTrain.Transmission.TravelledDistance = null.Float64FromPtr(ds.Odometer)
+	dsv2.Status.PowerTrain.Range = null.Float64FromPtr(ds.Range)
+	dsv2.Status.PowerTrain.FuelSystem.Range = null.Float64FromPtr(ds.Range)
+	dsv2.Status.LowVoltageBattery.CurrentVoltage = null.Float64FromPtr(ds.BatteryVoltage)
+	dsv2.Status.Exterior.AirTemperature = null.Float64FromPtr(ds.AmbientTemp)
+
+	if ds.TirePressure != nil {
+		dsv2.Status.Chassis.Axle.Row1.Wheel.Left.Tire.Pressure = null.Float64From(ds.TirePressure.FrontLeft)
+		dsv2.Status.Chassis.Axle.Row1.Wheel.Right.Tire.Pressure = null.Float64From(ds.TirePressure.FrontRight)
+		dsv2.Status.Chassis.Axle.Row2.Wheel.Left.Tire.Pressure = null.Float64From(ds.TirePressure.BackLeft)
+		dsv2.Status.Chassis.Axle.Row2.Wheel.Right.Tire.Pressure = null.Float64From(ds.TirePressure.BackRight)
+	}
+
+	dsv2.Status.CurrentLocation.Timestamp = null.StringFrom(ds.RecordUpdatedAt.Format(time.RFC3339))
+	dsv2.Status.CurrentLocation.Latitude = null.Float64FromPtr(ds.Latitude)
+	dsv2.Status.CurrentLocation.Longitude = null.Float64FromPtr(ds.Longitude)
+
+	return c.JSON(dsv2)
+}
+
+func multNull(x null.Float64, y float64) null.Float64 {
+	if !x.Valid {
+		return x
+	}
+	return null.Float64From(x.Float64 * y)
 }
 
 type odomValue struct {
