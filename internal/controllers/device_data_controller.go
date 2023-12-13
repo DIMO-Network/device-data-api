@@ -602,7 +602,6 @@ func (d *DeviceDataController) GetVehicleStatusV2(c *fiber.Ctx) error {
 	dsv2.Status.PowerTrain.Transmission.TravelledDistance = null.Float64FromPtr(ds.Odometer)
 	dsv2.Status.PowerTrain.Range = null.Float64FromPtr(ds.Range)
 	dsv2.Status.PowerTrain.FuelSystem.Range = null.Float64FromPtr(ds.Range)
-	dsv2.Status.PowerTrain.TractionBattery.Range = null.Float64FromPtr(ds.Range)
 	dsv2.Status.LowVoltageBattery.CurrentVoltage = null.Float64FromPtr(ds.BatteryVoltage)
 	dsv2.Status.Exterior.AirTemperature = null.Float64FromPtr(ds.AmbientTemp)
 
