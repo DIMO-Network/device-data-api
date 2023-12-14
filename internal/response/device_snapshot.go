@@ -37,47 +37,47 @@ type Device struct {
 
 type Status struct {
 	// Odometer reading, total distance travelled during the lifetime of the vehicle.
-	TravelledDistance null.Float64 `json:"travelledDistance,omitempty"`
+	TravelledDistance null.Float64 `json:"travelledDistance,omitempty" swaggertype:"number"`
 	// Vehicle speed.
-	Speed           null.Float64 `json:"speed,omitempty"`
+	Speed           null.Float64 `json:"speed,omitempty" swaggertype:"number"`
 	CurrentLocation struct {
 		// Current altitude relative to WGS 84 reference ellipsoid, as measured at the position of GNSS receiver antenna.
-		Altitude null.Float64 `json:"altitude,omitempty"`
+		Altitude null.Float64 `json:"altitude,omitempty" swaggertype:"number"`
 		// Current latitude of vehicle in WGS 84 geodetic coordinates, as measured at the position of GNSS receiver antenna.
-		Latitude null.Float64 `json:"latitude,omitempty"`
+		Latitude null.Float64 `json:"latitude,omitempty" swaggertype:"number"`
 		// Current longitude of vehicle in WGS 84 geodetic coordinates, as measured at the position of GNSS receiver antenna.
-		Longitude null.Float64 `json:"longitude,omitempty"`
+		Longitude null.Float64 `json:"longitude,omitempty" swaggertype:"number"`
 		// Timestamp from GNSS system for current location, formatted according to ISO 8601 with UTC time zone.
-		Timestamp null.String `json:"timestamp,omitempty"`
+		Timestamp null.String `json:"timestamp,omitempty" swaggertype:"string"`
 	} `json:"currentLocation"`
 	// Information about exterior measured by vehicle.
 	Exterior struct {
 		// Air temperature outside the vehicle.
-		AirTemperature null.Float64 `json:"airTemperature,omitempty"`
+		AirTemperature null.Float64 `json:"airTemperature,omitempty" swaggertype:"number"`
 	} `json:"exterior,omitempty"`
 
 	// Signals related to low voltage battery.
 	LowVoltageBattery struct {
 		// Current Voltage of the low voltage battery.
-		CurrentVoltage null.Float64 `json:"currentVoltage,omitempty"`
+		CurrentVoltage null.Float64 `json:"currentVoltage,omitempty" swaggertype:"number"`
 	} `json:"lowVoltageBattery,omitempty"`
 
 	// OBD data.
 	OBD struct {
 		// PID 33 - Barometric pressure
-		BarometricPressure null.Float64 `json:"barometricPressure,omitempty"`
+		BarometricPressure null.Float64 `json:"barometricPressure,omitempty" swaggertype:"number"`
 		// PID 04 - Engine load in percent - 0 = no load, 100 = full load
-		EngineLoad null.Float64 `json:"engineLoad,omitempty"`
+		EngineLoad null.Float64 `json:"engineLoad,omitempty" swaggertype:"number"`
 		// PID 0C - Engine speed measured as rotations per minute
-		EngineSpeed null.Float64 `json:"engineSpeed,omitempty"`
+		EngineSpeed null.Float64 `json:"engineSpeed,omitempty" swaggertype:"number"`
 		// PID 51 - Fuel type
-		FuelType null.String `json:"fuelType,omitempty"`
+		FuelType null.String `json:"fuelType,omitempty" swaggertype:"string"`
 		// PID 0F - Intake temperature
-		IntakeTemp null.Float64 `json:"intakeTemp,omitempty"`
+		IntakeTemp null.Float64 `json:"intakeTemp,omitempty" swaggertype:"number"`
 		// PID 1F - Engine run time
-		RunTime null.Float64 `json:"runTime,omitempty"`
+		RunTime null.Float64 `json:"runTime,omitempty" swaggertype:"number"`
 		// PID 11 - Throttle position - 0 = closed throttle, 100 = open throttle
-		ThrottlePosition null.Float64 `json:"throttlePosition,omitempty"`
+		ThrottlePosition null.Float64 `json:"throttlePosition,omitempty" swaggertype:"number"`
 	} `json:"obd,omitempty"`
 
 	// Powertrain data for battery management, etc.
@@ -85,74 +85,74 @@ type Status struct {
 		// Battery Management data.
 		TractionBattery struct {
 			// Gross capacity of the battery.
-			GrossCapacity null.Float64 `json:"grossCapacity,omitempty"`
+			GrossCapacity null.Float64 `json:"grossCapacity,omitempty" swaggertype:"number"`
 			// Total net capacity of the battery considering aging.
-			NetCapacity null.Float64 `json:"netCapacity,omitempty"`
+			NetCapacity null.Float64 `json:"netCapacity,omitempty" swaggertype:"number"`
 			// Properties related to battery charging.
 			Charging struct {
 				// Target charge limit (state of charge) for battery.
-				ChargeLimit null.Float64 `json:"chargeLimit,omitempty"`
+				ChargeLimit null.Float64 `json:"chargeLimit,omitempty" swaggertype:"number"`
 				// True if charging is ongoing. Charging is considered to be ongoing if energy is flowing from charger to vehicle.
-				IsCharging null.Bool `json:"isCharging,omitempty"`
+				IsCharging null.Bool `json:"isCharging,omitempty" swaggertype:"boolean"`
 			} `json:"charging,omitempty"`
 			// Remaining range in meters using only battery.
-			Range null.Float64 `json:"range,omitempty"`
+			Range null.Float64 `json:"range,omitempty" swaggertype:"number"`
 			// Information on the state of charge of the vehicle's high voltage battery.
 			StateOfCharge struct {
 				// Physical state of charge of the high voltage battery, relative to net capacity. This is not necessarily the state of charge being displayed to the customer.
-				Current null.Float64 `json:"current,omitempty"`
+				Current null.Float64 `json:"current,omitempty" swaggertype:"number"`
 				// State of charge displayed to the customer.
-				Displayed null.Float64 `json:"displayed,omitempty"`
+				Displayed null.Float64 `json:"displayed,omitempty" swaggertype:"number"`
 			} `json:"stateOfCharge,omitempty"`
 		} `json:"tractionBattery,omitempty"`
 
 		// Engine-specific data, stopping at the bell housing.
 		CombustionEngine struct {
 			// Engine coolant temperature.
-			ECT null.Float64 `json:"ect,omitempty"`
+			ECT null.Float64 `json:"ect,omitempty" swaggertype:"number"`
 			// Engine oil level. Must be one of: ['CRITICALLY_LOW', 'LOW', 'NORMAL', 'HIGH', 'CRITICALLY_HIGH']
-			EngineOilLevel null.String `json:"engineOilLevel,omitempty"`
+			EngineOilLevel null.String `json:"engineOilLevel,omitempty" swaggertype:"string"`
 			// Engine speed measured as rotations per minute.
-			Speed null.Float64 `json:"speed,omitempty"`
+			Speed null.Float64 `json:"speed,omitempty" swaggertype:"number"`
 			// Current throttle position.
-			TPS null.Float64 `json:"tps,omitempty"`
+			TPS null.Float64 `json:"tps,omitempty" swaggertype:"number"`
 		} `json:"combustionEngine,omitempty"`
 
 		// Transmission-specific data, stopping at the drive shafts.
 		Transmission struct {
 			// Odometer reading, total distance travelled during the lifetime of the transmission.
-			TravelledDistance null.Float64 `json:"travelledDistance,omitempty"`
+			TravelledDistance null.Float64 `json:"travelledDistance,omitempty" swaggertype:"number"`
 		} `json:"transmission,omitempty"`
 
 		// Defines the powertrain type of the vehicle. For vehicles with a combustion engine (including hybrids) more detailed information on fuels supported can be found in FuelSystem.SupportedFuelTypes and FuelSystem.SupportedFuels. Must be one of: ['COMBUSTION', 'HYBRID', 'ELECTRIC']
-		Type null.String `json:"type,omitempty"`
+		Type null.String `json:"type,omitempty" swaggertype:"string"`
 
 		// Fuel system data.
 		FuelSystem struct {
 			// Detailed information on fuels supported by the vehicle. Identifiers originating from DIN EN 16942:2021-08, appendix B, with additional suffix for octane (RON) where relevant. RON 95 is sometimes referred to as Super, RON 98 as Super Plus. Must be one of: ['E5_95', 'E5_98', 'E10_95', 'E10_98', 'E85', 'B7', 'B10', 'B20', 'B30', 'B100', 'XTL', 'LPG', 'CNG', 'LNG', 'H2', 'OTHER']
-			SupportedFuel []null.String `json:"supportedFuel,omitempty"`
+			SupportedFuel []null.String `json:"supportedFuel,omitempty" swaggertype:"string"`
 			// High level information of fuel types supported If a vehicle also has an electric drivetrain (e.g. hybrid) that will be obvious from the PowerTrain.Type signal. Must be one of: ['GASOLINE', 'DIESEL', 'E85', 'LPG', 'CNG', 'LNG', 'H2', 'OTHER']
-			SupportedFuelTypes []null.String `json:"supportedFuelTypes,omitempty"`
+			SupportedFuelTypes []null.String `json:"supportedFuelTypes,omitempty" swaggertype:"string"`
 			// Level in fuel tank as percent of capacity. 0 = empty. 100 = full.
-			Level null.Float64 `json:"level,omitempty"`
+			Level null.Float64 `json:"level,omitempty" swaggertype:"number"`
 			// Remaining range in meters using only liquid fuel.
-			Range null.Float64 `json:"range,omitempty"`
+			Range null.Float64 `json:"range,omitempty" swaggertype:"number"`
 		} `json:"fuelSystem,omitempty"`
 
 		// Remaining range in meters using all energy sources available in the vehicle.
-		Range null.Float64 `json:"range,omitempty"`
+		Range null.Float64 `json:"range,omitempty" swaggertype:"number"`
 	} `json:"fuelSystem,omitempty"`
 
 	// Attributes that identify a vehicle.
 	VehicleIdentification struct {
 		// Vehicle brand or manufacturer.
-		Brand null.String `json:"brand,omitempty"`
+		Brand null.String `json:"brand,omitempty" swaggertype:"string"`
 		// Vehicle model.
-		Model null.String `json:"model,omitempty"`
+		Model null.String `json:"model,omitempty" swaggertype:"string"`
 		// 17-character Vehicle Identification Number (VIN) as defined by ISO 3779.
-		VIN null.String `json:"vin,omitempty"`
+		VIN null.String `json:"vin,omitempty" swaggertype:"string"`
 		// Model year of the vehicle.
-		Year null.Int64 `json:"year,omitempty"`
+		Year null.Int64 `json:"year,omitempty" swaggertype:"number"`
 	} `json:"vehicleIdentification,omitempty"`
 
 	// All data concerning steering, suspension, wheels, and brakes.
@@ -167,7 +167,7 @@ type Status struct {
 						// Tire signals for wheel.
 						Tire struct {
 							// Tire pressure in kilo-Pascal.
-							Pressure null.Float64 `json:"pressure,omitempty"`
+							Pressure null.Float64 `json:"pressure,omitempty" swaggertype:"number"`
 						} `json:"left,omitempty"`
 					} `json:"left,omitempty"`
 					// Wheel signals for axle
@@ -175,7 +175,7 @@ type Status struct {
 						// Tire signals for wheel.
 						Tire struct {
 							// Tire pressure in kilo-Pascal.
-							Pressure null.Float64 `json:"pressure,omitempty"`
+							Pressure null.Float64 `json:"pressure,omitempty" swaggertype:"number"`
 						} `json:"right,omitempty"`
 					} `json:"right,omitempty"`
 				} `json:"wheel,omitempty"`
@@ -188,7 +188,7 @@ type Status struct {
 						// Tire signals for wheel.
 						Tire struct {
 							// Tire pressure in kilo-Pascal.
-							Pressure null.Float64 `json:"pressure,omitempty"`
+							Pressure null.Float64 `json:"pressure,omitempty" swaggertype:"number"`
 						} `json:"left,omitempty"`
 					} `json:"left,omitempty"`
 					// Wheel signals for axle
@@ -196,7 +196,7 @@ type Status struct {
 						// Tire signals for wheel.
 						Tire struct {
 							// Tire pressure in kilo-Pascal.
-							Pressure null.Float64 `json:"pressure,omitempty"`
+							Pressure null.Float64 `json:"pressure,omitempty" swaggertype:"number"`
 						} `json:"right,omitempty"`
 					} `json:"right,omitempty"`
 				} `json:"wheel,omitempty"`
