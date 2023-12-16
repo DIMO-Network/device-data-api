@@ -85,7 +85,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 		JWKSetURLs: []string{settings.TokenExchangeJWTKeySetURL},
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			logger.Err(err).Msg("Privilege token error.")
-			return fiber.DefaultErrorHandler(c, err)
+			return fiber.NewError(fiber.StatusUnauthorized, "Invalid privilege token.")
 		},
 	})
 	// autopi specific endpoint,
