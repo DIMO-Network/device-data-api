@@ -548,6 +548,67 @@ func (d *DeviceDataController) GetVehicleStatus(c *fiber.Ctx) error {
 	return c.JSON(ds)
 }
 
+// GetVehicleRawStatus godoc
+// @Description Returns the latest status update for the vehicle with a given token id.
+// @Tags        device-data
+// @Param       tokenId path int true "token id"
+// @Produce     json
+// @Success     200 {object} response.DeviceSnapshot
+// @Failure     404
+// @Router      /v1/vehicle/{tokenId}/status-raw [get]
+func (d *DeviceDataController) GetVehicleRawStatus(c *fiber.Ctx) error {
+	tis := c.Params("tokenID")
+	claims := c.Locals("tokenClaims").(pr.CustomClaims)
+
+	if !slices.Contains(claims.PrivilegeIDs, NonLocationData) {
+		return c.JSON([]interface{}{})
+	}
+
+	ti, ok := new(big.Int).SetString(tis, 10)
+	if !ok {
+		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Couldn't parse token id %q.", tis))
+	}
+
+	//tid := pgtypes.NewNullDecimal(new(decimal.Big).SetBigMantScale(ti, 0))
+	userDeviceNFT, err := d.deviceAPI.GetUserDeviceByTokenID(c.Context(), ti.Int64())
+	if err != nil {
+		d.log.Err(err).Msg("grpc error retrieving NFT metadata.")
+		return err
+	}
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fiber.NewError(fiber.StatusNotFound, "NFT not found.")
+		}
+		d.log.Err(err).Str("token_id", tis).Msg("Database error retrieving NFT metadata or NFT not found")
+		return err
+	}
+
+	if userDeviceNFT == nil {
+		return fiber.NewError(fiber.StatusNotFound, "NFT not found.")
+	}
+
+	deviceData, err := models.UserDeviceData(
+		models.UserDeviceDatumWhere.UserDeviceID.EQ(userDeviceNFT.Id),
+		models.UserDeviceDatumWhere.Signals.IsNotNull(),
+		models.UserDeviceDatumWhere.UpdatedAt.GT(time.Now().Add(-90*24*time.Hour)),
+	).All(c.Context(), d.dbs().Reader)
+	if errors.Is(err, sql.ErrNoRows) || len(deviceData) == 0 {
+		return fiber.NewError(fiber.StatusNotFound, "no status updates yet")
+	}
+	if err != nil {
+		return err
+	}
+
+	result := make([]interface{}, len(deviceData))
+
+	for i, item := range deviceData {
+		result[i] = item.Signals.JSON
+	}
+
+	return c.JSON(result)
+}
+
 // GetVehicleStatusV2 godoc
 // @Description Returns the latest status update for the vehicle with a given token id.
 // @Tags        device-data

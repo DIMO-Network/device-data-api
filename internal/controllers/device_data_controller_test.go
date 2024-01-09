@@ -218,6 +218,77 @@ func TestUserDevicesController_GetUserDeviceStatus(t *testing.T) {
 	})
 }
 
+func TestUserDevicesController_GetVehicleStatusRaw(t *testing.T) {
+	// arrange global db and route setup
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	logger := zerolog.New(os.Stdout).With().
+		Timestamp().
+		Str("app", "devices-api").
+		Logger()
+
+	ctx := context.Background()
+	pdb, container := test.StartContainerDatabase(ctx, t, migrationsDirRelPath)
+	defer func() {
+		if err := container.Terminate(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	deviceSvc := mock_services.NewMockDeviceAPIService(mockCtrl)
+	deviceDefSvc := mock_services.NewMockDeviceDefinitionsAPIService(mockCtrl)
+	deviceStatusSvc := mock_services.NewMockDeviceStatusService(mockCtrl)
+
+	testUserID := "123123"
+	c := NewDeviceDataController(&config.Settings{Port: "3000"}, &logger, deviceSvc, nil, deviceDefSvc, deviceStatusSvc, pdb.DBS)
+	app := fiber.New()
+	app.Get("/vehicle/:tokenId/status-raw", test.AuthInjectorTestHandler(testUserID), c.GetUserDeviceStatus)
+
+	t.Run("GET - device raw status", func(t *testing.T) {
+		// arrange db, insert some user_devices
+		autoPiInteg := test.BuildIntegrationGRPC(constants.AutoPiVendor, 10, 0)
+		smartCarInt := test.BuildIntegrationGRPC(constants.SmartCarVendor, 0, 0)
+		dd := test.BuildDeviceDefinitionGRPC(ksuid.New().String(), "Ford", "Mach E", 2020, autoPiInteg)
+		udID := ksuid.New().String()
+		deviceSvc.EXPECT().GetUserDevice(gomock.Any(), udID).Times(1).Return(&dagrpc.UserDevice{
+			Id:                 udID,
+			DeviceDefinitionId: dd[0].DeviceDefinitionId,
+			UserId:             testUserID,
+		}, nil)
+
+		smartCarData := models.UserDeviceDatum{
+			UserDeviceID: udID,
+			Signals: null.JSONFrom([]byte(`{"oil": {"value": 0.6859999895095825, "timestamp": "2023-04-27T14:57:37Z"}, 
+				"range": {"value": 187.79, "timestamp": "2023-04-27T14:57:37Z"}, 
+				"tires": {"value":{"backLeft": 244, "backRight": 280, "frontLeft": 244, "frontRight": 252}, "timestamp": "2023-04-27T14:57:37Z"}, 
+				"charging": {"value":false, "timestamp": "2023-04-27T14:57:37Z"}, 
+				"latitude": {"value":33.675048828125, "timestamp": "2023-04-27T14:57:37Z"}, 
+				"odometer": {"value":195677.59375, "timestamp": "2023-04-27T14:57:37Z"}, 
+				"longitude": {"value":-117.85894775390625, "timestamp": "2023-04-27T14:57:37Z"}
+				}`)),
+			CreatedAt:           time.Now().Add(time.Minute * -5),
+			UpdatedAt:           time.Now().Add(time.Minute * -5),
+			LastLocationEventAt: null.TimeFrom(time.Now().Add(time.Minute * -5)),
+			LastOdb2EventAt:     null.TimeFrom(time.Now().Add(time.Minute * -5)),
+			IntegrationID:       smartCarInt.Id,
+		}
+		err := smartCarData.Insert(ctx, pdb.DBS().Writer, boil.Infer())
+		assert.NoError(t, err)
+
+		request := test.BuildRequest("GET", "/vehicle/"+udID+"/status-raw", "")
+		response, _ := app.Test(request)
+		body, _ := io.ReadAll(response.Body)
+
+		if assert.Equal(t, fiber.StatusOK, response.StatusCode) == false {
+			fmt.Println("response body: " + string(body))
+		}
+
+		//teardown
+		test.TruncateTables(pdb.DBS().Writer.DB, t)
+	})
+}
+
 func getPtrFloat(f float64) *float64 {
 	if f == 0 {
 		return nil
