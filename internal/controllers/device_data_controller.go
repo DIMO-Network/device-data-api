@@ -560,10 +560,6 @@ func (d *DeviceDataController) GetVehicleRawStatus(c *fiber.Ctx) error {
 	tis := c.Params("tokenID")
 	claims := c.Locals("tokenClaims").(pr.CustomClaims)
 
-	if !slices.Contains(claims.PrivilegeIDs, NonLocationData) {
-		return c.JSON([]interface{}{})
-	}
-
 	ti, ok := new(big.Int).SetString(tis, 10)
 	if !ok {
 		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Couldn't parse token id %q.", tis))
@@ -600,13 +596,35 @@ func (d *DeviceDataController) GetVehicleRawStatus(c *fiber.Ctx) error {
 		return err
 	}
 
-	result := make([]interface{}, len(deviceData))
+	var jsonSignal []byte
+	for _, item := range deviceData {
+		jsonSignal = dataComplianceForSignals(item.Signals.JSON, claims.PrivilegeIDs)
+		break
+	}
+	return c.Send(jsonSignal)
+}
 
-	for i, item := range deviceData {
-		result[i] = item.Signals.JSON
+func dataComplianceForSignals(json []byte, privilegeIDs []int64) []byte {
+	nonLocationDataProperties := []string{"charging", "fuelPercentRemaining", "batteryCapacity", "oil", "soc", "chargeLimit", "odometer", "range", "batteryVoltage", "ambientTemp", "tires"}
+	currentLocationAndAllTimeLocation := []string{"latitude", "longitude"}
+
+	removeProperties := func(properties []string) {
+		for _, property := range properties {
+			if result := gjson.GetBytes(json, property); result.Exists() {
+				json, _ = sjson.DeleteBytes(json, property)
+			}
+		}
 	}
 
-	return c.JSON(result)
+	if !slices.Contains(privilegeIDs, NonLocationData) {
+		removeProperties(nonLocationDataProperties)
+	}
+
+	if !slices.Contains(privilegeIDs, CurrentLocation) || slices.Contains(privilegeIDs, AllTimeLocation) {
+		removeProperties(currentLocationAndAllTimeLocation)
+	}
+
+	return json
 }
 
 // GetVehicleStatusV2 godoc

@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"context"
+	pr "github.com/DIMO-Network/shared/middleware/privilegetoken"
+	"math/big"
 
 	_ "embed"
 	"encoding/json"
@@ -243,46 +245,70 @@ func TestUserDevicesController_GetVehicleStatusRaw(t *testing.T) {
 	testUserID := "123123"
 	c := NewDeviceDataController(&config.Settings{Port: "3000"}, &logger, deviceSvc, nil, deviceDefSvc, deviceStatusSvc, pdb.DBS)
 	app := fiber.New()
-	app.Get("/vehicle/:tokenId/status-raw", test.AuthInjectorTestHandler(testUserID), c.GetUserDeviceStatus)
+
+	// Custom Claims
+	app.Use(func(c *fiber.Ctx) error {
+		claims := pr.CustomClaims{
+			PrivilegeIDs: []int64{9},
+		}
+		c.Locals("tokenClaims", claims)
+		return c.Next()
+	})
+
+	app.Get("/vehicle/:tokenId/status-raw", test.AuthInjectorTestHandler(testUserID), c.GetVehicleRawStatus)
 
 	t.Run("GET - device raw status", func(t *testing.T) {
+
 		// arrange db, insert some user_devices
 		autoPiInteg := test.BuildIntegrationGRPC(constants.AutoPiVendor, 10, 0)
 		smartCarInt := test.BuildIntegrationGRPC(constants.SmartCarVendor, 0, 0)
 		dd := test.BuildDeviceDefinitionGRPC(ksuid.New().String(), "Ford", "Mach E", 2020, autoPiInteg)
+		tokenID := new(big.Int)
+		tokenID.SetString("123456789012345678901234567890", 10)
 		udID := ksuid.New().String()
-		deviceSvc.EXPECT().GetUserDevice(gomock.Any(), udID).Times(1).Return(&dagrpc.UserDevice{
+		deviceSvc.EXPECT().GetUserDeviceByTokenID(gomock.Any(), gomock.Any()).Times(1).Return(&dagrpc.UserDevice{
 			Id:                 udID,
 			DeviceDefinitionId: dd[0].DeviceDefinitionId,
 			UserId:             testUserID,
 		}, nil)
 
-		smartCarData := models.UserDeviceDatum{
+		userDeviceData := models.UserDeviceDatum{
 			UserDeviceID: udID,
-			Signals: null.JSONFrom([]byte(`{"oil": {"value": 0.6859999895095825, "timestamp": "2023-04-27T14:57:37Z"}, 
-				"range": {"value": 187.79, "timestamp": "2023-04-27T14:57:37Z"}, 
-				"tires": {"value":{"backLeft": 244, "backRight": 280, "frontLeft": 244, "frontRight": 252}, "timestamp": "2023-04-27T14:57:37Z"}, 
-				"charging": {"value":false, "timestamp": "2023-04-27T14:57:37Z"}, 
-				"latitude": {"value":33.675048828125, "timestamp": "2023-04-27T14:57:37Z"}, 
-				"odometer": {"value":195677.59375, "timestamp": "2023-04-27T14:57:37Z"}, 
-				"longitude": {"value":-117.85894775390625, "timestamp": "2023-04-27T14:57:37Z"}
-				}`)),
+			Signals: null.JSONFrom([]byte(`{"soc": {"value": 0.78, "timestamp": "2023-10-17T05:22:20Z"}, 
+				"vin": {"value": "XP7YGCEJ9PB148921", "timestamp": "2023-10-17T05:22:20Z"}, 
+				"range": {"value": 316.46140416, "timestamp": "2023-10-17T05:22:20Z"}, 
+				"speed": {"value": 32.18688, "timestamp": "2023-10-17T05:22:20Z"}, 
+				"charger": {"value": {"power": 3}, "timestamp": "2023-10-16T14:12:42Z"}, 
+				"charging": {"value": false, "timestamp": "2023-10-17T05:22:20Z"}, 
+				"latitude": {"value": 53.729016, "timestamp": "2023-10-17T05:22:20Z"}, 
+				"odometer": {"value": 9914.409470477953, "timestamp": "2023-10-17T05:22:20Z"}, 
+				"longitude": {"value": 9.990799, "timestamp": "2023-10-17T05:22:20Z"}, 
+				"timestamp": {"value": "2023-10-17T05:22:20.453508151Z", "timestamp": "2023-10-17T05:22:20Z"}, 
+				"vehicleId": {"value": "929850482922516", "timestamp": "2023-10-17T05:22:20Z"}, 
+				"ambientTemp": {"value": 6.5, "timestamp": "2023-10-17T05:22:20Z"}, 
+				"chargeLimit": {"value": 1, "timestamp": "2023-10-17T05:22:20Z"}}`)),
 			CreatedAt:           time.Now().Add(time.Minute * -5),
 			UpdatedAt:           time.Now().Add(time.Minute * -5),
 			LastLocationEventAt: null.TimeFrom(time.Now().Add(time.Minute * -5)),
 			LastOdb2EventAt:     null.TimeFrom(time.Now().Add(time.Minute * -5)),
 			IntegrationID:       smartCarInt.Id,
 		}
-		err := smartCarData.Insert(ctx, pdb.DBS().Writer, boil.Infer())
+		err := userDeviceData.Insert(ctx, pdb.DBS().Writer, boil.Infer())
 		assert.NoError(t, err)
 
-		request := test.BuildRequest("GET", "/vehicle/"+udID+"/status-raw", "")
+		request := test.BuildRequest("GET", "/vehicle/"+tokenID.String()+"/status-raw", "")
+
 		response, _ := app.Test(request)
 		body, _ := io.ReadAll(response.Body)
-
 		if assert.Equal(t, fiber.StatusOK, response.StatusCode) == false {
 			fmt.Println("response body: " + string(body))
 		}
+
+		jsonString := string(body)
+
+		// charging, soc
+		assert.Equal(t, false, gjson.Get(jsonString, "soc").Exists())
+		assert.Equal(t, false, gjson.Get(jsonString, "charging").Exists())
 
 		//teardown
 		test.TruncateTables(pdb.DBS().Writer.DB, t)
