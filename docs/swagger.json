@@ -300,6 +300,37 @@
                 }
             }
         },
+        "/v1/vehicle/{tokenId}/status-raw": {
+            "get": {
+                "description": "Returns the latest status update for the vehicle with a given token id.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "device-data"
+                ],
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "token id",
+                        "name": "tokenId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
         "/v2/vehicle/{tokenID}/history": {
             "get": {
                 "security": [

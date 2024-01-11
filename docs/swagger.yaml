@@ -608,6 +608,27 @@ paths:
           description: Not Found
       tags:
       - device-data
+  /v1/vehicle/{tokenId}/status-raw:
+    get:
+      description: Returns the latest status update for the vehicle with a given token
+        id.
+      parameters:
+      - description: token id
+        in: path
+        name: tokenId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      tags:
+      - device-data
   /v2/vehicle/{tokenID}/history:
     get:
       description: Get all historical data for a tokenID, within start and end range

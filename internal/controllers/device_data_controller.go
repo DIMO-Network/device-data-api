@@ -553,8 +553,9 @@ func (d *DeviceDataController) GetVehicleStatus(c *fiber.Ctx) error {
 // @Tags        device-data
 // @Param       tokenId path int true "token id"
 // @Produce     json
-// @Success     200 {object}
+// @Success     200
 // @Failure     404
+// @Failure     500
 // @Router      /v1/vehicle/{tokenId}/status-raw [get]
 func (d *DeviceDataController) GetVehicleStatusRaw(c *fiber.Ctx) error {
 	tis := c.Params("tokenID")
