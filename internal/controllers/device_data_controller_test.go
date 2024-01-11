@@ -3,8 +3,9 @@ package controllers
 import (
 	"context"
 	_ "embed"
-	pr "github.com/DIMO-Network/shared/middleware/privilegetoken"
 	"math/big"
+
+	pr "github.com/DIMO-Network/shared/middleware/privilegetoken"
 
 	"encoding/json"
 	"fmt"
