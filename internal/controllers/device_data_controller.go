@@ -594,6 +594,7 @@ func (d *DeviceDataController) GetVehicleStatusRaw(c *fiber.Ctx) error {
 	return c.Send(jsonSignal)
 }
 
+// dataComplianceForSignals removes any signals that per the privileges should not be returned
 func dataComplianceForSignals(json []byte, privilegeIDs []int64) []byte {
 	nonLocationDataProperties := []string{"charging", "fuelPercentRemaining", "batteryCapacity", "oil", "soc", "chargeLimit", "odometer", "range", "batteryVoltage", "ambientTemp", "tires"}
 	currentLocationAndAllTimeLocation := []string{"latitude", "longitude"}

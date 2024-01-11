@@ -2,10 +2,10 @@ package controllers
 
 import (
 	"context"
+	_ "embed"
 	pr "github.com/DIMO-Network/shared/middleware/privilegetoken"
 	"math/big"
 
-	_ "embed"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -249,7 +249,7 @@ func TestUserDevicesController_GetVehicleStatusRaw(t *testing.T) {
 	// Custom Claims
 	app.Use(func(c *fiber.Ctx) error {
 		claims := pr.CustomClaims{
-			PrivilegeIDs: []int64{9},
+			PrivilegeIDs: []int64{NonLocationData},
 		}
 		c.Locals("tokenClaims", claims)
 		return c.Next()
@@ -303,12 +303,15 @@ func TestUserDevicesController_GetVehicleStatusRaw(t *testing.T) {
 		if assert.Equal(t, fiber.StatusOK, response.StatusCode) == false {
 			fmt.Println("response body: " + string(body))
 		}
+		fmt.Println("response body: " + string(body))
 
 		jsonString := string(body)
 
-		// charging, soc
-		assert.Equal(t, false, gjson.Get(jsonString, "soc").Exists())
-		assert.Equal(t, false, gjson.Get(jsonString, "charging").Exists())
+		// assert NonLocationData to exist but location data to be removed
+		assert.True(t, gjson.Get(jsonString, "soc").Exists())
+		assert.True(t, gjson.Get(jsonString, "charging").Exists())
+		assert.False(t, gjson.Get(jsonString, "latitude").Exists())
+		assert.False(t, gjson.Get(jsonString, "longitude").Exists())
 
 		//teardown
 		test.TruncateTables(pdb.DBS().Writer.DB, t)
