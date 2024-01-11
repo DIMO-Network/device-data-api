@@ -102,6 +102,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 	// token based routes
 	vTokenV1.Get("/history", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.AllTimeLocation}), cacheHandler, deviceDataController.GetHistoricalRawPermissioned)
 	vTokenV1.Get("/status", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.CurrentLocation, controllers.AllTimeLocation}), cacheHandler, deviceDataController.GetVehicleStatus)
+	vTokenV1.Get("/status-raw", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.CurrentLocation, controllers.AllTimeLocation}), cacheHandler, deviceDataController.GetVehicleStatusRaw)
 
 	vTokenV2.Get("/status", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.CurrentLocation, controllers.AllTimeLocation}), cacheHandler, deviceDataController.GetVehicleStatusV2)
 	vTokenV2.Get("/history", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.AllTimeLocation}), cacheHandler, deviceDataController.GetHistoricalPermissionedV2)

@@ -548,6 +548,76 @@ func (d *DeviceDataController) GetVehicleStatus(c *fiber.Ctx) error {
 	return c.JSON(ds)
 }
 
+// GetVehicleStatusRaw godoc
+// @Description Returns the latest status update for the vehicle with a given token id.
+// @Tags        device-data
+// @Param       tokenId path int true "token id"
+// @Produce     json
+// @Success     200 {object}
+// @Failure     404
+// @Router      /v1/vehicle/{tokenId}/status-raw [get]
+func (d *DeviceDataController) GetVehicleStatusRaw(c *fiber.Ctx) error {
+	tis := c.Params("tokenID")
+	claims := c.Locals("tokenClaims").(pr.CustomClaims)
+
+	ti, ok := new(big.Int).SetString(tis, 10)
+	if !ok {
+		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Couldn't parse token id %q.", tis))
+	}
+
+	userDeviceNFT, err := d.deviceAPI.GetUserDeviceByTokenID(c.Context(), ti.Int64())
+	if err != nil {
+		d.log.Err(err).Msg("grpc error retrieving NFT metadata.")
+		return err
+	}
+	if userDeviceNFT == nil {
+		return fiber.NewError(fiber.StatusNotFound, "NFT not found.")
+	}
+
+	deviceData, err := models.UserDeviceData(
+		models.UserDeviceDatumWhere.UserDeviceID.EQ(userDeviceNFT.Id),
+		models.UserDeviceDatumWhere.Signals.IsNotNull(),
+		models.UserDeviceDatumWhere.UpdatedAt.GT(time.Now().Add(-90*24*time.Hour)),
+	).All(c.Context(), d.dbs().Reader)
+	if errors.Is(err, sql.ErrNoRows) || len(deviceData) == 0 {
+		return fiber.NewError(fiber.StatusNotFound, "no status updates yet")
+	}
+	if err != nil {
+		return err
+	}
+
+	var jsonSignal []byte
+	for _, item := range deviceData {
+		jsonSignal = dataComplianceForSignals(item.Signals.JSON, claims.PrivilegeIDs)
+		break
+	}
+	return c.Send(jsonSignal)
+}
+
+// dataComplianceForSignals removes any signals that per the privileges should not be returned
+func dataComplianceForSignals(json []byte, privilegeIDs []int64) []byte {
+	nonLocationDataProperties := []string{"charging", "fuelPercentRemaining", "batteryCapacity", "oil", "soc", "chargeLimit", "odometer", "range", "batteryVoltage", "ambientTemp", "tires"}
+	currentLocationAndAllTimeLocation := []string{"latitude", "longitude"}
+
+	removeProperties := func(properties []string) {
+		for _, property := range properties {
+			if result := gjson.GetBytes(json, property); result.Exists() {
+				json, _ = sjson.DeleteBytes(json, property)
+			}
+		}
+	}
+
+	if !slices.Contains(privilegeIDs, NonLocationData) {
+		removeProperties(nonLocationDataProperties)
+	}
+
+	if !slices.Contains(privilegeIDs, CurrentLocation) || slices.Contains(privilegeIDs, AllTimeLocation) {
+		removeProperties(currentLocationAndAllTimeLocation)
+	}
+
+	return json
+}
+
 // GetVehicleStatusV2 godoc
 // @Description Returns the latest status update for the vehicle with a given token id.
 // @Tags        device-data

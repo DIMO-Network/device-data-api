@@ -2,8 +2,11 @@ package controllers
 
 import (
 	"context"
-
 	_ "embed"
+	"math/big"
+
+	pr "github.com/DIMO-Network/shared/middleware/privilegetoken"
+
 	"encoding/json"
 	"fmt"
 	"io"
@@ -212,6 +215,104 @@ func TestUserDevicesController_GetUserDeviceStatus(t *testing.T) {
 		assert.Equal(t, 33.75, *snapshot.Latitude, "expected autopi latitude")
 		assert.Equal(t, -117.91, *snapshot.Longitude, "expected autopi longitude")
 		//assert.Equal(t, "2023-04-27T15:57:37Z", snapshot.RecordUpdatedAt.Format(time.RFC3339))
+
+		//teardown
+		test.TruncateTables(pdb.DBS().Writer.DB, t)
+	})
+}
+
+func TestUserDevicesController_GetVehicleStatusRaw(t *testing.T) {
+	// arrange global db and route setup
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	logger := zerolog.New(os.Stdout).With().
+		Timestamp().
+		Str("app", "devices-api").
+		Logger()
+
+	ctx := context.Background()
+	pdb, container := test.StartContainerDatabase(ctx, t, migrationsDirRelPath)
+	defer func() {
+		if err := container.Terminate(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	deviceSvc := mock_services.NewMockDeviceAPIService(mockCtrl)
+	deviceDefSvc := mock_services.NewMockDeviceDefinitionsAPIService(mockCtrl)
+	deviceStatusSvc := mock_services.NewMockDeviceStatusService(mockCtrl)
+
+	testUserID := "123123"
+	c := NewDeviceDataController(&config.Settings{Port: "3000"}, &logger, deviceSvc, nil, deviceDefSvc, deviceStatusSvc, pdb.DBS)
+	app := fiber.New()
+
+	// Custom Claims
+	app.Use(func(c *fiber.Ctx) error {
+		claims := pr.CustomClaims{
+			PrivilegeIDs: []int64{NonLocationData},
+		}
+		c.Locals("tokenClaims", claims)
+		return c.Next()
+	})
+
+	app.Get("/vehicle/:tokenId/status-raw", test.AuthInjectorTestHandler(testUserID), c.GetVehicleStatusRaw)
+
+	t.Run("GET - device raw status", func(t *testing.T) {
+
+		// arrange db, insert some user_devices
+		autoPiInteg := test.BuildIntegrationGRPC(constants.AutoPiVendor, 10, 0)
+		smartCarInt := test.BuildIntegrationGRPC(constants.SmartCarVendor, 0, 0)
+		dd := test.BuildDeviceDefinitionGRPC(ksuid.New().String(), "Ford", "Mach E", 2020, autoPiInteg)
+		tokenID := new(big.Int)
+		tokenID.SetString("123456789012345678901234567890", 10)
+		udID := ksuid.New().String()
+		deviceSvc.EXPECT().GetUserDeviceByTokenID(gomock.Any(), gomock.Any()).Times(1).Return(&dagrpc.UserDevice{
+			Id:                 udID,
+			DeviceDefinitionId: dd[0].DeviceDefinitionId,
+			UserId:             testUserID,
+		}, nil)
+
+		userDeviceData := models.UserDeviceDatum{
+			UserDeviceID: udID,
+			Signals: null.JSONFrom([]byte(`{"soc": {"value": 0.78, "timestamp": "2023-10-17T05:22:20Z"}, 
+				"vin": {"value": "XP7YGCEJ9PB148921", "timestamp": "2023-10-17T05:22:20Z"}, 
+				"range": {"value": 316.46140416, "timestamp": "2023-10-17T05:22:20Z"}, 
+				"speed": {"value": 32.18688, "timestamp": "2023-10-17T05:22:20Z"}, 
+				"charger": {"value": {"power": 3}, "timestamp": "2023-10-16T14:12:42Z"}, 
+				"charging": {"value": false, "timestamp": "2023-10-17T05:22:20Z"}, 
+				"latitude": {"value": 53.729016, "timestamp": "2023-10-17T05:22:20Z"}, 
+				"odometer": {"value": 9914.409470477953, "timestamp": "2023-10-17T05:22:20Z"}, 
+				"longitude": {"value": 9.990799, "timestamp": "2023-10-17T05:22:20Z"}, 
+				"timestamp": {"value": "2023-10-17T05:22:20.453508151Z", "timestamp": "2023-10-17T05:22:20Z"}, 
+				"vehicleId": {"value": "929850482922516", "timestamp": "2023-10-17T05:22:20Z"}, 
+				"ambientTemp": {"value": 6.5, "timestamp": "2023-10-17T05:22:20Z"}, 
+				"chargeLimit": {"value": 1, "timestamp": "2023-10-17T05:22:20Z"}}`)),
+			CreatedAt:           time.Now().Add(time.Minute * -5),
+			UpdatedAt:           time.Now().Add(time.Minute * -5),
+			LastLocationEventAt: null.TimeFrom(time.Now().Add(time.Minute * -5)),
+			LastOdb2EventAt:     null.TimeFrom(time.Now().Add(time.Minute * -5)),
+			IntegrationID:       smartCarInt.Id,
+		}
+		err := userDeviceData.Insert(ctx, pdb.DBS().Writer, boil.Infer())
+		assert.NoError(t, err)
+
+		request := test.BuildRequest("GET", "/vehicle/"+tokenID.String()+"/status-raw", "")
+
+		response, _ := app.Test(request)
+		body, _ := io.ReadAll(response.Body)
+		if assert.Equal(t, fiber.StatusOK, response.StatusCode) == false {
+			fmt.Println("response body: " + string(body))
+		}
+		fmt.Println("response body: " + string(body))
+
+		jsonString := string(body)
+
+		// assert NonLocationData to exist but location data to be removed
+		assert.True(t, gjson.Get(jsonString, "soc").Exists())
+		assert.True(t, gjson.Get(jsonString, "charging").Exists())
+		assert.False(t, gjson.Get(jsonString, "latitude").Exists())
+		assert.False(t, gjson.Get(jsonString, "longitude").Exists())
 
 		//teardown
 		test.TruncateTables(pdb.DBS().Writer.DB, t)
