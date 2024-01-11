@@ -255,7 +255,7 @@ func TestUserDevicesController_GetVehicleStatusRaw(t *testing.T) {
 		return c.Next()
 	})
 
-	app.Get("/vehicle/:tokenId/status-raw", test.AuthInjectorTestHandler(testUserID), c.GetVehicleRawStatus)
+	app.Get("/vehicle/:tokenId/status-raw", test.AuthInjectorTestHandler(testUserID), c.GetVehicleStatusRaw)
 
 	t.Run("GET - device raw status", func(t *testing.T) {
 

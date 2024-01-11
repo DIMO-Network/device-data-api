@@ -548,15 +548,15 @@ func (d *DeviceDataController) GetVehicleStatus(c *fiber.Ctx) error {
 	return c.JSON(ds)
 }
 
-// GetVehicleRawStatus godoc
+// GetVehicleStatusRaw godoc
 // @Description Returns the latest status update for the vehicle with a given token id.
 // @Tags        device-data
 // @Param       tokenId path int true "token id"
 // @Produce     json
-// @Success     200 {object} response.DeviceSnapshot
+// @Success     200 {object}
 // @Failure     404
 // @Router      /v1/vehicle/{tokenId}/status-raw [get]
-func (d *DeviceDataController) GetVehicleRawStatus(c *fiber.Ctx) error {
+func (d *DeviceDataController) GetVehicleStatusRaw(c *fiber.Ctx) error {
 	tis := c.Params("tokenID")
 	claims := c.Locals("tokenClaims").(pr.CustomClaims)
 
@@ -565,21 +565,11 @@ func (d *DeviceDataController) GetVehicleRawStatus(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Couldn't parse token id %q.", tis))
 	}
 
-	//tid := pgtypes.NewNullDecimal(new(decimal.Big).SetBigMantScale(ti, 0))
 	userDeviceNFT, err := d.deviceAPI.GetUserDeviceByTokenID(c.Context(), ti.Int64())
 	if err != nil {
 		d.log.Err(err).Msg("grpc error retrieving NFT metadata.")
 		return err
 	}
-
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return fiber.NewError(fiber.StatusNotFound, "NFT not found.")
-		}
-		d.log.Err(err).Str("token_id", tis).Msg("Database error retrieving NFT metadata or NFT not found")
-		return err
-	}
-
 	if userDeviceNFT == nil {
 		return fiber.NewError(fiber.StatusNotFound, "NFT not found.")
 	}
