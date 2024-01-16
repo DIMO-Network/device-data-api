@@ -271,6 +271,11 @@
         },
         "/v1/vehicle/{tokenId}/status": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Returns the latest status update for the vehicle with a given token id.",
                 "produces": [
                     "application/json"
@@ -302,6 +307,11 @@
         },
         "/v1/vehicle/{tokenId}/status-raw": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Returns the latest status update for the vehicle with a given token id.",
                 "produces": [
                     "application/json"
@@ -375,6 +385,11 @@
         },
         "/v2/vehicle/{tokenId}/status": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Returns the latest status update for the vehicle with a given token id.",
                 "produces": [
                     "application/json"

@@ -499,6 +499,7 @@ func (d *DeviceDataController) GetUserDeviceStatus(c *fiber.Ctx) error {
 // @Produce     json
 // @Success     200 {object} response.DeviceSnapshot
 // @Failure     404
+// @Security    BearerAuth
 // @Router      /v1/vehicle/{tokenId}/status [get]
 func (d *DeviceDataController) GetVehicleStatus(c *fiber.Ctx) error {
 	tis := c.Params("tokenID")
@@ -556,6 +557,7 @@ func (d *DeviceDataController) GetVehicleStatus(c *fiber.Ctx) error {
 // @Success     200
 // @Failure     404
 // @Failure     500
+// @Security    BearerAuth
 // @Router      /v1/vehicle/{tokenId}/status-raw [get]
 func (d *DeviceDataController) GetVehicleStatusRaw(c *fiber.Ctx) error {
 	tis := c.Params("tokenID")
@@ -626,6 +628,7 @@ func dataComplianceForSignals(json []byte, privilegeIDs []int64) []byte {
 // @Produce     json
 // @Success     200 {object} response.Device
 // @Failure     404
+// @Security    BearerAuth
 // @Router      /v2/vehicle/{tokenId}/status [get]
 func (d *DeviceDataController) GetVehicleStatusV2(c *fiber.Ctx) error {
 	claims := c.Locals("tokenClaims").(pr.CustomClaims)
