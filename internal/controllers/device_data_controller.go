@@ -322,7 +322,9 @@ func (d *DeviceDataController) getHistoryV1(c *fiber.Ctx, userDevice *grpc.UserD
 		localLog.Warn().Err(err).Msg("could not add range calculation to document")
 	}
 	body = removeOdometerIfInvalid(body)
-	localLog.Info().Dur("duration", time.Since(t)).Msgf("Performed JSON operations on %d bytes of history.", b)
+	if d := time.Since(t); d > time.Second {
+		localLog.Info().Dur("duration", d).Msgf("Performed JSON operations on %d bytes of history.", b)
+	}
 
 	c.Set("Content-Type", fiber.MIMEApplicationJSON)
 	return c.Status(fiber.StatusOK).Send(body)
