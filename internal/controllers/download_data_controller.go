@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"errors"
 
 	"encoding/json"
 	"time"
@@ -75,7 +76,8 @@ func (d *DataDownloadController) DataDownloadHandler(c *fiber.Ctx) error {
 }
 
 func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error {
-	sub, err := d.NATSSvc.JetStream.PullSubscribe(d.NATSSvc.JetStreamSubject, d.NATSSvc.DurableConsumer, nats.AckWait(d.NATSSvc.AckTimeout))
+	sub, err := d.NATSSvc.JetStream.PullSubscribe(d.NATSSvc.JetStreamSubject, d.NATSSvc.DurableConsumer,
+		nats.AckWait(d.NATSSvc.AckTimeout), nats.MaxDeliver(2))
 	if err != nil {
 		return err
 	}
@@ -83,7 +85,7 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 	for {
 		msgs, err := sub.Fetch(1)
 		if err != nil {
-			if err == nats.ErrTimeout {
+			if errors.Is(err, nats.ErrTimeout) {
 				continue
 			}
 			d.log.Err(err).Msg("error fetching from data download stream")
@@ -109,8 +111,9 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 					d.log.Error().Msgf("unable to parse query parameters: %+v", err)
 					continue
 				}
+				localLog := d.log.With().Str("userId", params.UserID).Str("userDeviceID", params.UserDeviceID).Logger()
 
-				d.log.Info().Str("userId", params.UserID).Str("userDeviceID", params.UserDeviceID).Msg("data download initiated")
+				localLog.Info().Msg("data download initiated")
 				d.inProgress(msg, params)
 
 				nestedCtx, cancel := context.WithCancel(ctx)
@@ -130,7 +133,7 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 				s3link, err := d.QuerySvc.StreamDataToS3(ctx, params.UserDeviceID)
 				if err != nil {
 					d.nak(msg, &params)
-					d.log.Err(err).Str("userId", params.UserID).Str("userDeviceID", params.UserDeviceID).Msg("error while fetching data from elasticsearch")
+					localLog.Err(err).Msg("error while fetching data from elasticsearch")
 					cancel()
 					continue
 				}
@@ -141,12 +144,12 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 				err = d.EmailSvc.SendEmail(params.UserID, s3link)
 				if err != nil {
 					d.nak(msg, &params)
-					d.log.Err(err).Msg("unable to put send email")
+					localLog.Err(err).Msg("unable to put send email")
 					continue
 				}
 
 				d.ack(msg, params)
-				d.log.Info().Str("userId", params.UserID).Str("userDeviceID", params.UserDeviceID).Uint64("numDelivered", mtd.NumDelivered).Msg("data download completed")
+				localLog.Info().Uint64("numDelivered", mtd.NumDelivered).Msg("data download completed")
 			}
 		}
 	}
