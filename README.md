@@ -138,3 +138,9 @@ Migrate DB to latest:
 if get ambiguous reference issue, try:
 - make sure latest go ethereum version: `go get github.com/ethereum/go-ethereum`
 - `go get github.com/btcsuite/btcd/chaincfg/chainhash`
+
+# Runbook
+
+Alert like: Consumer group devices-data-consumer lag is too big (4272) on topic topic.device.status/partition.
+
+Solution: just reboot the pods, and give it about 5 minutes.
