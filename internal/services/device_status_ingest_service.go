@@ -112,7 +112,8 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 	} else {
 		device, err = i.deviceSvc.GetUserDevice(ctx, userDeviceID)
 		if err != nil {
-			return fmt.Errorf("failed to find user_device with id %s. error: %w", userDeviceID, err)
+			i.log.Debug().Msgf("failed to find user_device with id %s. error: %w", userDeviceID, err)
+			return nil
 		}
 
 		// Validate integration Id
