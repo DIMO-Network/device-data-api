@@ -113,7 +113,7 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 		device, err = i.deviceSvc.GetUserDevice(ctx, userDeviceID)
 		if err != nil {
 			// this error tends to pollute the logs, if we return it will get logged as "error" level. Could increment a metric instead.
-			i.log.Debug().Msgf("failed to find user_device with id %s. error: %w", userDeviceID, err)
+			i.log.Debug().Msgf("failed to find user_device with id %s. error: %s", userDeviceID, err)
 			return nil
 		}
 
