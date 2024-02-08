@@ -89,7 +89,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 		},
 	})
 	// autopi specific endpoint,
-	app.Get("/v1/autopi/last-seen/:ethAddr", cacheHandler, deviceDataController.GetLastSeen)
+	app.Get("/v1/autopi/last-seen/:ethAddr", deviceDataController.GetLastSeen)
 
 	vTokenV1 := app.Group("/v1/vehicle/:tokenID", privilegeAuth)
 	vTokenV2 := app.Group("/v2/vehicle/:tokenID", privilegeAuth)
