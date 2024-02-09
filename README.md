@@ -63,7 +63,7 @@ You can reach this on port 5555. The "Log in with Example" option is probably th
 
 ```bash
 go install github.com/swaggo/swag/cmd/swag@latest
-swag init -g cmd/device-data-api/main.go --parseDependency --parseInternal --generatedTime true
+swag init -g cmd/device-data-api/main.go --parseDependency --parseInternal
 # optionally add `--parseDepth 2` if have issues
 ```
 
