@@ -17,7 +17,8 @@ require (
 	github.com/ethereum/go-ethereum v1.13.3
 	github.com/friendsofgo/errors v0.9.2
 	github.com/gofiber/contrib/jwt v1.0.2
-	github.com/gofiber/fiber/v2 v2.48.0
+	github.com/gofiber/fiber/v2 v2.50.0
+	github.com/gofiber/swagger v0.1.14
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/golang/mock v1.6.0
 	github.com/google/subcommands v1.2.0
@@ -36,7 +37,7 @@ require (
 	github.com/segmentio/ksuid v1.0.4
 	github.com/smartcar/go-sdk v1.4.0
 	github.com/stretchr/testify v1.8.4
-	github.com/swaggo/swag v1.16.1
+	github.com/swaggo/swag v1.16.2
 	github.com/testcontainers/testcontainers-go v0.27.0
 	github.com/testcontainers/testcontainers-go/modules/elasticsearch v0.27.0
 	github.com/tidwall/gjson v1.14.4
@@ -154,7 +155,6 @@ require (
 	github.com/go-openapi/jsonreference v0.20.2 // indirect
 	github.com/go-openapi/spec v0.20.9 // indirect
 	github.com/go-openapi/swag v0.22.4 // indirect
-	github.com/gofiber/swagger v0.1.12
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/klauspost/compress v1.16.7 // indirect
@@ -167,7 +167,7 @@ require (
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	github.com/valyala/fasthttp v1.48.0 // indirect
+	github.com/valyala/fasthttp v1.50.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
 	golang.org/x/crypto v0.14.0 // indirect
 	golang.org/x/net v0.17.0 // indirect

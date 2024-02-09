@@ -708,11 +708,13 @@ func (d *DeviceDataController) GetDailyDistance(c *fiber.Ctx) error {
 // @Router       /v1/autopi/last-seen/{ethAddr} [get]
 func (d *DeviceDataController) GetLastSeen(c *fiber.Ctx) error {
 	authed := false
-	for h, v := range c.GetReqHeaders() {
+	for h, vals := range c.GetReqHeaders() {
 		if strings.EqualFold("Authorization", h) {
-			if v == d.Settings.AutoPiPreSharedKey {
-				authed = true
-				break
+			for _, val := range vals {
+				if val == d.Settings.AutoPiPreSharedKey {
+					authed = true
+					break
+				}
 			}
 		}
 	}
