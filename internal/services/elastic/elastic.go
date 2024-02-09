@@ -4,6 +4,7 @@ package elastic
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -29,7 +30,7 @@ const (
 )
 
 // ErrInvalidParams is returned when the parameters for the history query are invalid.
-var ErrInvalidParams = fmt.Errorf("invalid parameters")
+var ErrInvalidParams = errors.New("invalid parameters")
 
 // Service is a service for performing queries on elastic.
 type Service struct {
@@ -80,6 +81,23 @@ type GetHistoryParams struct {
 	Buckets int
 }
 
+// SetDefaultHistoryParams sets the default values for the history params.
+// If the buckets are less than or equal to 0, it will be set to 1000.
+// If the end time is zero, it will be set to the current time.
+// If the start time is zero, it will be set to 2 weeks from the end time.
+func (g *GetHistoryParams) SetDefaultHistoryParams() {
+	if g.Buckets <= 0 {
+		g.Buckets = 1000
+	}
+	if g.EndTime.IsZero() {
+		g.EndTime = time.Now()
+	}
+
+	if g.StartTime.IsZero() {
+		g.StartTime = g.EndTime.Add(-time.Hour * 24 * 14) // default to 2 weeks ago
+	}
+}
+
 // GetHistory retrieves the history of a device from elastic. The history is divided into buckets and one data point is selected from each bucket.
 // The data points are selected by the first data point in the bucket that has a vehicle field.
 // The result is a list of data points.
@@ -113,23 +131,6 @@ func (s *Service) GetHistory(ctx context.Context, params GetHistoryParams) ([]js
 	// depending on the start and end time we may get len(results) <=  buckets + 1
 	// pass the max number of values to getHitsFromHistoryResponse to ensure we only get the desired number of values
 	return getHitsFromHistoryResponse(body, params.Buckets), nil
-}
-
-// SetDefaultHistoryParams sets the default values for the history params.
-// If the buckets are less than or equal to 0, it will be set to 1000.
-// If the end time is zero, it will be set to the current time.
-// If the start time is zero, it will be set to 2 weeks from the end time.
-func (g *GetHistoryParams) SetDefaultHistoryParams() {
-	if g.Buckets <= 0 {
-		g.Buckets = 1000
-	}
-	if g.EndTime.IsZero() {
-		g.EndTime = time.Now()
-	}
-
-	if g.StartTime.IsZero() {
-		g.StartTime = g.EndTime.Add(-time.Hour * 24 * 14) // default to 2 weeks ago
-	}
 }
 
 // buildHistoryQuery builds the query to retrieve the history of a device from elastic.
@@ -198,7 +199,7 @@ func getHitsFromHistoryResponse(body []byte, maxValues int) []json.RawMessage {
 	retData := []json.RawMessage{}
 	// This key gets the first data point in each bucket which should only contain 1 value
 	fullKey := fmt.Sprintf("aggregations.%s.buckets.#.%s.hits.hits.0._source", docByInterval, singleDoc)
-	gjson.GetBytes(body, fullKey).ForEach(func(key, value gjson.Result) bool {
+	gjson.GetBytes(body, fullKey).ForEach(func(_, value gjson.Result) bool {
 		// if we have reached the max number of values, stop
 		if len(retData) == maxValues {
 			return false

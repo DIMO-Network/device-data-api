@@ -49,7 +49,7 @@ func TestGetHistory(t *testing.T) {
 		params         elastic.GetHistoryParams
 		setDefaults    bool
 		expectError    bool
-		expectedIds    []string
+		expectedIDs    []string
 		expectedFields []string
 		excludedFields []string
 	}{
@@ -63,7 +63,7 @@ func TestGetHistory(t *testing.T) {
 				EndTime:      testStartTime.Add(time.Millisecond * 10),
 				PrivilegeIDs: []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleAllTimeLocation},
 			},
-			expectedIds: []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"},
+			expectedIDs: []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"},
 		},
 
 		{
@@ -75,7 +75,7 @@ func TestGetHistory(t *testing.T) {
 				EndTime:      testStartTime.Add(time.Millisecond * 10),
 				PrivilegeIDs: []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleAllTimeLocation},
 			},
-			expectedIds: []string{"0", "2", "4", "6", "8"},
+			expectedIDs: []string{"0", "2", "4", "6", "8"},
 		},
 
 		{
@@ -87,7 +87,7 @@ func TestGetHistory(t *testing.T) {
 				EndTime:      testStartTime.Add(time.Millisecond * 10),
 				PrivilegeIDs: []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleAllTimeLocation},
 			},
-			expectedIds: []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"},
+			expectedIDs: []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"},
 		},
 		{
 			name: "1 bucket",
@@ -98,7 +98,7 @@ func TestGetHistory(t *testing.T) {
 				EndTime:      testStartTime.Add(time.Millisecond * 10),
 				PrivilegeIDs: []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleAllTimeLocation},
 			},
-			expectedIds: []string{"0"},
+			expectedIDs: []string{"0"},
 		},
 		{
 			name: "buckets + 1 returned from elastic",
@@ -109,7 +109,7 @@ func TestGetHistory(t *testing.T) {
 				EndTime:      testStartTime.Add(time.Millisecond * 10),
 				PrivilegeIDs: []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleAllTimeLocation},
 			},
-			expectedIds: []string{"0"},
+			expectedIDs: []string{"0"},
 		},
 		{
 			name:        "buckets set to 0 defaults to 1000",
@@ -121,7 +121,7 @@ func TestGetHistory(t *testing.T) {
 				EndTime:      testStartTime.Add(time.Millisecond * 10),
 				PrivilegeIDs: []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleAllTimeLocation},
 			},
-			expectedIds: []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"},
+			expectedIDs: []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"},
 		},
 		{
 			name:        "buckets set negative number, defaults to 1000",
@@ -133,7 +133,7 @@ func TestGetHistory(t *testing.T) {
 				EndTime:      testStartTime.Add(time.Millisecond * 10),
 				PrivilegeIDs: []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleAllTimeLocation},
 			},
-			expectedIds: []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"},
+			expectedIDs: []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"},
 		},
 
 		// test cases for time parameters
@@ -146,7 +146,7 @@ func TestGetHistory(t *testing.T) {
 				EndTime:      testStartTime.Add(time.Millisecond * -10),
 				PrivilegeIDs: []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleAllTimeLocation},
 			},
-			expectedIds: []string{},
+			expectedIDs: []string{},
 		},
 		{
 			name:        "end time before start time negative bucket",
@@ -158,7 +158,7 @@ func TestGetHistory(t *testing.T) {
 				EndTime:      testStartTime.Add(time.Millisecond * -10),
 				PrivilegeIDs: []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleAllTimeLocation},
 			},
-			expectedIds: []string{},
+			expectedIDs: []string{},
 		},
 		{
 			name: "time range is 0",
@@ -169,7 +169,7 @@ func TestGetHistory(t *testing.T) {
 				EndTime:      testStartTime,
 				PrivilegeIDs: []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleAllTimeLocation},
 			},
-			expectedIds: []string{"0"},
+			expectedIDs: []string{"0"},
 		},
 		{
 			name:        "start time is zero causing default to 14 days from start",
@@ -181,7 +181,7 @@ func TestGetHistory(t *testing.T) {
 				EndTime:      testStartTime.Add(time.Millisecond * 10),
 				PrivilegeIDs: []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleAllTimeLocation},
 			},
-			expectedIds: []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"},
+			expectedIDs: []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"},
 		},
 		{
 			name:        "end time is zero causing default to now",
@@ -193,7 +193,7 @@ func TestGetHistory(t *testing.T) {
 				EndTime:      time.Time{},
 				PrivilegeIDs: []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleAllTimeLocation},
 			},
-			expectedIds: []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"},
+			expectedIDs: []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"},
 		},
 
 		// test case PrivilegeIDs filtering
@@ -206,7 +206,7 @@ func TestGetHistory(t *testing.T) {
 				EndTime:   testStartTime.Add(time.Millisecond * 1),
 			},
 			// no fields exist in the result everything is excluded
-			expectedIds:    nil,
+			expectedIDs:    nil,
 			excludedFields: []string{"data.misc.cell", "data.vehicle.currentLocation", "data.vehicle.powertrain"},
 		},
 		{
@@ -219,7 +219,7 @@ func TestGetHistory(t *testing.T) {
 				PrivilegeIDs: []privileges.Privilege{privileges.VehicleAllTimeLocation},
 			},
 			// only the location fields are present in the result
-			expectedIds:    nil, // no test ids are present in the result because the fields are excluded
+			expectedIDs:    nil, // no test ids are present in the result because the fields are excluded
 			expectedFields: []string{"data.vehicle.currentLocation", "data.misc.cell"},
 			excludedFields: []string{"data.vehicle.powertrain"},
 		},
@@ -233,7 +233,7 @@ func TestGetHistory(t *testing.T) {
 				PrivilegeIDs: []privileges.Privilege{privileges.VehicleNonLocationData},
 			},
 			// everything except the location fields are present in the result
-			expectedIds:    []string{"0"},
+			expectedIDs:    []string{"0"},
 			expectedFields: []string{"data.vehicle.powertrain"},
 			excludedFields: []string{"data.misc.cell", "data.vehicle.currentLocation"},
 		},
@@ -247,7 +247,7 @@ func TestGetHistory(t *testing.T) {
 				PrivilegeIDs: []privileges.Privilege{privileges.VehicleCommands},
 			},
 			// no fields exist in the result everything is excluded
-			expectedIds:    nil,
+			expectedIDs:    nil,
 			excludedFields: []string{"data.misc.cell", "data.vehicle.currentLocation", "data.vehicle.powertrain"},
 		},
 		{
@@ -260,7 +260,7 @@ func TestGetHistory(t *testing.T) {
 				PrivilegeIDs: []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleAllTimeLocation},
 			},
 			// everything is present in the result
-			expectedIds:    []string{"0"},
+			expectedIDs:    []string{"0"},
 			expectedFields: []string{"data.vehicle.powertrain", "data.vehicle.currentLocation", "data.misc.cell"},
 		},
 		{
@@ -273,7 +273,7 @@ func TestGetHistory(t *testing.T) {
 				PrivilegeIDs: []privileges.Privilege{privileges.VehicleCommands, privileges.VehicleAllTimeLocation},
 			},
 			// only the location fields are present in the result
-			expectedIds:    nil, // no test ids are present in the result because the fields are excluded
+			expectedIDs:    nil, // no test ids are present in the result because the fields are excluded
 			expectedFields: []string{"data.vehicle.currentLocation", "data.misc.cell"},
 			excludedFields: []string{"data.vehicle.powertrain"},
 		},
@@ -298,7 +298,7 @@ func TestGetHistory(t *testing.T) {
 				EndTime:      time.Date(9999999, 1, 1, 0, 0, 0, 0, time.UTC),
 				PrivilegeIDs: []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleAllTimeLocation},
 			},
-			expectedIds: []string{"0"},
+			expectedIDs: []string{"0"},
 		},
 		{
 			name: "extremely large time range and buckets",
@@ -309,7 +309,7 @@ func TestGetHistory(t *testing.T) {
 				EndTime:      time.Date(9999999, 1, 1, 0, 0, 0, 0, time.UTC),
 				PrivilegeIDs: []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleAllTimeLocation},
 			},
-			expectedIds: []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"},
+			expectedIDs: []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"},
 		},
 	}
 
@@ -344,7 +344,7 @@ func TestGetHistory(t *testing.T) {
 					require.Falsef(t, fieldData.Exists(), "excluded field %q found in result", field)
 				}
 			}
-			require.Truef(t, slices.Equal(tc.expectedIds, ids), "expected ids: %v, got ids: %v", tc.expectedIds, ids)
+			require.Truef(t, slices.Equal(tc.expectedIDs, ids), "expected ids: %v, got ids: %v", tc.expectedIDs, ids)
 		})
 	}
 }

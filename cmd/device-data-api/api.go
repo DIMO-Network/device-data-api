@@ -2,10 +2,9 @@ package main
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
-
-	"github.com/pkg/errors"
 
 	"github.com/DIMO-Network/device-data-api/internal/config"
 	"github.com/DIMO-Network/device-data-api/internal/controllers"
