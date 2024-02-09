@@ -394,8 +394,8 @@ func (d *DeviceDataController) getHistoryV2(c *fiber.Ctx, userDevice *grpc.UserD
 	}
 
 	resp := historyResp{Status: []any{}}
-	gjson.GetBytes(body, "aggregations.documents_by_hour.buckets").ForEach(func(key, v gjson.Result) bool {
-		gjson.Get(v.Raw, "select_single_doc.hits.hits").ForEach(func(key, value gjson.Result) bool {
+	gjson.GetBytes(body, "aggregations.documents_by_hour.buckets").ForEach(func(_, v gjson.Result) bool {
+		gjson.Get(v.Raw, "select_single_doc.hits.hits").ForEach(func(_, value gjson.Result) bool {
 			resp.Status = append(resp.Status, value.Get("_source").Value())
 			return true
 		})

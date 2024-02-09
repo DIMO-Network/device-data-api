@@ -43,7 +43,7 @@ func NewQueryStorageService(es *elasticsearch.TypedClient, settings *config.Sett
 	ctx := log.WithContext(context.Background())
 
 	resolver := aws.EndpointResolverWithOptionsFunc(
-		func(service, region string, options ...any) (aws.Endpoint, error) {
+		func(_, _ string, _ ...any) (aws.Endpoint, error) {
 			if settings.AWSEndpoint != "" {
 				return aws.Endpoint{URL: settings.AWSEndpoint}, nil
 			}

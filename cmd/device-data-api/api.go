@@ -61,7 +61,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 	// secured paths
 	jwtAuth := jwtware.New(jwtware.Config{
 		JWKSetURLs: []string{settings.JwtKeySetURL},
-		ErrorHandler: func(c *fiber.Ctx, err error) error {
+		ErrorHandler: func(_ *fiber.Ctx, _ error) error {
 			return fiber.NewError(fiber.StatusUnauthorized, "Invalid JWT.")
 		},
 	})
@@ -83,7 +83,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 	logger.Info().Str("jwkUrl", settings.TokenExchangeJWTKeySetURL).Str("vehicleAddr", settings.VehicleNFTAddress).Msg("Privileges enabled.")
 	privilegeAuth := jwtware.New(jwtware.Config{
 		JWKSetURLs: []string{settings.TokenExchangeJWTKeySetURL},
-		ErrorHandler: func(c *fiber.Ctx, err error) error {
+		ErrorHandler: func(_ *fiber.Ctx, err error) error {
 			logger.Err(err).Msg("Privilege token error.")
 			return fiber.NewError(fiber.StatusUnauthorized, "Invalid privilege token.")
 		},
