@@ -25,6 +25,7 @@ import (
 	"github.com/DIMO-Network/device-data-api/models"
 	pb "github.com/DIMO-Network/device-data-api/pkg/grpc"
 	"github.com/DIMO-Network/shared/db"
+	"github.com/DIMO-Network/shared/privileges"
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -65,9 +66,13 @@ func (s *userDeviceData) GetUserDeviceData(ctx context.Context, req *pb.UserDevi
 	} else {
 		deviceStyleID = nil
 	}
+	privs := make([]privileges.Privilege, len(req.PrivilegeIds))
+	for i, p := range req.PrivilegeIds {
+		privs[i] = privileges.Privilege(p)
+	}
 
 	ds := s.deviceStatusSvc.PrepareDeviceStatusInformation(ctx, deviceData, req.DeviceDefinitionId,
-		deviceStyleID, req.PrivilegeIds) // up to caller to pass in correct privileges
+		deviceStyleID, privs) // up to caller to pass in correct privileges
 
 	return &pb.UserDeviceDataResponse{
 		Charging:             ds.Charging,

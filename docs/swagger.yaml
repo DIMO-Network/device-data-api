@@ -642,13 +642,19 @@ paths:
         name: tokenID
         required: true
         type: integer
-      - description: startDate eg 2022-01-02. if empty two weeks back
+      - description: startTime is an RFC3339 formatted date-time string. If empty
+          two weeks from endTime
         in: query
-        name: startDate
+        name: startTime
         type: string
-      - description: endDate eg 2022-03-01. if empty today
+      - description: endTime is an RFC3339 formatted date-time string. If empty the
+          current time
         in: query
-        name: endDate
+        name: endTime
+        type: string
+      - description: number of data points to return, default 1000
+        in: query
+        name: buckets
         type: string
       produces:
       - application/json

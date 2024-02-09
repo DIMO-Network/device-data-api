@@ -76,7 +76,7 @@ func (uds *QueryStorageService) executeESQuery(q *search.Request) (string, error
 	res, err := uds.es.Search().
 		Index(uds.ElasticIndex).
 		Request(q).
-		Do(context.Background())
+		Perform(context.Background())
 	if err != nil {
 		uds.log.Err(err).Msg("Could not query Elasticsearch")
 		return "", err
@@ -104,7 +104,7 @@ func (ud *userData) executeESQuery(q *search.Request) (string, error) {
 	res, err := ud.es.Search().
 		Index(ud.ElasticIndex).
 		Request(q).
-		Do(context.Background())
+		Perform(context.Background())
 	if err != nil {
 		ud.log.Err(err).Msg("Could not query Elasticsearch")
 		return "", err

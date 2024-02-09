@@ -10,6 +10,7 @@ import (
 	"github.com/DIMO-Network/device-data-api/internal/test"
 	"github.com/DIMO-Network/device-data-api/models"
 	ddgrpc "github.com/DIMO-Network/device-definitions-api/pkg/grpc"
+	"github.com/DIMO-Network/shared/privileges"
 	"github.com/segmentio/ksuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -163,7 +164,7 @@ func Test_deviceStatusService_PrepareDeviceStatusInformation(t *testing.T) {
 	slice = append(slice, &smartCarData)
 	slice = append(slice, &autoPiData)
 
-	snapshot := deviceStatusSvc.PrepareDeviceStatusInformation(ctx, slice, dd[0].DeviceDefinitionId, nil, []int64{1, 3, 4})
+	snapshot := deviceStatusSvc.PrepareDeviceStatusInformation(ctx, slice, dd[0].DeviceDefinitionId, nil, []privileges.Privilege{1, 3, 4})
 
 	assert.Equal(t, 187.79, *snapshot.Range)
 	assert.Equal(t, false, *snapshot.Charging)

@@ -8,6 +8,7 @@ import (
 	"github.com/DIMO-Network/device-data-api/internal/response"
 	"github.com/DIMO-Network/device-data-api/models"
 	"github.com/DIMO-Network/shared"
+	"github.com/DIMO-Network/shared/privileges"
 	smartcar "github.com/smartcar/go-sdk"
 	"github.com/tidwall/gjson"
 	"golang.org/x/exp/slices"
@@ -19,7 +20,7 @@ type deviceStatusService struct {
 }
 
 type DeviceStatusService interface {
-	PrepareDeviceStatusInformation(ctx context.Context, deviceData models.UserDeviceDatumSlice, deviceDefinitionID string, deviceStyleID *string, privilegeIDs []int64) response.DeviceSnapshot
+	PrepareDeviceStatusInformation(ctx context.Context, deviceData models.UserDeviceDatumSlice, deviceDefinitionID string, deviceStyleID *string, privilegeIDs []privileges.Privilege) response.DeviceSnapshot
 	CalculateRange(ctx context.Context, deviceDefinitionID string, deviceStyleID *string, fuelPercentRemaining float64) (*float64, error)
 }
 
@@ -29,14 +30,7 @@ func NewDeviceStatusService(deviceDefinitionsSvc DeviceDefinitionsAPIService) De
 	}
 }
 
-const (
-	NonLocationData int64 = 1
-	Commands        int64 = 2
-	CurrentLocation int64 = 3
-	AllTimeLocation int64 = 4
-)
-
-func (dss *deviceStatusService) PrepareDeviceStatusInformation(ctx context.Context, deviceData models.UserDeviceDatumSlice, deviceDefinitionID string, deviceStyleID *string, privilegeIDs []int64) response.DeviceSnapshot {
+func (dss *deviceStatusService) PrepareDeviceStatusInformation(ctx context.Context, deviceData models.UserDeviceDatumSlice, deviceDefinitionID string, deviceStyleID *string, privilegeIDs []privileges.Privilege) response.DeviceSnapshot {
 	ds := response.DeviceSnapshot{}
 
 	// set the record created date to most recent one
@@ -48,7 +42,7 @@ func (dss *deviceStatusService) PrepareDeviceStatusInformation(ctx context.Conte
 	// future: if time btw UpdateAt and timestamp > 7 days, ignore property
 
 	// todo further refactor by passing in type for each option, then have switch in function below, can also refactor timestamp thing
-	if slices.Contains(privilegeIDs, NonLocationData) {
+	if slices.Contains(privilegeIDs, privileges.VehicleNonLocationData) {
 		charging := findMostRecentSignal(deviceData, "charging", false)
 		if charging.Exists() {
 			c := charging.Get("value").Bool()
@@ -128,7 +122,7 @@ func (dss *deviceStatusService) PrepareDeviceStatusInformation(ctx context.Conte
 		}
 	}
 
-	if slices.Contains(privilegeIDs, CurrentLocation) || slices.Contains(privilegeIDs, AllTimeLocation) {
+	if slices.Contains(privilegeIDs, privileges.VehicleCurrentLocation) || slices.Contains(privilegeIDs, privileges.VehicleAllTimeLocation) {
 		latitude := findMostRecentSignal(deviceData, "latitude", false)
 		if latitude.Exists() {
 			ts := latitude.Get("timestamp").Time()

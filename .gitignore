@@ -15,3 +15,7 @@
 # vendor/
 settings.yaml
 .idea/
+
+# Igonre the device-data-api binary only
+device-data-api
+!device-data-api/

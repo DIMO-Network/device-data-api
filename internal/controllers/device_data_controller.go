@@ -1,72 +1,70 @@
+//go:generate mockgen -package controllers_test -destination es_mock_test.go github.com/DIMO-Network/device-data-api/internal/controllers EsInterface
 package controllers
 
 import (
 	"context"
-	"strconv"
-	"strings"
-
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/volatiletech/null/v8"
-	"golang.org/x/exp/slices"
-
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
 	"math/big"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/DIMO-Network/device-data-api/internal/config"
-	"github.com/DIMO-Network/device-data-api/internal/response"
-	_ "github.com/DIMO-Network/device-data-api/internal/response" // needed for swagger gen
+	"github.com/DIMO-Network/device-data-api/internal/response" // also needed for swagger gen
 	"github.com/DIMO-Network/device-data-api/internal/services"
+	"github.com/DIMO-Network/device-data-api/internal/services/elastic"
 	"github.com/DIMO-Network/device-data-api/models"
 	"github.com/DIMO-Network/devices-api/pkg/grpc"
 	"github.com/DIMO-Network/shared"
 	"github.com/DIMO-Network/shared/db"
-
 	pr "github.com/DIMO-Network/shared/middleware/privilegetoken"
-	es8 "github.com/elastic/go-elasticsearch/v8"
+	"github.com/DIMO-Network/shared/privileges"
+	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/core/search"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/some"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/calendarinterval"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/sortorder"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/gofiber/fiber/v2"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
+	"github.com/volatiletech/null/v8"
+	"golang.org/x/exp/slices"
+)
+
+const (
+	defaultTimeout = time.Minute * 5
 )
 
 type DeviceDataController struct {
 	Settings        *config.Settings
 	log             *zerolog.Logger
 	deviceAPI       services.DeviceAPIService
-	es8Client       *es8.TypedClient
+	esService       EsInterface
 	definitionsAPI  services.DeviceDefinitionsAPIService
 	deviceStatusSvc services.DeviceStatusService
 	dbs             func() *db.ReaderWriter
 }
 
-const (
-	NonLocationData int64 = 1
-	Commands        int64 = 2
-	CurrentLocation int64 = 3
-	AllTimeLocation int64 = 4
-)
-
-type historyResp struct {
-	Status []any `json:"statuses"`
+// EsInterface is an interface for the elastic service.
+type EsInterface interface {
+	GetHistory(ctx context.Context, params elastic.GetHistoryParams) ([]json.RawMessage, error)
+	ESClient() *elasticsearch.TypedClient
 }
 
 // NewDeviceDataController constructor
-func NewDeviceDataController(settings *config.Settings, logger *zerolog.Logger, deviceAPIService services.DeviceAPIService, es8Client *es8.TypedClient, definitionsAPIService services.DeviceDefinitionsAPIService, deviceStatusSvc services.DeviceStatusService, dbs func() *db.ReaderWriter) DeviceDataController {
+func NewDeviceDataController(settings *config.Settings, logger *zerolog.Logger, deviceAPIService services.DeviceAPIService, esService EsInterface, definitionsAPIService services.DeviceDefinitionsAPIService, deviceStatusSvc services.DeviceStatusService, dbs func() *db.ReaderWriter) DeviceDataController {
 	return DeviceDataController{
 		Settings:        settings,
 		log:             logger,
 		deviceAPI:       deviceAPIService,
-		es8Client:       es8Client,
+		esService:       esService,
 		definitionsAPI:  definitionsAPIService,
 		dbs:             dbs,
 		deviceStatusSvc: deviceStatusSvc,
@@ -190,85 +188,22 @@ func (d *DeviceDataController) GetHistoricalRawPermissioned(c *fiber.Ctx) error 
 		return err
 	}
 
-	claims := c.Locals("tokenClaims").(pr.CustomClaims)
-	privileges := claims.PrivilegeIDs
+	privs := getPrivileges(c)
 
 	var filter types.SourceFilter
 
-	if slices.Contains(privileges, AllTimeLocation) {
+	if slices.Contains(privs, privileges.VehicleAllTimeLocation) {
 		filter.Includes = append(filter.Includes, "data.latitude", "data.longitude", "location", "data.cell", "cell")
 	} else {
 		filter.Excludes = append(filter.Excludes, "data.latitude", "data.longitude", "location", "data.cell", "cell")
 	}
 
-	if slices.Contains(privileges, NonLocationData) {
+	if slices.Contains(privs, privileges.VehicleNonLocationData) {
 		// Overrides the more limited Includes entries from above if the token also
 		// has AllTimeLocation.
 		filter.Includes = append(filter.Includes, "*")
 	}
 	return d.getHistoryV1(c, userDevice, startDate, endDate, filter)
-}
-
-// GetHistoricalPermissionedV2 godoc
-// @Description  Get all historical data for a tokenID, within start and end range
-// @Tags         device-data
-// @Produce      json
-// @Success      200
-// @Param        tokenID  path   int64  true   "token id"
-// @Param        startDate     query  string  false  "startDate eg 2022-01-02. if empty two weeks back"
-// @Param        endDate       query  string  false  "endDate eg 2022-03-01. if empty today"
-// @Security     BearerAuth
-// @Router       /v2/vehicle/{tokenID}/history [get]
-func (d *DeviceDataController) GetHistoricalPermissionedV2(c *fiber.Ctx) error {
-	const dateLayout = "2006-01-02" // date layout support by elastic
-	tokenID := c.Params("tokenID")
-	startDate := c.Query("startDate")
-	if startDate == "" {
-		startDate = time.Now().Add(-1 * (time.Hour * 24 * 14)).Format(dateLayout) // if no startdate default to 2 weeks
-	} else {
-		_, err := time.Parse(dateLayout, startDate)
-		if err != nil {
-			return fiber.NewError(fiber.StatusBadRequest, err.Error())
-		}
-	}
-	endDate := c.Query("endDate")
-	if endDate == "" {
-		endDate = time.Now().Format(dateLayout)
-	} else {
-		_, err := time.Parse(dateLayout, endDate)
-		if err != nil {
-			return fiber.NewError(fiber.StatusBadRequest, err.Error())
-		}
-	}
-
-	i, err := strconv.ParseInt(tokenID, 10, 64)
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
-	}
-
-	userDevice, err := d.deviceAPI.GetUserDeviceByTokenID(c.Context(), i)
-	if err != nil {
-		return err
-	}
-
-	claims := c.Locals("tokenClaims").(pr.CustomClaims)
-	privileges := claims.PrivilegeIDs
-
-	var filter types.SourceFilter
-
-	if slices.Contains(privileges, AllTimeLocation) {
-		filter.Includes = append(filter.Includes, "*.vehicle.currentLocation")
-	} else {
-		filter.Excludes = append(filter.Excludes, "*.misc.cell", "*.vehicle.currentLocation")
-	}
-
-	if slices.Contains(privileges, NonLocationData) {
-		// Overrides the more limited Includes entries from above if the token also
-		// has AllTimeLocation.
-		filter.Includes = append(filter.Includes, "*")
-	}
-
-	return d.getHistoryV2(c, userDevice, startDate, endDate, filter)
 }
 
 func (d *DeviceDataController) getHistoryV1(c *fiber.Ctx, userDevice *grpc.UserDevice, startDate, endDate string, filter types.SourceFilter) error {
@@ -297,7 +232,7 @@ func (d *DeviceDataController) getHistoryV1(c *fiber.Ctx, userDevice *grpc.UserD
 		Source_: &source,
 	}
 
-	res, err := d.es8Client.Search().Index(d.Settings.DeviceDataIndexName).Request(&req).Do(c.Context())
+	res, err := d.esService.ESClient().Search().Index(d.Settings.DeviceDataIndexName).Request(&req).Perform(c.Context())
 	if err != nil {
 		return err
 	}
@@ -328,89 +263,6 @@ func (d *DeviceDataController) getHistoryV1(c *fiber.Ctx, userDevice *grpc.UserD
 
 	c.Set("Content-Type", fiber.MIMEApplicationJSON)
 	return c.Status(fiber.StatusOK).Send(body)
-}
-
-func (d *DeviceDataController) getHistoryV2(c *fiber.Ctx, userDevice *grpc.UserDevice, startDate, endDate string, filter types.SourceFilter) error {
-	var source types.SourceConfig = filter
-	timeFilter := "time"
-	msm := types.MinimumShouldMatch(1)
-	min := 1
-	req := search.Request{
-		Query: &types.Query{
-			Bool: &types.BoolQuery{
-				Filter: []types.Query{
-					{Term: map[string]types.TermQuery{"subject": {Value: userDevice.Id}}},
-					{Range: map[string]types.RangeQuery{"time": types.DateRangeQuery{Gte: some.String(startDate), Lte: some.String(endDate)}}},
-				},
-				Should: []types.Query{
-					{Exists: &types.ExistsQuery{Field: "data.vehicle"}},
-				},
-				MinimumShouldMatch: &msm,
-			},
-		},
-		Aggregations: map[string]types.Aggregations{
-			"documents_by_hour": {
-				DateHistogram: &types.DateHistogramAggregation{
-					Field:            &timeFilter,
-					CalendarInterval: &calendarinterval.Hour,
-					MinDocCount:      &min,
-				},
-				Aggregations: map[string]types.Aggregations{
-					"select_single_doc": {
-						TopHits: &types.TopHitsAggregation{
-							Size:    &min,
-							Source_: &source,
-						},
-					},
-				},
-			},
-		},
-		Size: some.Int(0),
-	}
-
-	reqb, err := json.Marshal(req)
-	if err != nil {
-		return err
-	}
-
-	d.log.Info().RawJSON("request", reqb).Str("index", d.Settings.DeviceDataIndexNameV2).Msg("V2 request")
-
-	res, err := d.es8Client.Search().Index(d.Settings.DeviceDataIndexNameV2).Request(&req).Do(c.Context())
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
-
-	localLog := d.log.With().Str("userDeviceId", userDevice.Id).
-		Str("deviceDefinitionId", userDevice.DeviceDefinitionId).Interface("response", res).Logger()
-	if res.StatusCode >= fiber.StatusBadRequest {
-		localLog.Error().Str("userDeviceId", userDevice.Id).Interface("response", res).Msgf("Got status code %d from Elastic.", res.StatusCode)
-		return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
-	}
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		localLog.Err(err).Str("userDeviceId", userDevice.Id).Msg("Failed to read Elastic response body.")
-		return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
-	}
-
-	resp := historyResp{Status: []any{}}
-	gjson.GetBytes(body, "aggregations.documents_by_hour.buckets").ForEach(func(_, v gjson.Result) bool {
-		gjson.Get(v.Raw, "select_single_doc.hits.hits").ForEach(func(_, value gjson.Result) bool {
-			resp.Status = append(resp.Status, value.Get("_source").Value())
-			return true
-		})
-		return true
-	})
-
-	// TODO: must be updated to work with modified query
-	// body, err = addRangeIfNotExists(c.Context(), d.definitionsAPI, body, userDevice.DeviceDefinitionId, userDevice.DeviceStyleId)
-	// if err != nil {
-	// 	localLog.Warn().Err(err).Msg("could not add range calculation to document")
-	// }
-	// body = removeOdometerIfInvalid(body)
-
-	c.Set("Content-Type", fiber.MIMEApplicationJSON)
-	return c.Status(fiber.StatusOK).JSON(resp)
 }
 
 // removeOdometerIfInvalid removes the odometer json properties we consider invalid
@@ -492,7 +344,7 @@ func (d *DeviceDataController) GetUserDeviceStatus(c *fiber.Ctx) error {
 	}
 
 	ds := d.deviceStatusSvc.PrepareDeviceStatusInformation(c.Context(), deviceData, userDevice.DeviceDefinitionId,
-		userDevice.DeviceStyleId, []int64{NonLocationData, CurrentLocation, AllTimeLocation})
+		userDevice.DeviceStyleId, []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleCurrentLocation, privileges.VehicleAllTimeLocation})
 
 	return c.JSON(ds)
 }
@@ -509,8 +361,6 @@ func (d *DeviceDataController) GetUserDeviceStatus(c *fiber.Ctx) error {
 func (d *DeviceDataController) GetVehicleStatus(c *fiber.Ctx) error {
 	tis := c.Params("tokenID")
 	claims := c.Locals("tokenClaims").(pr.CustomClaims)
-
-	privileges := claims.PrivilegeIDs
 
 	ti, ok := new(big.Int).SetString(tis, 10)
 	if !ok {
@@ -549,7 +399,7 @@ func (d *DeviceDataController) GetVehicleStatus(c *fiber.Ctx) error {
 	}
 
 	ds := d.deviceStatusSvc.PrepareDeviceStatusInformation(c.Context(), deviceData, userDeviceNFT.DeviceDefinitionId,
-		userDeviceNFT.DeviceStyleId, privileges)
+		userDeviceNFT.DeviceStyleId, claims.PrivilegeIDs)
 
 	return c.JSON(ds)
 }
@@ -566,7 +416,7 @@ func (d *DeviceDataController) GetVehicleStatus(c *fiber.Ctx) error {
 // @Router      /v1/vehicle/{tokenId}/status-raw [get]
 func (d *DeviceDataController) GetVehicleStatusRaw(c *fiber.Ctx) error {
 	tis := c.Params("tokenID")
-	claims := c.Locals("tokenClaims").(pr.CustomClaims)
+	privs := getPrivileges(c)
 
 	ti, ok := new(big.Int).SetString(tis, 10)
 	if !ok {
@@ -596,14 +446,14 @@ func (d *DeviceDataController) GetVehicleStatusRaw(c *fiber.Ctx) error {
 
 	var jsonSignal []byte
 	for _, item := range deviceData {
-		jsonSignal = dataComplianceForSignals(item.Signals.JSON, claims.PrivilegeIDs)
+		jsonSignal = dataComplianceForSignals(item.Signals.JSON, privs)
 		break
 	}
 	return c.Send(jsonSignal)
 }
 
 // dataComplianceForSignals removes any signals that per the privileges should not be returned
-func dataComplianceForSignals(json []byte, privilegeIDs []int64) []byte {
+func dataComplianceForSignals(json []byte, privilegeIDs []privileges.Privilege) []byte {
 	nonLocationDataProperties := []string{"charging", "fuelPercentRemaining", "batteryCapacity", "oil", "soc", "chargeLimit", "odometer", "range", "batteryVoltage", "ambientTemp", "tires"}
 	currentLocationAndAllTimeLocation := []string{"latitude", "longitude"}
 
@@ -615,11 +465,11 @@ func dataComplianceForSignals(json []byte, privilegeIDs []int64) []byte {
 		}
 	}
 
-	if !slices.Contains(privilegeIDs, NonLocationData) {
+	if !slices.Contains(privilegeIDs, privileges.VehicleNonLocationData) {
 		removeProperties(nonLocationDataProperties)
 	}
 
-	if !slices.Contains(privilegeIDs, CurrentLocation) || slices.Contains(privilegeIDs, AllTimeLocation) {
+	if !slices.Contains(privilegeIDs, privileges.VehicleCurrentLocation) || slices.Contains(privilegeIDs, privileges.VehicleAllTimeLocation) {
 		removeProperties(currentLocationAndAllTimeLocation)
 	}
 
@@ -800,7 +650,7 @@ func (d *DeviceDataController) GetDailyDistance(c *fiber.Ctx) error {
 		},
 	}
 
-	resp, err := d.es8Client.Search().Index(d.Settings.DeviceDataIndexName).Request(query).Do(c.Context())
+	resp, err := d.esService.ESClient().Search().Index(d.Settings.DeviceDataIndexName).Request(query).Perform(c.Context())
 	if err != nil {
 		return err
 	}
@@ -858,11 +708,13 @@ func (d *DeviceDataController) GetDailyDistance(c *fiber.Ctx) error {
 // @Router       /v1/autopi/last-seen/{ethAddr} [get]
 func (d *DeviceDataController) GetLastSeen(c *fiber.Ctx) error {
 	authed := false
-	for h, v := range c.GetReqHeaders() {
+	for h, vals := range c.GetReqHeaders() {
 		if strings.EqualFold("Authorization", h) {
-			if v == d.Settings.AutoPiPreSharedKey {
-				authed = true
-				break
+			for _, val := range vals {
+				if val == d.Settings.AutoPiPreSharedKey {
+					authed = true
+					break
+				}
 			}
 		}
 	}
@@ -908,7 +760,7 @@ func (d *DeviceDataController) queryOdometer(ctx context.Context, order sortorde
 		Sort: []types.SortCombinations{types.SortOptions{SortOptions: map[string]types.FieldSort{"data.odometer": {Order: &order}}}},
 	}
 
-	res, err := d.es8Client.Search().Index(d.Settings.DeviceDataIndexName).Request(&req).Do(ctx)
+	res, err := d.esService.ESClient().Search().Index(d.Settings.DeviceDataIndexName).Request(&req).Perform(ctx)
 	if err != nil {
 		return 0, err
 	}

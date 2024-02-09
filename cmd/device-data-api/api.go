@@ -2,20 +2,20 @@ package main
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
-
-	"github.com/pkg/errors"
 
 	"github.com/DIMO-Network/device-data-api/internal/config"
 	"github.com/DIMO-Network/device-data-api/internal/controllers"
 	"github.com/DIMO-Network/device-data-api/internal/middleware/metrics"
 	"github.com/DIMO-Network/device-data-api/internal/middleware/owner"
 	"github.com/DIMO-Network/device-data-api/internal/services"
+	"github.com/DIMO-Network/device-data-api/internal/services/elastic"
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/shared/middleware/privilegetoken"
+	"github.com/DIMO-Network/shared/privileges"
 	pb "github.com/DIMO-Network/users-api/pkg/grpc"
-	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/ethereum/go-ethereum/common"
 	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
@@ -66,19 +66,12 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 		},
 	})
 
-	esClient8, err := elasticsearch.NewTypedClient(elasticsearch.Config{
-		Addresses:  []string{settings.ElasticSearchAnalyticsHost},
-		Username:   settings.ElasticSearchAnalyticsUsername,
-		Password:   settings.ElasticSearchAnalyticsPassword,
-		MaxRetries: 5,
-	})
+	esService, err := elastic.New(settings, &logger, nil)
 	if err != nil {
-		logger.Fatal().Err(err).Msg("Error constructing Elasticsearch client.")
+		logger.Fatal().Err(err).Msg("Error constructing Elasticsearch service.")
 	}
-
 	deviceStatusSvc := services.NewDeviceStatusService(definitionsAPIService)
-
-	deviceDataController := controllers.NewDeviceDataController(settings, &logger, deviceAPIService, esClient8, definitionsAPIService, deviceStatusSvc, dbs)
+	deviceDataController := controllers.NewDeviceDataController(settings, &logger, deviceAPIService, esService, definitionsAPIService, deviceStatusSvc, dbs)
 
 	logger.Info().Str("jwkUrl", settings.TokenExchangeJWTKeySetURL).Str("vehicleAddr", settings.VehicleNFTAddress).Msg("Privileges enabled.")
 	privilegeAuth := jwtware.New(jwtware.Config{
@@ -100,12 +93,12 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 	vehicleAddr := common.HexToAddress(settings.VehicleNFTAddress)
 
 	// token based routes
-	vTokenV1.Get("/history", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.AllTimeLocation}), cacheHandler, deviceDataController.GetHistoricalRawPermissioned)
-	vTokenV1.Get("/status", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.CurrentLocation, controllers.AllTimeLocation}), cacheHandler, deviceDataController.GetVehicleStatus)
-	vTokenV1.Get("/status-raw", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.CurrentLocation, controllers.AllTimeLocation}), cacheHandler, deviceDataController.GetVehicleStatusRaw)
+	vTokenV1.Get("/history", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleAllTimeLocation}), cacheHandler, deviceDataController.GetHistoricalRawPermissioned)
+	vTokenV1.Get("/status", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleCurrentLocation, privileges.VehicleAllTimeLocation}), cacheHandler, deviceDataController.GetVehicleStatus)
+	vTokenV1.Get("/status-raw", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleCurrentLocation, privileges.VehicleAllTimeLocation}), cacheHandler, deviceDataController.GetVehicleStatusRaw)
 
-	vTokenV2.Get("/status", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.CurrentLocation, controllers.AllTimeLocation}), cacheHandler, deviceDataController.GetVehicleStatusV2)
-	vTokenV2.Get("/history", tk.OneOf(vehicleAddr, []int64{controllers.NonLocationData, controllers.AllTimeLocation}), cacheHandler, deviceDataController.GetHistoricalPermissionedV2)
+	vTokenV2.Get("/status", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleCurrentLocation, privileges.VehicleAllTimeLocation}), cacheHandler, deviceDataController.GetVehicleStatusV2)
+	vTokenV2.Get("/history", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleAllTimeLocation}), cacheHandler, deviceDataController.GetHistoricalPermissionedV2)
 
 	udMw := owner.New(usersClient, deviceAPIService, &logger)
 	v1Auth := app.Group("/v1", jwtAuth)
@@ -116,7 +109,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 	udOwner.Get("/distance-driven", cacheHandler, deviceDataController.GetDistanceDriven)
 	udOwner.Get("/daily-distance", cacheHandler, deviceDataController.GetDailyDistance)
 
-	dataDownloadController, err := controllers.NewDataDownloadController(settings, &logger, esClient8, deviceAPIService)
+	dataDownloadController, err := controllers.NewDataDownloadController(settings, &logger, esService.ESClient(), deviceAPIService)
 	if err != nil {
 		panic(err)
 	}

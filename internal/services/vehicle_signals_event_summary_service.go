@@ -13,7 +13,6 @@ import (
 	"github.com/rs/zerolog"
 )
 
-//go:generate mockgen -source vehicle_signals_event_summary_service.go -destination mocks/vehicle_signals_event_summary_service_mock.go
 type vehicleSignalsEventSummaryService struct {
 	db          func() *db.ReaderWriter
 	log         *zerolog.Logger
