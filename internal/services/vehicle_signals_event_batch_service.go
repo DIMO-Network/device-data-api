@@ -12,7 +12,6 @@ import (
 	"github.com/rs/zerolog"
 )
 
-//go:generate mockgen -source vehicle_signals_event_batch_service.go -destination mocks/vehicle_signals_event_batch_service_mock.go
 type VehicleSignalsEventBatchService interface {
 	GenerateVehicleDataTracking(ctx context.Context, dateKey string, fromTime time.Time) error
 }

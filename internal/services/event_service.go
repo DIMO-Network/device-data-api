@@ -12,8 +12,6 @@ import (
 	"github.com/segmentio/ksuid"
 )
 
-//go:generate mockgen -source event_service.go -destination mocks/event_service_mock.go
-
 type Event struct {
 	Type    string
 	Subject string

@@ -17,7 +17,6 @@ import (
 	"github.com/rs/zerolog"
 )
 
-//go:generate mockgen -source vehicle_signal_job_service.go -destination mocks/vehicle_signal_job_service_mock.go
 type vehicleSignalJobService struct {
 	db  func() *db.ReaderWriter
 	log *zerolog.Logger
