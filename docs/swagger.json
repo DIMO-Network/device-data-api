@@ -365,14 +365,20 @@
                     },
                     {
                         "type": "string",
-                        "description": "startDate eg 2022-01-02. if empty two weeks back",
-                        "name": "startDate",
+                        "description": "startTime is an RFC3339 formatted date-time string. If empty two weeks from endTime",
+                        "name": "startTime",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "endDate eg 2022-03-01. if empty today",
-                        "name": "endDate",
+                        "description": "endTime is an RFC3339 formatted date-time string. If empty the current time",
+                        "name": "endTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "number of data points to return, default 1000",
+                        "name": "buckets",
                         "in": "query"
                     }
                 ],

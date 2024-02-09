@@ -4,27 +4,20 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"testing"
-
-	"github.com/stretchr/testify/require"
-	"github.com/volatiletech/sqlboiler/v4/boil"
-
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
+	"testing"
 	"time"
-
-	"github.com/DIMO-Network/device-data-api/models"
 
 	"github.com/DIMO-Network/device-data-api/internal/config"
 	"github.com/DIMO-Network/device-data-api/internal/constants"
+	"github.com/DIMO-Network/device-data-api/models"
 	ddgrpc "github.com/DIMO-Network/device-definitions-api/pkg/grpc"
 	"github.com/DIMO-Network/shared/db"
+	"github.com/DIMO-Network/shared/middleware/privilegetoken"
+	"github.com/DIMO-Network/shared/privileges"
 	pb "github.com/DIMO-Network/users-api/pkg/grpc"
 	"github.com/docker/go-connections/nat"
 	"github.com/gofiber/fiber/v2"
@@ -33,8 +26,13 @@ import (
 	"github.com/pressly/goose/v3"
 	"github.com/rs/zerolog"
 	"github.com/segmentio/ksuid"
+	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"github.com/volatiletech/sqlboiler/v4/boil"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const testDbName = "device_data_api"
@@ -179,6 +177,17 @@ func AuthInjectorTestHandler(userID string) fiber.Handler {
 		})
 
 		c.Locals("user", token)
+		return c.Next()
+	}
+}
+
+// ClaimsInjectorTestHandler injects fake claims into context
+func ClaimsInjectorTestHandler(claims []privileges.Privilege) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		claims := privilegetoken.CustomClaims{
+			PrivilegeIDs: claims,
+		}
+		c.Locals("tokenClaims", claims)
 		return c.Next()
 	}
 }

@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"github.com/DIMO-Network/device-data-api/internal/services"
+	"github.com/DIMO-Network/shared/middleware/privilegetoken"
+	"github.com/DIMO-Network/shared/privileges"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -28,4 +30,17 @@ func CalculateRange(rangeData *services.DeviceDefinitionRange, fuelPercentRemain
 		return &rangeKm
 	}
 	return nil
+}
+
+// getPrivileges takes a fiber context and returns a slice of prvilieges from the jwt token if they exist.
+func getPrivileges(c *fiber.Ctx) []privileges.Privilege {
+	claims, ok := c.Locals("tokenClaims").(privilegetoken.CustomClaims)
+	if !ok {
+		return nil
+	}
+	privs := make([]privileges.Privilege, len(claims.PrivilegeIDs))
+	for i, id := range claims.PrivilegeIDs {
+		privs[i] = privileges.Privilege(id)
+	}
+	return privs
 }

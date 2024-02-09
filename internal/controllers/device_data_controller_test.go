@@ -5,7 +5,7 @@ import (
 	_ "embed"
 	"math/big"
 
-	pr "github.com/DIMO-Network/shared/middleware/privilegetoken"
+	"github.com/DIMO-Network/shared/privileges"
 
 	"encoding/json"
 	"fmt"
@@ -186,7 +186,7 @@ func TestUserDevicesController_GetUserDeviceStatus(t *testing.T) {
 		assert.NoError(t, err)
 
 		notCharging := false
-		deviceStatusSvc.EXPECT().PrepareDeviceStatusInformation(gomock.Any(), gomock.Any(), dd[0].DeviceDefinitionId, nil, []int64{1, 3, 4}).Times(1).
+		deviceStatusSvc.EXPECT().PrepareDeviceStatusInformation(gomock.Any(), gomock.Any(), dd[0].DeviceDefinitionId, nil, []privileges.Privilege{1, 3, 4}).Times(1).
 			Return(response2.DeviceSnapshot{
 				Charging:     &notCharging,
 				Odometer:     getPtrFloat(195677.59375),
@@ -248,13 +248,9 @@ func TestUserDevicesController_GetVehicleStatusRaw(t *testing.T) {
 	app := fiber.New()
 
 	// Custom Claims
-	app.Use(func(c *fiber.Ctx) error {
-		claims := pr.CustomClaims{
-			PrivilegeIDs: []int64{NonLocationData},
-		}
-		c.Locals("tokenClaims", claims)
-		return c.Next()
-	})
+	app.Use(test.ClaimsInjectorTestHandler(
+		[]privileges.Privilege{privileges.VehicleNonLocationData},
+	))
 
 	app.Get("/vehicle/:tokenId/status-raw", test.AuthInjectorTestHandler(testUserID), c.GetVehicleStatusRaw)
 
