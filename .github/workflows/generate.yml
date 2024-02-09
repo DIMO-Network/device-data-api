@@ -29,7 +29,7 @@ jobs:
         run: go generate ./...
 
       - name: generate swagger
-        run: swag init -g cmd/device-data-api/main.go --parseDependency --parseInternal --generatedTime true
+        run: swag init -g cmd/device-data-api/main.go --parseDependency --parseInternal
 
       - name: go mod tidy
         run: go mod tidy
