@@ -22,6 +22,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cache"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	fiberrecover "github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/gofiber/fiber/v2/middleware/skip"
 	"github.com/gofiber/swagger"
 	"github.com/rs/zerolog"
 )
@@ -46,13 +47,16 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 		StackTraceHandler: nil,
 	}))
 	app.Use(cors.New())
-	//cache
-	cacheHandler := cache.New(cache.Config{
-		Next: func(c *fiber.Ctx) bool {
-			return c.Query("refresh") == "true"
-		},
+
+	cacheHandler := skip.New(cache.New(cache.Config{
 		Expiration:   2 * time.Minute,
 		CacheControl: true,
+		KeyGenerator: func(c *fiber.Ctx) string {
+			return c.Path() + c.Get("Authorization")
+		},
+	}), func(c *fiber.Ctx) bool {
+		// skip cache if refresh is true
+		return c.Query("refresh") == "true"
 	})
 
 	app.Get("/", healthCheck)
