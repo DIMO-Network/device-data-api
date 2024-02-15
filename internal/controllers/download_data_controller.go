@@ -2,9 +2,8 @@ package controllers
 
 import (
 	"context"
-	"errors"
-
 	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/DIMO-Network/device-data-api/internal/config"
@@ -18,9 +17,9 @@ import (
 // DataDownloadController provides endpoints for user to download their data or save it (encrypted) to IPFS
 type DataDownloadController struct {
 	log       *zerolog.Logger
-	QuerySvc  *services.QueryStorageService
-	EmailSvc  *services.EmailService
-	NATSSvc   *services.NATSService
+	querySvc  *services.QueryStorageService
+	emailSvc  *services.EmailService
+	natsSvc   *services.NATSService
 	deviceAPI services.DeviceAPIService
 }
 
@@ -36,10 +35,10 @@ func NewDataDownloadController(settings *config.Settings, log *zerolog.Logger, e
 	}
 	return &DataDownloadController{
 		log:       log,
-		QuerySvc:  querySvc,
-		EmailSvc:  emailSvc,
+		querySvc:  querySvc,
+		emailSvc:  emailSvc,
 		deviceAPI: deviceAPIService,
-		NATSSvc:   nats}, nil
+		natsSvc:   nats}, nil
 }
 
 // DataDownloadHandler godoc
@@ -55,15 +54,24 @@ func NewDataDownloadController(settings *config.Settings, log *zerolog.Logger, e
 func (d *DataDownloadController) DataDownloadHandler(c *fiber.Ctx) error {
 	userID := GetUserID(c)
 	userDeviceID := c.Params("userDeviceID")
+	// make sure user has an email address before enqueueing job
+	_, err := d.emailSvc.GetVerifiedEmailAddress(userID)
+	if err != nil {
+		return c.Status(fiber.StatusConflict).JSON(dataDownloadRequestStatus{
+			Status:       "error",
+			UserID:       userID,
+			UserDeviceID: userDeviceID,
+			Message:      "Your account does not have a verified email address. Please look for your DIMO verification email, click on the verify link and try here again.",
+		})
+	}
 
 	params := QueryValues{
 		UserID:       userID,
 		UserDeviceID: userDeviceID,
 	}
-
 	b, _ := json.Marshal(params)
 
-	if _, err := d.NATSSvc.JetStream.Publish(d.QuerySvc.NATSDataDownloadSubject, b); err != nil {
+	if _, err := d.natsSvc.JetStream.Publish(d.querySvc.NATSDataDownloadSubject, b); err != nil {
 		return err
 	}
 
@@ -76,8 +84,8 @@ func (d *DataDownloadController) DataDownloadHandler(c *fiber.Ctx) error {
 }
 
 func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error {
-	sub, err := d.NATSSvc.JetStream.PullSubscribe(d.NATSSvc.JetStreamSubject, d.NATSSvc.DurableConsumer,
-		nats.AckWait(d.NATSSvc.AckTimeout))
+	sub, err := d.natsSvc.JetStream.PullSubscribe(d.natsSvc.JetStreamSubject, d.natsSvc.DurableConsumer,
+		nats.AckWait(d.natsSvc.AckTimeout))
 	if err != nil {
 		return err
 	}
@@ -133,7 +141,7 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 					}
 				}()
 
-				s3link, err := d.QuerySvc.StreamDataToS3(ctx, params.UserDeviceID)
+				s3link, err := d.querySvc.StreamDataToS3(ctx, params.UserDeviceID)
 				if err != nil {
 					ack(msg, localLog)
 					localLog.Err(err).Msg("error while fetching data from elasticsearch")
@@ -144,7 +152,7 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 
 				inProgress(msg, localLog)
 
-				err = d.EmailSvc.SendEmail(params.UserID, s3link)
+				err = d.emailSvc.SendEmail(params.UserID, s3link)
 				if err != nil {
 					ack(msg, localLog)
 					localLog.Err(err).Msg("unable to put send email")

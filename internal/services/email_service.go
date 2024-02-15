@@ -56,7 +56,7 @@ func NewEmailService(settings *config.Settings, log *zerolog.Logger) *EmailServi
 
 func (es *EmailService) SendEmail(user string, downloadLink []string) error {
 
-	userEmail, err := es.getVerifiedEmailAddress(user)
+	userEmail, err := es.GetVerifiedEmailAddress(user)
 	if err != nil {
 		return err
 	}
@@ -113,7 +113,7 @@ func (es *EmailService) SendEmail(user string, downloadLink []string) error {
 	return smtp.SendMail(addr, auth, es.emailFrom, []string{userEmail}, buffer.Bytes())
 }
 
-func (es *EmailService) getVerifiedEmailAddress(userID string) (string, error) {
+func (es *EmailService) GetVerifiedEmailAddress(userID string) (string, error) {
 
 	usersClient := pb.NewUserServiceClient(es.ClientConn)
 	user, err := usersClient.GetUser(context.Background(), &pb.GetUserRequest{Id: userID})
