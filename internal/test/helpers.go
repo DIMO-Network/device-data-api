@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/DIMO-Network/device-data-api/internal/config"
 	"github.com/DIMO-Network/device-data-api/internal/constants"
 	"github.com/DIMO-Network/device-data-api/models"
@@ -103,7 +105,7 @@ $$ LANGUAGE plpgsql;
 	}
 
 	goose.SetTableName("devices_api.migrations")
-	if err := goose.Run("up", pdb.DBS().Writer.DB, migrationsDirRelPath); err != nil {
+	if err := goose.RunContext(ctx, "up", pdb.DBS().Writer.DB, migrationsDirRelPath); err != nil {
 		return handleContainerStartErr(ctx, errors.Wrap(err, "failed to apply goose migrations for test"), pgContainer, t)
 	}
 
@@ -361,6 +363,14 @@ func (c *UsersClient) GetUser(_ context.Context, in *pb.GetUserRequest, _ ...grp
 	u, ok := c.Store[in.Id]
 	if !ok {
 		return nil, status.Error(codes.NotFound, "No user with that id found.")
+	}
+	return u, nil
+}
+
+func (c *UsersClient) GetUserByEthAddr(_ context.Context, in *pb.GetUserByEthRequest, _ ...grpc.CallOption) (*pb.User, error) {
+	u, ok := c.Store[common.BytesToAddress(in.EthAddr).Hex()]
+	if !ok {
+		return nil, status.Error(codes.NotFound, "No user with that eth addr found.")
 	}
 	return u, nil
 }

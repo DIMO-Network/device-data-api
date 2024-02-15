@@ -23,7 +23,7 @@ import (
 
 	"github.com/DIMO-Network/device-data-api/internal/middleware/metrics"
 	"github.com/DIMO-Network/shared/db"
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"github.com/burdiyan/kafkautil"
 	"github.com/google/subcommands"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"

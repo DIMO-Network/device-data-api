@@ -9,11 +9,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/burdiyan/kafkautil"
-
 	"github.com/DIMO-Network/shared/db"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"github.com/rs/zerolog"
 )
 
@@ -51,7 +49,7 @@ func createKafkaProducer(settings *config.Settings) (sarama.SyncProducer, error)
 	config := sarama.NewConfig()
 	config.Version = sarama.V2_8_1_0
 	config.Producer.Return.Successes = true
-	config.Producer.Partitioner = kafkautil.NewJVMCompatiblePartitioner
+	config.Producer.Partitioner = NewJVMCompatiblePartitioner
 	p, err := sarama.NewSyncProducer(strings.Split(settings.KafkaBrokers, ","), config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct producer with broker list %s: %w", settings.KafkaBrokers, err)

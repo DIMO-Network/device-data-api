@@ -122,7 +122,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 	go func() {
 		err = dataDownloadController.DataDownloadConsumer(context.Background())
 		if err != nil {
-			logger.Info().Err(err).Msg("data download consumer error")
+			logger.Err(err).Msg("data download consumer error")
 		}
 	}()
 

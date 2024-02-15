@@ -77,10 +77,13 @@ func (d *DataDownloadController) DataDownloadHandler(c *fiber.Ctx) error {
 
 func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error {
 	sub, err := d.NATSSvc.JetStream.PullSubscribe(d.NATSSvc.JetStreamSubject, d.NATSSvc.DurableConsumer,
-		nats.AckWait(d.NATSSvc.AckTimeout), nats.MaxDeliver(2))
+		nats.AckWait(d.NATSSvc.AckTimeout))
 	if err != nil {
 		return err
 	}
+	// it is not possible to set the MaxDeliver in the subscriber here without some additional setup in the js engine, so therefore all message error conditions
+	// should be Acked so that we don't end up in infinite retry scenarios. Assuming the error is transient, if the user tries again it will likely work.
+	localLog := d.log.With().Str("handler", "DataDownloadConsumer").Logger()
 
 	for {
 		msgs, err := sub.Fetch(1)
@@ -88,33 +91,33 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 			if errors.Is(err, nats.ErrTimeout) {
 				continue
 			}
-			d.log.Err(err).Msg("error fetching from data download stream")
+			localLog.Err(err).Msg("error fetching from data download stream")
 		}
 
 		for _, msg := range msgs {
 			mtd, err := msg.Metadata()
 			if err != nil {
-				d.nak(msg, nil)
-				d.log.Info().Err(err).Msg("unable to parse metadata for message")
+				localLog.Err(err).Msg("unable to parse metadata for message")
+				ack(msg, localLog)
 				continue
 			}
 
 			select {
 			case <-ctx.Done():
-				d.nak(msg, nil)
+				ack(msg, localLog)
 				return nil
 			default:
 				var params QueryValues
 				err = json.Unmarshal(msg.Data, &params)
 				if err != nil {
-					d.nak(msg, &params)
-					d.log.Error().Msgf("unable to parse query parameters: %+v", err)
+					ack(msg, localLog)
+					localLog.Error().Msgf("unable to parse query parameters: %+v", err)
 					continue
 				}
-				localLog := d.log.With().Str("userId", params.UserID).Str("userDeviceID", params.UserDeviceID).Logger()
+				localLog := localLog.With().Str("userId", params.UserID).Str("userDeviceID", params.UserDeviceID).Logger()
 
 				localLog.Info().Msg("data download initiated")
-				d.inProgress(msg, params)
+				inProgress(msg, localLog)
 
 				nestedCtx, cancel := context.WithCancel(ctx)
 				go func() {
@@ -125,54 +128,47 @@ func (d *DataDownloadController) DataDownloadConsumer(ctx context.Context) error
 						case <-nestedCtx.Done():
 							return
 						case <-tick.C:
-							d.inProgress(msg, params)
+							inProgress(msg, localLog)
 						}
 					}
 				}()
 
 				s3link, err := d.QuerySvc.StreamDataToS3(ctx, params.UserDeviceID)
 				if err != nil {
-					d.nak(msg, &params)
+					ack(msg, localLog)
 					localLog.Err(err).Msg("error while fetching data from elasticsearch")
 					cancel()
 					continue
 				}
 				cancel()
 
-				d.inProgress(msg, params)
+				inProgress(msg, localLog)
 
 				err = d.EmailSvc.SendEmail(params.UserID, s3link)
 				if err != nil {
-					d.nak(msg, &params)
+					ack(msg, localLog)
 					localLog.Err(err).Msg("unable to put send email")
 					continue
 				}
 
-				d.ack(msg, params)
+				ack(msg, localLog)
 				localLog.Info().Uint64("numDelivered", mtd.NumDelivered).Msg("data download completed")
 			}
 		}
 	}
 }
 
-func (d *DataDownloadController) ack(msg *nats.Msg, params QueryValues) {
+// ack does msg.Ack() but if there is an error it uses the passed in localLog, which has extra info, to log the error message
+// we could use msg.Nak for certain transient error cases but only if we're able to configure the subscriber to have MaxDeliver attempts not be infinite
+func ack(msg *nats.Msg, localLog zerolog.Logger) {
 	if err := msg.Ack(); err != nil {
-		d.log.Err(err).Str("userId", params.UserID).Str("userDeviceID", params.UserDeviceID).Msg("message ack failed")
+		localLog.Err(err).Msg("message ack failed")
 	}
 }
 
-func (d *DataDownloadController) inProgress(msg *nats.Msg, params QueryValues) {
+func inProgress(msg *nats.Msg, localLog zerolog.Logger) {
 	if err := msg.InProgress(); err != nil {
-		d.log.Err(err).Str("userId", params.UserID).Str("userDeviceID", params.UserDeviceID).Msg("message in progress failed")
-	}
-}
-
-func (d *DataDownloadController) nak(msg *nats.Msg, params *QueryValues) {
-	err := msg.Nak()
-	if params == nil {
-		d.log.Err(err).Msg("message nak failed")
-	} else {
-		d.log.Err(err).Str("userId", params.UserID).Str("userDeviceID", params.UserDeviceID).Msg("message nak failed")
+		localLog.Err(err).Msg("message in progress failed")
 	}
 }
 

@@ -34,7 +34,7 @@ func (p *migrateDBCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&p.down, "down", false, "down database")
 }
 
-func (p *migrateDBCmd) Execute(_ context.Context, _ *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (p *migrateDBCmd) Execute(ctx context.Context, _ *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	const schemaName = "device_data_api"
 	var db *sql.DB
 	// setup database
@@ -63,7 +63,7 @@ func (p *migrateDBCmd) Execute(_ context.Context, _ *flag.FlagSet, _ ...interfac
 		p.logger.Fatal().Err(err).Msg("could not create schema")
 	}
 	goose.SetTableName("device_data_api.migrations")
-	if err := goose.Run(command, db, "migrations"); err != nil {
+	if err := goose.RunContext(ctx, command, db, "migrations"); err != nil {
 		p.logger.Fatal().Msgf("failed to apply go code migrations: %v\n", err)
 	}
 	// if we add any code migrations import _ "github.com/DIMO-Network/devices-api/migrations" // migrations won't work without this
