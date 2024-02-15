@@ -9,7 +9,7 @@ import (
 	"github.com/DIMO-Network/device-data-api/internal/config"
 	"github.com/DIMO-Network/device-data-api/internal/services"
 	"github.com/DIMO-Network/shared"
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"github.com/rs/zerolog"
 	"github.com/segmentio/ksuid"
 )

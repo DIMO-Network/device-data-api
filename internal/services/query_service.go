@@ -199,7 +199,7 @@ func (ud *userData) uploadPartToS3(ctx context.Context, reader *bytes.Reader, up
 		Bucket:     aws.String(ud.AWSBucket),
 		Key:        aws.String(ud.keyName),
 		UploadId:   ud.uploadObj.UploadId,
-		PartNumber: partNum,
+		PartNumber: &partNum,
 		Body:       reader,
 	})
 	if err != nil {
@@ -209,7 +209,7 @@ func (ud *userData) uploadPartToS3(ctx context.Context, reader *bytes.Reader, up
 	}
 
 	uploadParts = append(uploadParts, awstypes.CompletedPart{
-		PartNumber: partNum,
+		PartNumber: &partNum,
 		ETag:       part.ETag,
 	})
 
@@ -325,7 +325,6 @@ func (uds *QueryStorageService) StreamDataToS3(ctx context.Context, userDeviceID
 	}
 
 	return s3writer.downloadLinks, nil
-
 }
 
 // Elastic maximum.
