@@ -52,7 +52,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 		Expiration:   2 * time.Minute,
 		CacheControl: true,
 		KeyGenerator: func(c *fiber.Ctx) string {
-			return c.Path() + c.Get("Authorization")
+			return c.OriginalURL() + c.Get(fiber.HeaderAuthorization)
 		},
 	}), func(c *fiber.Ctx) bool {
 		// skip cache if refresh is true
