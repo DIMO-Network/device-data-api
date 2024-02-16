@@ -238,8 +238,7 @@ func (d *DeviceDataController) getHistoryV1(c *fiber.Ctx, userDevice *grpc.UserD
 	}
 	defer res.Body.Close()
 
-	localLog := d.log.With().Str("userDeviceId", userDevice.Id).
-		Str("deviceDefinitionId", userDevice.DeviceDefinitionId).Interface("response", res).Logger()
+	localLog := d.log.With().Str("userDeviceId", userDevice.Id).Str("deviceDefinitionId", userDevice.DeviceDefinitionId).Logger()
 	if res.StatusCode >= fiber.StatusBadRequest {
 		localLog.Error().Str("userDeviceId", userDevice.Id).Interface("response", res).Msgf("Got status code %d from Elastic.", res.StatusCode)
 		return fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
@@ -254,7 +253,7 @@ func (d *DeviceDataController) getHistoryV1(c *fiber.Ctx, userDevice *grpc.UserD
 	t := time.Now()
 	body, err = addRangeIfNotExists(c.Context(), d.definitionsAPI, body, userDevice.DeviceDefinitionId, userDevice.DeviceStyleId)
 	if err != nil {
-		localLog.Warn().Err(err).Msg("could not add range calculation to document")
+		localLog.Warn().Err(err).Str("response", string(body)).Msg("could not add range calculation to document")
 	}
 	body = removeOdometerIfInvalid(body)
 	if d := time.Since(t); d > time.Second {
