@@ -159,7 +159,10 @@ func ErrorHandler(c *fiber.Ctx, err error, logger zerolog.Logger) error {
 
 	// don't log not found errors
 	if code != fiber.StatusNotFound {
-		logger.Err(err).Int("code", code).Str("path", strings.TrimPrefix(c.Path(), "/")).Msg("Failed request.")
+		logger.Err(err).Int("httpStatusCode", code).
+			Str("httpPath", strings.TrimPrefix(c.Path(), "/")).
+			Str("httpMethod", c.Method()).
+			Msg("caught an error from http request")
 	}
 
 	return c.Status(code).JSON(CodeResp{Code: code, Message: message})
