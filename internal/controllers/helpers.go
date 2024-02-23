@@ -47,33 +47,34 @@ func getPrivileges(c *fiber.Ctx) []privileges.Privilege {
 	return privs
 }
 
-const dateLayout1 = time.DateOnly
-const dateLayout2 = time.RFC3339
-
+// parseDateRange validates whether the start and end date parameters are in an acceptable format, otherwise returns an error.
 func parseDateRange(startDate, endDate string) (string, string, error) {
 	if startDate == "" {
-		startDate = time.Now().Add(-1 * (time.Hour * 24 * 14)).Format(dateLayout2) // if no startdate default to 2 weeks
+		startDate = time.Now().Add(-1 * (time.Hour * 24 * 14)).Format(time.RFC3339) // if no startdate default to 2 weeks
 	} else {
-		_, errLayout1 := time.Parse(dateLayout1, startDate)
-		if errLayout1 != nil {
-			_, errLayout2 := time.Parse(dateLayout2, startDate)
-			if errLayout2 != nil {
-				return "", "", errLayout2
-			}
+		if !validDate(startDate) {
+			return "", "", fiber.NewError(fiber.StatusBadRequest, "Invalid start date format")
 		}
 	}
 
 	if endDate == "" {
-		endDate = time.Now().Format(dateLayout2)
+		endDate = time.Now().Format(time.RFC3339)
 	} else {
-		_, errLayout1 := time.Parse(dateLayout1, startDate)
-		if errLayout1 != nil {
-			_, errLayout2 := time.Parse(dateLayout2, endDate)
-			if errLayout2 != nil {
-				return "", "", errLayout2
-			}
+		if !validDate(endDate) {
+			return "", "", fiber.NewError(fiber.StatusBadRequest, "Invalid end date format")
 		}
 	}
 
 	return startDate, endDate, nil
+}
+
+func validDate(date string) bool {
+	_, errDateOnly := time.Parse(time.DateOnly, date)
+	if errDateOnly != nil {
+		_, errRFC3339 := time.Parse(time.RFC3339, date)
+		if errRFC3339 != nil {
+			return false
+		}
+	}
+	return true
 }

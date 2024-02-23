@@ -217,7 +217,6 @@ func (d *DeviceDataController) getHistoryV1(c *fiber.Ctx, userDevice *grpc.UserD
 		},
 		Size:    some.Int(1000),
 		Source_: &source,
-		Sort:    []types.SortCombinations{types.SortOptions{SortOptions: map[string]types.FieldSort{"data.timestamp": {Order: &sortorder.Asc}}}},
 	}
 
 	res, err := d.esService.ESClient().Search().Index(d.Settings.DeviceDataIndexName).Request(&req).Perform(c.Context())
