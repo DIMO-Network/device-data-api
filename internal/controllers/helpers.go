@@ -48,6 +48,7 @@ func getPrivileges(c *fiber.Ctx) []privileges.Privilege {
 }
 
 // parseDateRange validates whether the start and end date parameters are in an acceptable format, otherwise returns an error.
+// accepted formats include time.RFC3339 and time.DateOnly
 func parseDateRange(startDate, endDate string) (string, string, error) {
 	if startDate == "" {
 		startDate = time.Now().Add(-1 * (time.Hour * 24 * 14)).Format(time.RFC3339) // if no startdate default to 2 weeks
@@ -68,11 +69,12 @@ func parseDateRange(startDate, endDate string) (string, string, error) {
 	return startDate, endDate, nil
 }
 
+// validDate returns true if date can be parsed as time.DateOnly or time.RFC3339
 func validDate(date string) bool {
-	_, errDateOnly := time.Parse(time.DateOnly, date)
-	if errDateOnly != nil {
-		_, errRFC3339 := time.Parse(time.RFC3339, date)
-		if errRFC3339 != nil {
+	_, err := time.Parse(time.DateOnly, date)
+	if err != nil {
+		_, err = time.Parse(time.RFC3339, date)
+		if err != nil {
 			return false
 		}
 	}

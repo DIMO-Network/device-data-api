@@ -342,7 +342,7 @@ func TestParseDateRange(t *testing.T) {
 			originalStart: "",
 			originalEnd:   "",
 			valid:         true,
-			expectedStart: time.Now().Add(-1 * (time.Hour * 24 * 14)).Format(dateLayout2),
+			expectedStart: time.Now().Add(-1 * (time.Hour * 24 * 14)).Format(time.RFC3339),
 			expectedEnd:   time.Now().Format(time.RFC3339),
 		},
 		{
