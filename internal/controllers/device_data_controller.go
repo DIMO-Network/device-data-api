@@ -152,8 +152,8 @@ func addRangeIfNotExists(ctx context.Context, deviceDefSvc services.DeviceDefini
 // @Produce      json
 // @Success      200
 // @Param        tokenID  path   int64  true   "token id"
-// @Param        startDate     query  string  false  "startDate eg 2022-01-02. if empty two weeks back"
-// @Param        endDate       query  string  false  "endDate eg 2022-03-01. if empty today"
+// @Param        startDate     query  string  false  "startDate ex: 2022-01-02; or,  2022-01-02T09:00:00Z; if empty two weeks back"
+// @Param        endDate       query  string  false  "endDate ex: 2022-03-01; or, 2023-03-01T09:00:00Z; if empty today"
 // @Security     BearerAuth
 // @Router       /v1/vehicle/{tokenID}/history [get]
 func (d *DeviceDataController) GetHistoricalRawPermissioned(c *fiber.Ctx) error {
