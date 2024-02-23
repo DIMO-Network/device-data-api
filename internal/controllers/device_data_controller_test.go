@@ -3,7 +3,6 @@ package controllers
 import (
 	"context"
 	_ "embed"
-	"errors"
 	"math/big"
 
 	"github.com/DIMO-Network/shared/privileges"
@@ -319,35 +318,49 @@ func TestUserDevicesController_GetVehicleStatusRaw(t *testing.T) {
 func TestParseDateRange(t *testing.T) {
 
 	for _, c := range []struct {
-		startDate string
-		endDate   string
-		err       error
+		originalStart string
+		originalEnd   string
+		expectedStart string
+		expectedEnd   string
+		valid         bool
 	}{
 		{
-			startDate: "2023-05-04",
-			endDate:   "2023-05-06",
+			originalStart: "2023-05-04",
+			originalEnd:   "2023-05-06",
+			valid:         true,
+			expectedStart: "2023-05-04",
+			expectedEnd:   "2023-05-06",
 		},
 		{
-			startDate: "2023-05-04T09:00:00",
-			endDate:   "2023-05-06T23:00:00",
-			err:       errors.New("parsing time \"2023-05-04T09:00:00\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"\" as \"Z07:00\""),
+			originalStart: "2023-05-04T09:00:00Z",
+			originalEnd:   "2023-05-06T23:00:00Z",
+			valid:         true,
+			expectedStart: "2023-05-04T09:00:00Z",
+			expectedEnd:   "2023-05-06T23:00:00Z",
 		},
 		{
-			startDate: "2023-05-04T09:00:00Z",
-			endDate:   "2023-05-06T23:00:00",
-			err:       errors.New("parsing time \"2023-05-06T23:00:00\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"\" as \"Z07:00\""),
+			originalStart: "",
+			originalEnd:   "",
+			valid:         true,
+			expectedStart: time.Now().Add(-1 * (time.Hour * 24 * 14)).Format(dateLayout2),
+			expectedEnd:   time.Now().Format(time.RFC3339),
 		},
 		{
-			startDate: "2023-05-04T09:00:00Z",
-			endDate:   "2023-05-06T23:00:00Z",
+			originalStart: "2023-05-04T09:00:00",
+			originalEnd:   "2023-05-06T23:00:00",
+		},
+		{
+			originalStart: "2023-05-04T09:00:00Z",
+			originalEnd:   "2023-05-06T23:00:00",
 		},
 	} {
-		parsedStart, parsedEnd, err := parseDateRange(c.startDate, c.endDate)
-		if err != nil {
-			assert.Equal(t, c.err.Error(), err.Error())
+		parsedStart, parsedEnd, err := parseDateRange(c.originalStart, c.originalEnd)
+		if !c.valid {
+			assert.Error(t, err)
 		} else {
-			assert.Equal(t, c.startDate, parsedStart)
-			assert.Equal(t, c.endDate, parsedEnd)
+			assert.NoError(t, err)
+			assert.Equal(t, c.expectedStart, parsedStart)
+			assert.Equal(t, c.expectedEnd, parsedEnd)
 		}
 	}
 }
