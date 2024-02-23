@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"time"
+
 	"github.com/DIMO-Network/device-data-api/internal/services"
 	"github.com/DIMO-Network/shared/middleware/privilegetoken"
 	"github.com/DIMO-Network/shared/privileges"
@@ -43,4 +45,38 @@ func getPrivileges(c *fiber.Ctx) []privileges.Privilege {
 		privs[i] = privileges.Privilege(id)
 	}
 	return privs
+}
+
+// parseDateRange validates whether the start and end date parameters are in an acceptable format, otherwise returns an error.
+// accepted formats include time.RFC3339 and time.DateOnly
+func parseDateRange(startDate, endDate string) (string, string, error) {
+	if startDate == "" {
+		startDate = time.Now().Add(-1 * (time.Hour * 24 * 14)).Format(time.RFC3339) // if no startdate default to 2 weeks
+	} else {
+		if !validDate(startDate) {
+			return "", "", fiber.NewError(fiber.StatusBadRequest, "Invalid start date format")
+		}
+	}
+
+	if endDate == "" {
+		endDate = time.Now().Format(time.RFC3339)
+	} else {
+		if !validDate(endDate) {
+			return "", "", fiber.NewError(fiber.StatusBadRequest, "Invalid end date format")
+		}
+	}
+
+	return startDate, endDate, nil
+}
+
+// validDate returns true if date can be parsed as time.DateOnly or time.RFC3339
+func validDate(date string) bool {
+	_, err := time.Parse(time.DateOnly, date)
+	if err != nil {
+		_, err = time.Parse(time.RFC3339, date)
+		if err != nil {
+			return false
+		}
+	}
+	return true
 }

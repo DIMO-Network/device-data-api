@@ -260,13 +260,13 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "startDate eg 2022-01-02. if empty two weeks back",
+                        "description": "startDate ex: 2022-01-02; or,  2022-01-02T09:00:00Z; if empty two weeks back",
                         "name": "startDate",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "endDate eg 2022-03-01. if empty today",
+                        "description": "endDate ex: 2022-03-01; or, 2023-03-01T09:00:00Z; if empty today",
                         "name": "endDate",
                         "in": "query"
                     }

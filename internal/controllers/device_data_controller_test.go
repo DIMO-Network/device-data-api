@@ -315,6 +315,62 @@ func TestUserDevicesController_GetVehicleStatusRaw(t *testing.T) {
 	})
 }
 
+func TestParseDateRange(t *testing.T) {
+	for _, c := range []struct {
+		name          string
+		originalStart string
+		originalEnd   string
+		expectedStart string
+		expectedEnd   string
+		valid         bool
+	}{
+		{
+			name:          "dateOnly",
+			originalStart: "2023-05-04",
+			originalEnd:   "2023-05-06",
+			valid:         true,
+			expectedStart: "2023-05-04",
+			expectedEnd:   "2023-05-06",
+		},
+		{
+			name:          "rfc3339",
+			originalStart: "2023-05-04T09:00:00Z",
+			originalEnd:   "2023-05-06T23:00:00Z",
+			valid:         true,
+			expectedStart: "2023-05-04T09:00:00Z",
+			expectedEnd:   "2023-05-06T23:00:00Z",
+		},
+		{
+			name:          "noValuesPassed",
+			originalStart: "",
+			originalEnd:   "",
+			valid:         true,
+		},
+		{
+			originalStart: "2023-05-04T09:00:00",
+			originalEnd:   "2023-05-06T23:00:00",
+		},
+		{
+			originalStart: "2023-05-04T09:00:00Z",
+			originalEnd:   "2023-05-06T23:00:00",
+		},
+	} {
+		parsedStart, parsedEnd, err := parseDateRange(c.originalStart, c.originalEnd)
+		if !c.valid {
+			assert.Error(t, err)
+		} else {
+			if c.name == "noValuesPassed" {
+				assert.True(t, validDate(parsedStart))
+				assert.True(t, validDate(parsedEnd))
+				continue
+			}
+			assert.NoError(t, err)
+			assert.Equal(t, c.expectedStart, parsedStart)
+			assert.Equal(t, c.expectedEnd, parsedEnd)
+		}
+	}
+}
+
 func getPtrFloat(f float64) *float64 {
 	if f == 0 {
 		return nil
