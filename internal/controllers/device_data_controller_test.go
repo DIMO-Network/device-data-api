@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	_ "embed"
+	"errors"
 	"math/big"
 
 	"github.com/DIMO-Network/shared/privileges"
@@ -313,6 +314,42 @@ func TestUserDevicesController_GetVehicleStatusRaw(t *testing.T) {
 		//teardown
 		test.TruncateTables(pdb.DBS().Writer.DB, t)
 	})
+}
+
+func TestParseDateRange(t *testing.T) {
+
+	for _, c := range []struct {
+		startDate string
+		endDate   string
+		err       error
+	}{
+		{
+			startDate: "2023-05-04",
+			endDate:   "2023-05-06",
+		},
+		{
+			startDate: "2023-05-04T09:00:00",
+			endDate:   "2023-05-06T23:00:00",
+			err:       errors.New("parsing time \"2023-05-04T09:00:00\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"\" as \"Z07:00\""),
+		},
+		{
+			startDate: "2023-05-04T09:00:00Z",
+			endDate:   "2023-05-06T23:00:00",
+			err:       errors.New("parsing time \"2023-05-06T23:00:00\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"\" as \"Z07:00\""),
+		},
+		{
+			startDate: "2023-05-04T09:00:00Z",
+			endDate:   "2023-05-06T23:00:00Z",
+		},
+	} {
+		parsedStart, parsedEnd, err := parseDateRange(c.startDate, c.endDate)
+		if err != nil {
+			assert.Equal(t, c.err.Error(), err.Error())
+		} else {
+			assert.Equal(t, c.startDate, parsedStart)
+			assert.Equal(t, c.endDate, parsedEnd)
+		}
+	}
 }
 
 func getPtrFloat(f float64) *float64 {

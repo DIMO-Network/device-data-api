@@ -157,25 +157,12 @@ func addRangeIfNotExists(ctx context.Context, deviceDefSvc services.DeviceDefini
 // @Security     BearerAuth
 // @Router       /v1/vehicle/{tokenID}/history [get]
 func (d *DeviceDataController) GetHistoricalRawPermissioned(c *fiber.Ctx) error {
-	const dateLayout = "2006-01-02" // date layout support by elastic
 	tokenID := c.Params("tokenID")
 	startDate := c.Query("startDate")
-	if startDate == "" {
-		startDate = time.Now().Add(-1 * (time.Hour * 24 * 14)).Format(dateLayout) // if no startdate default to 2 weeks
-	} else {
-		_, err := time.Parse(dateLayout, startDate)
-		if err != nil {
-			return fiber.NewError(fiber.StatusBadRequest, err.Error())
-		}
-	}
 	endDate := c.Query("endDate")
-	if endDate == "" {
-		endDate = time.Now().Format(dateLayout)
-	} else {
-		_, err := time.Parse(dateLayout, endDate)
-		if err != nil {
-			return fiber.NewError(fiber.StatusBadRequest, err.Error())
-		}
+	startDate, endDate, err := parseDateRange(startDate, endDate)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
 	i, err := strconv.ParseInt(tokenID, 10, 64)
@@ -230,6 +217,7 @@ func (d *DeviceDataController) getHistoryV1(c *fiber.Ctx, userDevice *grpc.UserD
 		},
 		Size:    some.Int(1000),
 		Source_: &source,
+		Sort:    []types.SortCombinations{types.SortOptions{SortOptions: map[string]types.FieldSort{"data.timestamp": {Order: &sortorder.Asc}}}},
 	}
 
 	res, err := d.esService.ESClient().Search().Index(d.Settings.DeviceDataIndexName).Request(&req).Perform(c.Context())

@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"time"
+
 	"github.com/DIMO-Network/device-data-api/internal/services"
 	"github.com/DIMO-Network/shared/middleware/privilegetoken"
 	"github.com/DIMO-Network/shared/privileges"
@@ -43,4 +45,35 @@ func getPrivileges(c *fiber.Ctx) []privileges.Privilege {
 		privs[i] = privileges.Privilege(id)
 	}
 	return privs
+}
+
+const dateLayout1 = time.DateOnly
+const dateLayout2 = time.RFC3339
+
+func parseDateRange(startDate, endDate string) (string, string, error) {
+	if startDate == "" {
+		startDate = time.Now().Add(-1 * (time.Hour * 24 * 14)).Format(dateLayout2) // if no startdate default to 2 weeks
+	} else {
+		_, errLayout1 := time.Parse(dateLayout1, startDate)
+		if errLayout1 != nil {
+			_, errLayout2 := time.Parse(dateLayout2, startDate)
+			if errLayout2 != nil {
+				return "", "", errLayout2
+			}
+		}
+	}
+
+	if endDate == "" {
+		endDate = time.Now().Format(dateLayout2)
+	} else {
+		_, errLayout1 := time.Parse(dateLayout1, startDate)
+		if errLayout1 != nil {
+			_, errLayout2 := time.Parse(dateLayout2, endDate)
+			if errLayout2 != nil {
+				return "", "", errLayout2
+			}
+		}
+	}
+
+	return startDate, endDate, nil
 }
