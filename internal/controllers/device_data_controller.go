@@ -733,20 +733,33 @@ func (d *DeviceDataController) GetLastSeen(c *fiber.Ctx) error {
 
 // queryOdometer gets the lowest or highest odometer reading depending on order - asc = lowest, desc = highest
 func (d *DeviceDataController) queryOdometer(ctx context.Context, order sortorder.SortOrder, userDeviceID string) (float64, error) {
-	req := search.Request{
-		Query: &types.Query{
-			Bool: &types.BoolQuery{
-				Filter: []types.Query{
-					{Term: map[string]types.TermQuery{"subject": {Value: userDeviceID}}},
-					{Exists: &types.ExistsQuery{Field: "data.odometer"}},
+
+	agg := types.Aggregations{}
+
+	if order == sortorder.Asc {
+		agg.Min = &types.MinAggregation{
+			Field: some.String("data.odometer"),
+		}
+	} else {
+		agg.Max = &types.MaxAggregation{
+			Field: some.String("data.odometer"),
+		}
+	}
+
+	query := &search.Request{
+		Aggregations: map[string]types.Aggregations{
+			"distance": {
+				Filter: &types.Query{
+					Term: map[string]types.TermQuery{"subject": {Value: userDeviceID}},
+				},
+				Aggregations: map[string]types.Aggregations{
+					"odometer": agg,
 				},
 			},
 		},
-		Size: some.Int(1),
-		Sort: []types.SortCombinations{types.SortOptions{SortOptions: map[string]types.FieldSort{"data.odometer": {Order: &order}}}},
 	}
 
-	res, err := d.esService.ESClient().Search().Index(d.Settings.DeviceDataIndexName).Request(&req).Perform(ctx)
+	res, err := d.esService.ESClient().Search().Index(d.Settings.DeviceDataIndexName).Request(query).Perform(ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -761,12 +774,10 @@ func (d *DeviceDataController) queryOdometer(ctx context.Context, order sortorde
 		return 0, err
 	}
 
-	if gjson.GetBytes(body, "hits.hits.#").Int() == 0 {
+	if gjson.GetBytes(body, "aggregations.distance.doc_count").Int() == 0 {
 		// Existing behavior. Not great.
 		return 0, nil
 	}
 
-	body = removeOdometerIfInvalid(body)
-
-	return gjson.GetBytes(body, "hits.hits.0._source.data.odometer").Float(), nil
+	return gjson.GetBytes(body, "aggregations.distance.odometer.value").Float(), nil
 }
