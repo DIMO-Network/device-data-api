@@ -726,19 +726,6 @@ func (d *DeviceDataController) GetLastSeen(c *fiber.Ctx) error {
 	})
 }
 
-/*
-{
-  "aggregations": {
-    "max_odometer": {
-      "value": 43646.30078125
-    },
-    "min_odometer": {
-      "value": 41552.5
-    }
-  }
-}
-*/
-
 type odometerQueryResult struct {
 	Aggregations struct {
 		MaxOdometer struct {
