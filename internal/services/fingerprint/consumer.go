@@ -68,16 +68,16 @@ const autoPiIntegrationID = "27qftVRWQYpVDcO5DltO5Ojbjxk"
 // HandleDeviceFingerprint extracts the VIN from the payload, and sets it in user_device_data.signals
 func (c *Consumer) HandleDeviceFingerprint(ctx context.Context, event *Event) error {
 	if !common.IsHexAddress(event.Subject) {
-		return fmt.Errorf("subject %q not a valid address", event.Subject)
+		return fmt.Errorf("subject %q not a valid eth hex address", event.Subject)
 	}
 	addr := common.HexToAddress(event.Subject)
 	signature := common.FromHex(event.Signature)
 	hash := crypto.Keccak256Hash(event.Data)
 
 	if recAddr, err := helpers.Ecrecover(hash.Bytes(), signature); err != nil {
-		return fmt.Errorf("failed to recover an address: %w", err)
+		return fmt.Errorf("fingerprint failed to recover an address: %w", err)
 	} else if recAddr != addr {
-		return fmt.Errorf("recovered wrong address %s", recAddr)
+		return fmt.Errorf("fingerprint recovered wrong address %s", recAddr)
 	}
 
 	vin, err := ExtractVIN(event.Data)
@@ -85,7 +85,7 @@ func (c *Consumer) HandleDeviceFingerprint(ctx context.Context, event *Event) er
 		if errors.Is(err, ErrNoVIN) {
 			return nil
 		}
-		return fmt.Errorf("couldn't extract vin: %w", err)
+		return fmt.Errorf("fingerprint couldn't extract vin: %w", err)
 	}
 
 	ud, err := c.deviceAPIService.GetUserDeviceByEthAddr(ctx, addr.Bytes())
