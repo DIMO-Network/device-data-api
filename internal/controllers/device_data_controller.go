@@ -27,7 +27,6 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/some"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/calendarinterval"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/sortorder"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gofiber/fiber/v2"
 	"github.com/pkg/errors"
@@ -284,17 +283,13 @@ func removeOdometerIfInvalid(body []byte) []byte {
 // @Router       /v1/user/device-data/{userDeviceID}/distance-driven [get]
 func (d *DeviceDataController) GetDistanceDriven(c *fiber.Ctx) error {
 	userDeviceID := c.Params("userDeviceID")
-	odoStart, err := d.queryOdometer(c.Context(), sortorder.Asc, userDeviceID)
-	if err != nil {
-		return errors.Wrap(err, "error querying odometer")
-	}
-	odoEnd, err := d.queryOdometer(c.Context(), sortorder.Desc, userDeviceID)
+	distanceDriven, err := d.queryOdometer(c.Context(), userDeviceID)
 	if err != nil {
 		return errors.Wrap(err, "error querying odometer")
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"distanceDriven": odoEnd - odoStart,
+		"distanceDriven": distanceDriven,
 		"units":          "kilometers",
 	})
 }
@@ -731,35 +726,57 @@ func (d *DeviceDataController) GetLastSeen(c *fiber.Ctx) error {
 	})
 }
 
+/*
+{
+  "aggregations": {
+    "max_odometer": {
+      "value": 43646.30078125
+    },
+    "min_odometer": {
+      "value": 41552.5
+    }
+  }
+}
+*/
+
+type odometerQueryResult struct {
+	Aggregations struct {
+		MaxOdometer struct {
+			Value float64 `json:"value"`
+		} `json:"max_odometer"`
+		MinOdometer struct {
+			Value float64 `json:"value"`
+		} `json:"min_odometer"`
+	} `json:"aggregations"`
+}
+
 // queryOdometer gets the lowest or highest odometer reading depending on order - asc = lowest, desc = highest
-func (d *DeviceDataController) queryOdometer(ctx context.Context, order sortorder.SortOrder, userDeviceID string) (float64, error) {
+func (d *DeviceDataController) queryOdometer(ctx context.Context, userDeviceID string) (float64, error) {
 
-	agg := types.Aggregations{}
-
-	if order == sortorder.Asc {
-		agg.Min = &types.MinAggregation{
-			Field: some.String("data.odometer"),
-		}
-	} else {
-		agg.Max = &types.MaxAggregation{
-			Field: some.String("data.odometer"),
-		}
-	}
-
-	query := &search.Request{
-		Aggregations: map[string]types.Aggregations{
-			"distance": {
-				Filter: &types.Query{
-					Term: map[string]types.TermQuery{"subject": {Value: userDeviceID}},
-				},
-				Aggregations: map[string]types.Aggregations{
-					"odometer": agg,
+	query := search.Request{
+		Query: &types.Query{
+			Bool: &types.BoolQuery{
+				Filter: []types.Query{
+					{Term: map[string]types.TermQuery{"subject": {Value: userDeviceID}}},
 				},
 			},
 		},
+		Aggregations: map[string]types.Aggregations{
+			"max_odometer": {
+				Max: &types.MaxAggregation{
+					Field: some.String("data.odometer"),
+				},
+			},
+			"min_odometer": {
+				Min: &types.MinAggregation{
+					Field: some.String("data.odometer"),
+				},
+			},
+		},
+		Size: some.Int(0),
 	}
 
-	res, err := d.esService.ESClient().Search().Index(d.Settings.DeviceDataIndexName).Request(query).Perform(ctx)
+	res, err := d.esService.ESClient().Search().Index(d.Settings.DeviceDataIndexName).Request(&query).Perform(ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -774,10 +791,14 @@ func (d *DeviceDataController) queryOdometer(ctx context.Context, order sortorde
 		return 0, err
 	}
 
-	if gjson.GetBytes(body, "aggregations.distance.doc_count").Int() == 0 {
-		// Existing behavior. Not great.
-		return 0, nil
+	var result odometerQueryResult
+
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		return 0, err
 	}
 
-	return gjson.GetBytes(body, "aggregations.distance.odometer.value").Float(), nil
+	distanceDriven := result.Aggregations.MaxOdometer.Value - result.Aggregations.MinOdometer.Value
+
+	return distanceDriven, nil
 }
