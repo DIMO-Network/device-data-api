@@ -713,12 +713,14 @@ func (d *DeviceDataController) GetLastSeen(c *fiber.Ctx) error {
 
 	ud, err := d.deviceAPI.GetUserDeviceByEthAddr(c.Context(), addr.Bytes())
 	if err != nil {
-
-		return err
+		return fiber.NewError(fiber.StatusNotFound, fmt.Sprintf("aftermarket device not found with ethAddr: %s . %s", ethAddr, err.Error()))
 	}
 	udd, err := models.UserDeviceData(
 		models.UserDeviceDatumWhere.UserDeviceID.EQ(ud.Id)).One(c.Context(), d.dbs().Reader)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fiber.NewError(fiber.StatusFailedDependency, "device found, but no data reported: "+err.Error())
+		}
 		return err
 	}
 	return c.JSON(fiber.Map{
