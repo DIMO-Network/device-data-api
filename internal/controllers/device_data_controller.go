@@ -730,12 +730,14 @@ func (d *DeviceDataController) GetLastSeen(c *fiber.Ctx) error {
 
 type odometerQueryResult struct {
 	Aggregations struct {
-		MaxOdometer struct {
-			Value float64 `json:"value"`
-		} `json:"max_odometer"`
-		MinOdometer struct {
-			Value float64 `json:"value"`
-		} `json:"min_odometer"`
+		Distance struct {
+			MaxOdometer struct {
+				Value float64 `json:"value"`
+			} `json:"max_odometer"`
+			MinOdometer struct {
+				Value float64 `json:"value"`
+			} `json:"min_odometer"`
+		} `json:"distance"`
 	} `json:"aggregations"`
 }
 
@@ -750,19 +752,23 @@ func (d *DeviceDataController) queryOdometer(ctx context.Context, userDeviceID s
 				},
 			},
 		},
+		Size: some.Int(0),
 		Aggregations: map[string]types.Aggregations{
-			"max_odometer": {
-				Max: &types.MaxAggregation{
-					Field: some.String("data.odometer"),
-				},
-			},
-			"min_odometer": {
-				Min: &types.MinAggregation{
-					Field: some.String("data.odometer"),
+			"distance": {
+				Aggregations: map[string]types.Aggregations{
+					"max_odometer": {
+						Max: &types.MaxAggregation{
+							Field: some.String("data.odometer"),
+						},
+					},
+					"min_odometer": {
+						Min: &types.MinAggregation{
+							Field: some.String("data.odometer"),
+						},
+					},
 				},
 			},
 		},
-		Size: some.Int(0),
 	}
 
 	res, err := d.esService.ESClient().Search().Index(d.Settings.DeviceDataIndexName).Request(&query).Perform(ctx)
@@ -787,7 +793,7 @@ func (d *DeviceDataController) queryOdometer(ctx context.Context, userDeviceID s
 		return 0, err
 	}
 
-	distanceDriven := result.Aggregations.MaxOdometer.Value - result.Aggregations.MinOdometer.Value
+	distanceDriven := result.Aggregations.Distance.MaxOdometer.Value - result.Aggregations.Distance.MinOdometer.Value
 
 	return distanceDriven, nil
 }
