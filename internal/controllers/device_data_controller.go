@@ -271,6 +271,17 @@ func removeOdometerIfInvalid(body []byte) []byte {
 	return body
 }
 
+type odometerQueryResult struct {
+	Aggregations struct {
+		MaxOdometer struct {
+			Value *float64 `json:"value"`
+		} `json:"max_odometer"`
+		MinOdometer struct {
+			Value *float64 `json:"value"`
+		} `json:"min_odometer"`
+	} `json:"aggregations"`
+}
+
 // GetDistanceDriven godoc
 // @Description  Get kilometers driven for a userDeviceID since connected (ie. since we have data available)
 // @Description  if it returns 0 for distanceDriven it means we have no odometer data.
@@ -283,10 +294,63 @@ func removeOdometerIfInvalid(body []byte) []byte {
 // @Router       /v1/user/device-data/{userDeviceID}/distance-driven [get]
 func (d *DeviceDataController) GetDistanceDriven(c *fiber.Ctx) error {
 	userDeviceID := c.Params("userDeviceID")
-	distanceDriven, err := d.queryOdometer(c.Context(), userDeviceID)
+	query := &search.Request{
+		Query: &types.Query{
+			Bool: &types.BoolQuery{
+				Filter: []types.Query{
+					{Term: map[string]types.TermQuery{"subject": {Value: userDeviceID}}},
+				},
+			},
+		},
+		Size: some.Int(0),
+		Aggregations: map[string]types.Aggregations{
+			"max_odometer": {
+				Max: &types.MaxAggregation{
+					Field: some.String("data.odometer"),
+				},
+			},
+			"min_odometer": {
+				Min: &types.MinAggregation{
+					Field: some.String("data.odometer"),
+				},
+			},
+		},
+	}
+
+	res, err := d.esService.ESClient().Search().Index(d.Settings.DeviceDataIndexName).Request(query).Perform(c.Context())
 	if err != nil {
 		return errors.Wrap(err, "error querying odometer")
 	}
+	defer res.Body.Close()
+
+	if res.StatusCode != 200 {
+		return fmt.Errorf("status code %d from Elastic", res.StatusCode)
+	}
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return err
+	}
+
+	var result odometerQueryResult
+
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		return err
+	}
+
+	endOdometer := 0.0
+	startOdometer := 0.0
+
+	if result.Aggregations.MaxOdometer.Value != nil {
+		endOdometer = *result.Aggregations.MaxOdometer.Value
+	}
+
+	if result.Aggregations.MinOdometer.Value != nil {
+		startOdometer = *result.Aggregations.MinOdometer.Value
+	}
+
+	distanceDriven := endOdometer - startOdometer
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"distanceDriven": distanceDriven,
@@ -350,11 +414,6 @@ func (d *DeviceDataController) GetVehicleStatus(c *fiber.Ctx) error {
 
 	//tid := pgtypes.NewNullDecimal(new(decimal.Big).SetBigMantScale(ti, 0))
 	userDeviceNFT, err := d.deviceAPI.GetUserDeviceByTokenID(c.Context(), ti.Int64())
-	if err != nil {
-		d.log.Err(err).Msg("grpc error retrieving NFT metadata.")
-		return err
-	}
-
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return fiber.NewError(fiber.StatusNotFound, "NFT not found.")
@@ -726,74 +785,4 @@ func (d *DeviceDataController) GetLastSeen(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"last_data_seen": udd.UpdatedAt.Format(time.RFC3339),
 	})
-}
-
-type odometerQueryResult struct {
-	Aggregations struct {
-		Distance struct {
-			MaxOdometer struct {
-				Value float64 `json:"value"`
-			} `json:"max_odometer"`
-			MinOdometer struct {
-				Value float64 `json:"value"`
-			} `json:"min_odometer"`
-		} `json:"distance"`
-	} `json:"aggregations"`
-}
-
-// queryOdometer gets the lowest or highest odometer reading depending on order - asc = lowest, desc = highest
-func (d *DeviceDataController) queryOdometer(ctx context.Context, userDeviceID string) (float64, error) {
-
-	query := search.Request{
-		Query: &types.Query{
-			Bool: &types.BoolQuery{
-				Filter: []types.Query{
-					{Term: map[string]types.TermQuery{"subject": {Value: userDeviceID}}},
-				},
-			},
-		},
-		Size: some.Int(0),
-		Aggregations: map[string]types.Aggregations{
-			"distance": {
-				Aggregations: map[string]types.Aggregations{
-					"max_odometer": {
-						Max: &types.MaxAggregation{
-							Field: some.String("data.odometer"),
-						},
-					},
-					"min_odometer": {
-						Min: &types.MinAggregation{
-							Field: some.String("data.odometer"),
-						},
-					},
-				},
-			},
-		},
-	}
-
-	res, err := d.esService.ESClient().Search().Index(d.Settings.DeviceDataIndexName).Request(&query).Perform(ctx)
-	if err != nil {
-		return 0, err
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode != 200 {
-		return 0, fmt.Errorf("status code %d from Elastic", res.StatusCode)
-	}
-
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return 0, err
-	}
-
-	var result odometerQueryResult
-
-	err = json.Unmarshal(body, &result)
-	if err != nil {
-		return 0, err
-	}
-
-	distanceDriven := result.Aggregations.Distance.MaxOdometer.Value - result.Aggregations.Distance.MinOdometer.Value
-
-	return distanceDriven, nil
 }
