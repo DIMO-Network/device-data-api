@@ -298,7 +298,7 @@ func (d *DeviceDataController) GetDistanceDriven(c *fiber.Ctx) error {
 		Query: &types.Query{
 			Bool: &types.BoolQuery{
 				Filter: []types.Query{
-					{Match: map[string]types.MatchQuery{"subject": {Query: userDeviceID}}},
+					{Term: map[string]types.TermQuery{"subject": {Value: userDeviceID}}},
 				},
 			},
 		},
