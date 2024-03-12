@@ -319,7 +319,7 @@ func (d *DeviceDataController) GetDistanceDriven(c *fiber.Ctx) error {
 
 	res, err := d.esService.ESClient().Search().Index(d.Settings.DeviceDataIndexName).Request(query).Perform(c.Context())
 	if err != nil {
-		return err
+		return errors.Wrap(err, "error querying odometer")
 	}
 	defer res.Body.Close()
 
