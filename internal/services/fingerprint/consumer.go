@@ -77,7 +77,7 @@ func (c *Consumer) HandleDeviceFingerprint(ctx context.Context, event *Event) er
 	if recAddr, err := helpers.Ecrecover(hash.Bytes(), signature); err != nil {
 		return fmt.Errorf("fingerprint failed to recover an address: %w", err)
 	} else if recAddr != addr {
-		return fmt.Errorf("fingerprint recovered wrong address %s", recAddr)
+		return fmt.Errorf("fingerprint recovered wrong address: %s. subject addr: %s", recAddr, addr)
 	}
 
 	vin, err := ExtractVIN(event.Data)
@@ -85,7 +85,7 @@ func (c *Consumer) HandleDeviceFingerprint(ctx context.Context, event *Event) er
 		if errors.Is(err, ErrNoVIN) {
 			return nil
 		}
-		return fmt.Errorf("fingerprint couldn't extract vin: %w", err)
+		return fmt.Errorf("fingerprint couldn't extract vin: %w. subject addr: %s", err, addr)
 	}
 
 	ud, err := c.deviceAPIService.GetUserDeviceByEthAddr(ctx, addr.Bytes())
