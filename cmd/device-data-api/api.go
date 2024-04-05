@@ -6,12 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/DIMO-Network/device-data-api/internal/config"
-	"github.com/DIMO-Network/device-data-api/internal/controllers"
-	"github.com/DIMO-Network/device-data-api/internal/middleware/metrics"
-	"github.com/DIMO-Network/device-data-api/internal/middleware/owner"
-	"github.com/DIMO-Network/device-data-api/internal/services"
-	"github.com/DIMO-Network/device-data-api/internal/services/elastic"
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/shared/middleware/privilegetoken"
 	"github.com/DIMO-Network/shared/privileges"
@@ -25,6 +19,13 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/skip"
 	"github.com/gofiber/swagger"
 	"github.com/rs/zerolog"
+
+	"github.com/DIMO-Network/device-data-api/internal/config"
+	"github.com/DIMO-Network/device-data-api/internal/controllers"
+	"github.com/DIMO-Network/device-data-api/internal/middleware/metrics"
+	"github.com/DIMO-Network/device-data-api/internal/middleware/owner"
+	"github.com/DIMO-Network/device-data-api/internal/services"
+	"github.com/DIMO-Network/device-data-api/internal/services/elastic"
 )
 
 func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *db.ReaderWriter,
@@ -76,6 +77,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 	}
 	deviceStatusSvc := services.NewDeviceStatusService(definitionsAPIService)
 	deviceDataController := controllers.NewDeviceDataController(settings, &logger, deviceAPIService, esService, definitionsAPIService, deviceStatusSvc, dbs)
+	deviceDataControllerV2 := controllers.NewDeviceDataControllerV2(settings, &logger, deviceAPIService, esService)
 
 	logger.Info().Str("jwkUrl", settings.TokenExchangeJWTKeySetURL).Str("vehicleAddr", settings.VehicleNFTAddress).Msg("Privileges enabled.")
 	privilegeAuth := jwtware.New(jwtware.Config{
@@ -112,6 +114,11 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 	udOwner.Get("/historical", cacheHandler, deviceDataController.GetHistoricalRaw)
 	udOwner.Get("/distance-driven", cacheHandler, deviceDataController.GetDistanceDriven)
 	udOwner.Get("/daily-distance", cacheHandler, deviceDataController.GetDailyDistance)
+
+	v2Auth := app.Group("/v2", jwtAuth)
+	udOwnerV2 := v2Auth.Group("/vehicles/:tokenID", udMw)
+	udOwnerV2.Get("/analytics/daily-distance", deviceDataControllerV2.GetDailyDistance)
+	udOwnerV2.Get("/analytics/total-distance", deviceDataControllerV2.GetDistanceDriven)
 
 	dataDownloadController, err := controllers.NewDataDownloadController(settings, &logger, esService.ESClient(), deviceAPIService)
 	if err != nil {
