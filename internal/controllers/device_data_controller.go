@@ -12,11 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/DIMO-Network/device-data-api/internal/config"
-	"github.com/DIMO-Network/device-data-api/internal/response" // also needed for swagger gen
-	"github.com/DIMO-Network/device-data-api/internal/services"
-	"github.com/DIMO-Network/device-data-api/internal/services/elastic"
-	"github.com/DIMO-Network/device-data-api/models"
 	"github.com/DIMO-Network/devices-api/pkg/grpc"
 	"github.com/DIMO-Network/shared"
 	"github.com/DIMO-Network/shared/db"
@@ -35,6 +30,12 @@ import (
 	"github.com/tidwall/sjson"
 	"github.com/volatiletech/null/v8"
 	"golang.org/x/exp/slices"
+
+	"github.com/DIMO-Network/device-data-api/internal/config"
+	"github.com/DIMO-Network/device-data-api/internal/response" // also needed for swagger gen
+	"github.com/DIMO-Network/device-data-api/internal/services"
+	"github.com/DIMO-Network/device-data-api/internal/services/elastic"
+	"github.com/DIMO-Network/device-data-api/models"
 )
 
 const (
@@ -54,6 +55,8 @@ type DeviceDataController struct {
 // EsInterface is an interface for the elastic service.
 type EsInterface interface {
 	GetHistory(ctx context.Context, params elastic.GetHistoryParams) ([]json.RawMessage, error)
+	GetTotalDistanceDriven(ctx context.Context, deviceID string) ([]byte, error)
+	GetTotalDailyDistanceDriven(ctx context.Context, tz, deviceID string) ([]byte, error)
 	ESClient() *elasticsearch.TypedClient
 }
 
@@ -284,8 +287,8 @@ type odometerQueryResult struct {
 
 // GetDistanceDriven godoc
 // @Description  Get kilometers driven for a userDeviceID since connected (ie. since we have data available)
-// @Description  if it returns 0 for distanceDriven it means we have no odometer data.
-// @Tags         device-data
+// @Description  [🔴__Warning - API Shutdown by June 30, 2024, Use `/v2/vehicles/:tokenId/analytics/total-distance` instead__🔴]  if it returns 0 for distanceDriven it means we have no odometer data.
+// @Tags         device-data [End Of Life Warning]
 // @Produce      json
 // @Success      200
 // @Failure      404 "no device found for user with provided parameters"
@@ -412,7 +415,7 @@ func (d *DeviceDataController) GetVehicleStatus(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Couldn't parse token id %q.", tis))
 	}
 
-	//tid := pgtypes.NewNullDecimal(new(decimal.Big).SetBigMantScale(ti, 0))
+	// tid := pgtypes.NewNullDecimal(new(decimal.Big).SetBigMantScale(ti, 0))
 	userDeviceNFT, err := d.deviceAPI.GetUserDeviceByTokenID(c.Context(), ti.Int64())
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -535,7 +538,7 @@ func (d *DeviceDataController) GetVehicleStatusV2(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Couldn't parse token id %q.", tokenIDStr))
 	}
 
-	//tid := pgtypes.NewNullDecimal(new(decimal.Big).SetBigMantScale(ti, 0))
+	// tid := pgtypes.NewNullDecimal(new(decimal.Big).SetBigMantScale(ti, 0))
 	userDeviceNFT, err := d.deviceAPI.GetUserDeviceByTokenID(c.Context(), tokenID)
 	if err != nil {
 		return err
@@ -641,8 +644,8 @@ type DailyDistanceResp struct {
 }
 
 // GetDailyDistance godoc
-// @Description  Get kilometers driven for a userDeviceID each day.
-// @Tags         device-data
+// @Description  [🔴__Warning - API Shutdown by June 30, 2024, Use `/v2/vehicles/:tokenId/analytics/daily-distance` instead__🔴] Get kilometers driven for a userDeviceID each day.
+// @Tags         device-data [End Of Life Warning]
 // @Produce      json
 // @Success      200 {object} controllers.DailyDistanceResp
 // @Failure      404 "no device found for user with provided parameters"

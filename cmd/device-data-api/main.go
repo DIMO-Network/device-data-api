@@ -3,8 +3,13 @@ package main
 import (
 	"context"
 	"flag"
+	"net"
+	"net/http"
+	"os"
 	"os/signal"
+	"strings"
 	"syscall"
+	"time"
 
 	"github.com/DIMO-Network/device-data-api/internal/services/fingerprint"
 
@@ -15,13 +20,6 @@ import (
 
 	"github.com/DIMO-Network/device-data-api/internal/rpc"
 
-	"net"
-	"net/http"
-	"os"
-	"strings"
-	"time"
-
-	"github.com/DIMO-Network/device-data-api/internal/middleware/metrics"
 	"github.com/DIMO-Network/shared/db"
 	"github.com/IBM/sarama"
 	"github.com/burdiyan/kafkautil"
@@ -31,15 +29,18 @@ import (
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/lovoo/goka"
 
-	_ "github.com/DIMO-Network/device-data-api/docs"
-	"github.com/DIMO-Network/device-data-api/internal/config"
-	"github.com/DIMO-Network/device-data-api/internal/services"
-	dddatagrpc "github.com/DIMO-Network/device-data-api/pkg/grpc"
+	"github.com/DIMO-Network/device-data-api/internal/middleware/metrics"
+
 	"github.com/DIMO-Network/shared"
 	"github.com/gofiber/fiber/v2"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
+
+	_ "github.com/DIMO-Network/device-data-api/docs"
+	"github.com/DIMO-Network/device-data-api/internal/config"
+	"github.com/DIMO-Network/device-data-api/internal/services"
+	dddatagrpc "github.com/DIMO-Network/device-data-api/pkg/grpc"
 )
 
 // @title                       DIMO Device Data API

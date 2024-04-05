@@ -70,3 +70,33 @@ func (mr *MockEsInterfaceMockRecorder) GetHistory(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHistory", reflect.TypeOf((*MockEsInterface)(nil).GetHistory), arg0, arg1)
 }
+
+// GetTotalDailyDistanceDriven mocks base method.
+func (m *MockEsInterface) GetTotalDailyDistanceDriven(arg0 context.Context, arg1, arg2 string) ([]byte, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTotalDailyDistanceDriven", arg0, arg1, arg2)
+	ret0, _ := ret[0].([]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTotalDailyDistanceDriven indicates an expected call of GetTotalDailyDistanceDriven.
+func (mr *MockEsInterfaceMockRecorder) GetTotalDailyDistanceDriven(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTotalDailyDistanceDriven", reflect.TypeOf((*MockEsInterface)(nil).GetTotalDailyDistanceDriven), arg0, arg1, arg2)
+}
+
+// GetTotalDistanceDriven mocks base method.
+func (m *MockEsInterface) GetTotalDistanceDriven(arg0 context.Context, arg1 string) ([]byte, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTotalDistanceDriven", arg0, arg1)
+	ret0, _ := ret[0].([]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTotalDistanceDriven indicates an expected call of GetTotalDistanceDriven.
+func (mr *MockEsInterfaceMockRecorder) GetTotalDistanceDriven(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTotalDistanceDriven", reflect.TypeOf((*MockEsInterface)(nil).GetTotalDistanceDriven), arg0, arg1)
+}
