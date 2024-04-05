@@ -8,7 +8,6 @@ import (
 
 	"github.com/DIMO-Network/devices-api/pkg/grpc"
 	"github.com/DIMO-Network/shared"
-	"github.com/DIMO-Network/shared/db"
 	"github.com/gofiber/fiber/v2"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
@@ -18,13 +17,10 @@ import (
 )
 
 type DeviceDataControllerV2 struct {
-	Settings        *config.Settings
-	log             *zerolog.Logger
-	deviceAPI       services.DeviceAPIService
-	esService       EsInterface
-	definitionsAPI  services.DeviceDefinitionsAPIService
-	deviceStatusSvc services.DeviceStatusService
-	dbs             func() *db.ReaderWriter
+	Settings  *config.Settings
+	log       *zerolog.Logger
+	deviceAPI services.DeviceAPIService
+	esService EsInterface
 }
 
 // NewDeviceDataControllerV2 constructor
@@ -145,12 +141,12 @@ func (d *DeviceDataControllerV2) GetDistanceDriven(c *fiber.Ctx) error {
 func (d *DeviceDataControllerV2) getDeviceFromTokenID(ctx context.Context, tokenID string) (*grpc.UserDevice, error) {
 	tkID, err := strconv.ParseInt(tokenID, 10, 64)
 	if err != nil {
-		return nil, errors.New("could not process the provided tokenId!")
+		return nil, errors.New("could not process the provided tokenId")
 	}
 
 	device, err := d.deviceAPI.GetUserDeviceByTokenID(ctx, tkID)
 	if err != nil {
-		return nil, errors.New("could find a device using provided tokenId!")
+		return nil, errors.New("could find a device using provided tokenId")
 	}
 
 	return device, nil
