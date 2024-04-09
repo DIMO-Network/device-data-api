@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/DIMO-Network/devices-api/pkg/grpc"
+	"github.com/DIMO-Network/shared/privileges"
 	"github.com/gofiber/fiber/v2"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
@@ -58,6 +59,7 @@ func (d *DeviceDataControllerV2Suite) TestGetDistanceDriven() {
 		urlParameters    map[string]string
 		expectedResponse int
 		expectedDevice   *grpc.UserDevice
+		customClaims     []privileges.Privilege
 	}{
 		{
 			name: "Test happy path odometer success",
@@ -68,6 +70,7 @@ func (d *DeviceDataControllerV2Suite) TestGetDistanceDriven() {
 			expectedDevice: &grpc.UserDevice{
 				Id: expectedDeviceID,
 			},
+			customClaims: []privileges.Privilege{privileges.VehicleNonLocationData},
 		},
 		{
 			name: "Test no device for token error",
@@ -76,15 +79,18 @@ func (d *DeviceDataControllerV2Suite) TestGetDistanceDriven() {
 			},
 			expectedResponse: fiber.StatusBadRequest,
 			expectedDevice:   nil,
+			customClaims: []privileges.Privilege{privileges.VehicleNonLocationData},
 		},
 	}
 	d.esMock.EXPECT().GetTotalDistanceDriven(gomock.Any(), expectedDeviceID).Return([]byte(`{"aggregations": {"max_odometer": {"value": 200},"min_odometer": {"value": 50}}}`), nil).AnyTimes()
 
 	testUserID := "123123"
 	app := fiber.New()
-	app.Get("/v2/vehicles/:tokenID/analytics/total-distance", test.AuthInjectorTestHandler(testUserID), d.SUT.GetDistanceDriven)
 
 	for _, tc := range tests {
+		app.Use(test.ClaimsInjectorTestHandler(tc.customClaims))
+		app.Get("/v2/vehicles/:tokenID/analytics/total-distance", test.AuthInjectorTestHandler(testUserID), d.SUT.GetDistanceDriven)
+		
 		var errDevice error
 		if tc.expectedDevice == nil {
 			errDevice = errors.New("device not found")
