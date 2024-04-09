@@ -44,7 +44,7 @@ func (d *DeviceDataControllerV2Suite) SetupSuite() {
 
 	logger := zerolog.Nop()
 
-	d.SUT = controllers.NewDeviceDataControllerV2(&config.Settings{DeviceDataIndexName: mockDeviceDataIndexName}, &logger, d.deviceSvc, d.esMock)
+	d.SUT = controllers.NewDeviceDataControllerV2(&config.Settings{DeviceDataIndexName: mockDeviceDataIndexName}, &logger, d.deviceSvc, d.esMock, nil, nil)
 }
 
 func TestDeviceDataControllerV2Suite(t *testing.T) {

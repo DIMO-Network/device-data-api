@@ -145,7 +145,6 @@ func (s *Service) GetTotalDailyDistanceDriven(ctx context.Context, tz, deviceID 
 	defer resp.Body.Close() // nolint
 
 	if c := resp.StatusCode; c != 200 {
-		s.log.Error().Int("statusCode", c).Msg("Failed to get daily distance from Elastic.")
 		return nil, fmt.Errorf("got status code %d from Elastic message", c)
 	}
 

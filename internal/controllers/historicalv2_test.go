@@ -9,17 +9,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/DIMO-Network/device-data-api/internal/config"
-	"github.com/DIMO-Network/device-data-api/internal/controllers"
-	"github.com/DIMO-Network/device-data-api/internal/services/elastic"
-	mock_services "github.com/DIMO-Network/device-data-api/internal/services/mocks"
-	"github.com/DIMO-Network/device-data-api/internal/test"
 	"github.com/DIMO-Network/devices-api/pkg/grpc"
 	"github.com/DIMO-Network/shared/privileges"
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
+
+	"github.com/DIMO-Network/device-data-api/internal/config"
+	"github.com/DIMO-Network/device-data-api/internal/controllers"
+	"github.com/DIMO-Network/device-data-api/internal/services/elastic"
+	mock_services "github.com/DIMO-Network/device-data-api/internal/services/mocks"
+	"github.com/DIMO-Network/device-data-api/internal/test"
 )
 
 const (
@@ -160,7 +161,7 @@ func TestGetHistoricalPermissionedV2(t *testing.T) {
 		Str("app", "devices-api").
 		Logger()
 
-	deviceCtrl := controllers.NewDeviceDataController(&config.Settings{Port: "3000"}, &logger, deviceSvc, esMock, nil, nil, nil)
+	deviceCtrl := controllers.NewDeviceDataControllerV2(&config.Settings{Port: "3000"}, &logger, deviceSvc, esMock, nil, nil)
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -170,7 +171,7 @@ func TestGetHistoricalPermissionedV2(t *testing.T) {
 
 			app := fiber.New()
 			app.Use(test.ClaimsInjectorTestHandler(tc.customClaims))
-			app.Get("/v2/vehicle/:tokenID/history", deviceCtrl.GetHistoricalPermissionedV2)
+			app.Get("/v2/vehicle/:tokenID/history", deviceCtrl.GetHistoricalPermissioned)
 
 			// if we do not expect errors, we need to set the expected calls
 			if tc.expectedResponse == fiber.StatusOK {
