@@ -12,13 +12,16 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/DIMO-Network/device-data-api/internal/config"
 	"github.com/DIMO-Network/shared/privileges"
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/core/search"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/some"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/calendarinterval"
 	"github.com/rs/zerolog"
 	"github.com/tidwall/gjson"
+
+	"github.com/DIMO-Network/device-data-api/internal/config"
 )
 
 const (
@@ -96,6 +99,103 @@ func (g *GetHistoryParams) SetDefaultHistoryParams() {
 	if g.StartTime.IsZero() {
 		g.StartTime = g.EndTime.Add(-time.Hour * 24 * 14) // default to 2 weeks ago
 	}
+}
+
+func (s *Service) GetTotalDailyDistanceDriven(ctx context.Context, tz, deviceID string) ([]byte, error) {
+	query := &search.Request{
+		Query: &types.Query{
+			Bool: &types.BoolQuery{
+				Filter: []types.Query{
+					{Match: map[string]types.MatchQuery{"subject": {Query: deviceID}}},
+					{Range: map[string]types.RangeQuery{"data.timestamp": types.DateRangeQuery{Gte: some.String("now-13d/d"), TimeZone: &tz}}},
+				},
+			},
+		},
+		Size: some.Int(0),
+		Aggregations: map[string]types.Aggregations{
+			"days": {
+				DateHistogram: &types.DateHistogramAggregation{
+					Field:            some.String("data.timestamp"),
+					CalendarInterval: &calendarinterval.Day,
+					TimeZone:         &tz,
+				},
+				Aggregations: map[string]types.Aggregations{
+					"min_odom": {
+						Min: &types.MinAggregation{
+							Field: some.String("data.odometer"),
+						},
+					},
+					"max_odom": {
+						Max: &types.MaxAggregation{
+							Field: some.String("data.odometer"),
+						},
+					},
+					// Code generation for buckets_path is broken as of 8.5.0
+					// See https://github.com/elastic/go-elasticsearch/issues/570
+				},
+			},
+		},
+	}
+
+	resp, err := s.esClient.Search().Index(s.settings.DeviceDataIndexName).Request(query).Perform(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close() // nolint
+
+	if c := resp.StatusCode; c != 200 {
+		return nil, fmt.Errorf("got status code %d from Elastic message", c)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body %w", err)
+	}
+
+	return body, nil
+}
+
+func (s *Service) GetTotalDistanceDriven(ctx context.Context, deviceID string) ([]byte, error) {
+	query := &search.Request{
+		Query: &types.Query{
+			Bool: &types.BoolQuery{
+				Filter: []types.Query{
+					{Term: map[string]types.TermQuery{"subject": {Value: deviceID}}},
+				},
+			},
+		},
+		Size: some.Int(0),
+		Aggregations: map[string]types.Aggregations{
+			"max_odometer": {
+				Max: &types.MaxAggregation{
+					Field: some.String("data.odometer"),
+				},
+			},
+			"min_odometer": {
+				Min: &types.MinAggregation{
+					Field: some.String("data.odometer"),
+				},
+			},
+		},
+	}
+
+	res, err := s.esClient.Search().Index(s.settings.DeviceDataIndexName).Request(query).Perform(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error querying odometer %w", err)
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("got status code %d from Elastic message", res.StatusCode)
+	}
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	return body, nil
 }
 
 // GetHistory retrieves the history of a device from elastic. The history is divided into buckets and one data point is selected from each bucket.

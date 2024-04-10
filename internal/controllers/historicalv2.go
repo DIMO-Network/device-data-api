@@ -7,8 +7,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/DIMO-Network/device-data-api/internal/services/elastic"
 	"github.com/gofiber/fiber/v2"
+
+	"github.com/DIMO-Network/device-data-api/internal/services/elastic"
 )
 
 // historicalV2QueryParams represents the query parameters for the historical endpoint.
@@ -24,7 +25,7 @@ type historyResp struct {
 	Statuses []json.RawMessage `json:"statuses"`
 }
 
-// GetHistoricalPermissionedV2 godoc
+// GetHistoricalPermissioned godoc
 // @Description  Get all historical data for a tokenID, within start and end range
 // @Tags         device-data
 // @Produce      json
@@ -35,7 +36,7 @@ type historyResp struct {
 // @Param        buckets       query  string  false  "number of data points to return, default 1000"
 // @Security     BearerAuth
 // @Router       /v2/vehicle/{tokenID}/history [get]
-func (d *DeviceDataController) GetHistoricalPermissionedV2(c *fiber.Ctx) error {
+func (d *DeviceDataControllerV2) GetHistoricalPermissioned(c *fiber.Ctx) error {
 	// get the startTime and endTime from the query parameters and convert them to time.Time
 	var err error
 	qParams := historicalV2QueryParams{}

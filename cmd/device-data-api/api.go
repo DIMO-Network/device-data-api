@@ -6,12 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/DIMO-Network/device-data-api/internal/config"
-	"github.com/DIMO-Network/device-data-api/internal/controllers"
-	"github.com/DIMO-Network/device-data-api/internal/middleware/metrics"
-	"github.com/DIMO-Network/device-data-api/internal/middleware/owner"
-	"github.com/DIMO-Network/device-data-api/internal/services"
-	"github.com/DIMO-Network/device-data-api/internal/services/elastic"
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/shared/middleware/privilegetoken"
 	"github.com/DIMO-Network/shared/privileges"
@@ -25,6 +19,13 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/skip"
 	"github.com/gofiber/swagger"
 	"github.com/rs/zerolog"
+
+	"github.com/DIMO-Network/device-data-api/internal/config"
+	"github.com/DIMO-Network/device-data-api/internal/controllers"
+	"github.com/DIMO-Network/device-data-api/internal/middleware/metrics"
+	"github.com/DIMO-Network/device-data-api/internal/middleware/owner"
+	"github.com/DIMO-Network/device-data-api/internal/services"
+	"github.com/DIMO-Network/device-data-api/internal/services/elastic"
 )
 
 func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *db.ReaderWriter,
@@ -76,6 +77,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 	}
 	deviceStatusSvc := services.NewDeviceStatusService(definitionsAPIService)
 	deviceDataController := controllers.NewDeviceDataController(settings, &logger, deviceAPIService, esService, definitionsAPIService, deviceStatusSvc, dbs)
+	deviceDataControllerV2 := controllers.NewDeviceDataControllerV2(settings, &logger, deviceAPIService, esService, deviceStatusSvc, dbs)
 
 	logger.Info().Str("jwkUrl", settings.TokenExchangeJWTKeySetURL).Str("vehicleAddr", settings.VehicleNFTAddress).Msg("Privileges enabled.")
 	privilegeAuth := jwtware.New(jwtware.Config{
@@ -101,9 +103,11 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 	vTokenV1.Get("/status", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleCurrentLocation, privileges.VehicleAllTimeLocation}), cacheHandler, deviceDataController.GetVehicleStatus)
 	vTokenV1.Get("/status-raw", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleCurrentLocation, privileges.VehicleAllTimeLocation}), cacheHandler, deviceDataController.GetVehicleStatusRaw)
 
-	vTokenV2.Get("/status", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleCurrentLocation, privileges.VehicleAllTimeLocation}), cacheHandler, deviceDataController.GetVehicleStatusV2)
-	vTokenV2.Get("/history", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleAllTimeLocation}), cacheHandler, deviceDataController.GetHistoricalPermissionedV2)
-
+	vTokenV2.Get("/status", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleCurrentLocation, privileges.VehicleAllTimeLocation}), cacheHandler, deviceDataControllerV2.GetVehicleStatus)
+	vTokenV2.Get("/history", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleAllTimeLocation}), cacheHandler, deviceDataControllerV2.GetHistoricalPermissioned)
+	vTokenV2.Get("/analytics/daily-distance", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData}), cacheHandler, deviceDataControllerV2.GetDailyDistance)
+	vTokenV2.Get("/analytics/total-distance", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData}), cacheHandler, deviceDataControllerV2.GetDistanceDriven)
+	
 	udMw := owner.New(usersClient, deviceAPIService, &logger)
 	v1Auth := app.Group("/v1", jwtAuth)
 
