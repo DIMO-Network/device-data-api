@@ -32,6 +32,7 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/DIMO-Network/device-data-api/internal/config"
+	_ "github.com/DIMO-Network/device-data-api/internal/response" // also needed for swagger gen
 	"github.com/DIMO-Network/device-data-api/internal/services"
 	"github.com/DIMO-Network/device-data-api/internal/services/elastic"
 	"github.com/DIMO-Network/device-data-api/models"
