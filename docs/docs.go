@@ -350,6 +350,49 @@ const docTemplate = `{
                 }
             }
         },
+        "/v2/vehicle/{tokenID}/analytics/daily-distance": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get kilometers driven for a tokenID each day.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "device-data"
+                ],
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "token id",
+                        "name": "tokenID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANAS time zone id, e.g., America/Los_Angeles",
+                        "name": "time_zone",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controllers.DailyDistanceResp"
+                        }
+                    },
+                    "404": {
+                        "description": "no device found for user with provided parameters"
+                    }
+                }
+            }
+        },
         "/v2/vehicle/{tokenID}/history": {
             "get": {
                 "security": [
@@ -434,49 +477,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/v2/vehicles/{tokenID}/analytics/daily-distance": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Get kilometers driven for a userDeviceID each day.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "device-data"
-                ],
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "user device id",
-                        "name": "userDeviceID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "IANAS time zone id, e.g., America/Los_Angeles",
-                        "name": "time_zone",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/internal_controllers.DailyDistanceResp"
-                        }
-                    },
-                    "404": {
-                        "description": "no device found for user with provided parameters"
-                    }
-                }
-            }
-        },
         "/v2/vehicles/{tokenID}/analytics/total-distance": {
             "get": {
                 "security": [
@@ -484,7 +484,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Get kilometers driven for a userDeviceID since connected (ie. since we have data available)\nif it returns 0 for distanceDriven it means we have no odometer data.",
+                "description": "Get kilometers driven for a tokenID since connected (ie. since we have data available)\nif it returns 0 for distanceDriven it means we have no odometer data.",
                 "produces": [
                     "application/json"
                 ],
@@ -494,8 +494,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "user device id",
-                        "name": "userDeviceID",
+                        "description": "token id",
+                        "name": "tokenID",
                         "in": "path",
                         "required": true
                     }

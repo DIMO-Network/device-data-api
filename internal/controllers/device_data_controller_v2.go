@@ -23,10 +23,10 @@ import (
 )
 
 type DeviceDataControllerV2 struct {
-	Settings  *config.Settings
-	log       *zerolog.Logger
-	deviceAPI services.DeviceAPIService
-	esService EsInterface
+	Settings        *config.Settings
+	log             *zerolog.Logger
+	deviceAPI       services.DeviceAPIService
+	esService       EsInterface
 	dbs             func() *db.ReaderWriter
 	deviceStatusSvc services.DeviceStatusService
 }
@@ -34,25 +34,25 @@ type DeviceDataControllerV2 struct {
 // NewDeviceDataControllerV2 constructor
 func NewDeviceDataControllerV2(settings *config.Settings, logger *zerolog.Logger, deviceAPIService services.DeviceAPIService, esService EsInterface, deviceStatusSvc services.DeviceStatusService, dbs func() *db.ReaderWriter) DeviceDataControllerV2 {
 	return DeviceDataControllerV2{
-		Settings:  settings,
-		log:       logger,
-		deviceAPI: deviceAPIService,
-		esService: esService,
-		dbs: dbs,
+		Settings:        settings,
+		log:             logger,
+		deviceAPI:       deviceAPIService,
+		esService:       esService,
+		dbs:             dbs,
 		deviceStatusSvc: deviceStatusSvc,
 	}
 }
 
 // GetDailyDistance godoc
-// @Description  Get kilometers driven for a userDeviceID each day.
+// @Description  Get kilometers driven for a tokenID each day.
 // @Tags         device-data
 // @Produce      json
 // @Success      200 {object} controllers.DailyDistanceResp
 // @Failure      404 "no device found for user with provided parameters"
-// @Param        userDeviceID  path   string  true   "user device id"
+// @Param        tokenID  path   int  true   "token id"
 // @Param	     time_zone query string true "IANAS time zone id, e.g., America/Los_Angeles"
 // @Security     BearerAuth
-// @Router       /v2/vehicles/{tokenID}/analytics/daily-distance [get]
+// @Router       /v2/vehicle/{tokenID}/analytics/daily-distance [get]
 func (d *DeviceDataControllerV2) GetDailyDistance(c *fiber.Ctx) error {
 	tz := c.Query("time_zone")
 	tkID := c.Params("tokenID")
@@ -100,13 +100,13 @@ func (d *DeviceDataControllerV2) GetDailyDistance(c *fiber.Ctx) error {
 }
 
 // GetDistanceDriven godoc
-// @Description  Get kilometers driven for a userDeviceID since connected (ie. since we have data available)
+// @Description  Get kilometers driven for a tokenID since connected (ie. since we have data available)
 // @Description  if it returns 0 for distanceDriven it means we have no odometer data.
 // @Tags         device-data
 // @Produce      json
 // @Success      200
 // @Failure      404 "no device found for user with provided parameters"
-// @Param        userDeviceID  path   string  true   "user device id"
+// @Param        tokenID  path   string  true   "token id"
 // @Security     BearerAuth
 // @Router       /v2/vehicles/{tokenID}/analytics/total-distance [get]
 func (d *DeviceDataControllerV2) GetDistanceDriven(c *fiber.Ctx) error {
@@ -239,7 +239,6 @@ func (d *DeviceDataControllerV2) GetVehicleStatus(c *fiber.Ctx) error {
 
 	return c.JSON(dsv2)
 }
-
 
 func (d *DeviceDataControllerV2) getDeviceFromTokenID(ctx context.Context, tokenID string) (*grpc.UserDevice, error) {
 	tkID, err := strconv.ParseInt(tokenID, 10, 64)
