@@ -182,7 +182,7 @@ func (d *DeviceDataController) GetHistoricalRawPermissioned(c *fiber.Ctx) error 
 	var filter types.SourceFilter
 
 	if slices.Contains(privs, privileges.VehicleAllTimeLocation) {
-		filter.Includes = append(filter.Includes, "data.latitude", "data.longitude", "location", "data.cell", "cell")
+		filter.Includes = append(filter.Includes, "data.latitude", "data.longitude", "location", "data.cell", "cell", "data.timestamp")
 	} else {
 		filter.Excludes = append(filter.Excludes, "data.latitude", "data.longitude", "location", "data.cell", "cell")
 	}
