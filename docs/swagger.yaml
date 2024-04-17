@@ -636,6 +636,33 @@ paths:
       - BearerAuth: []
       tags:
       - device-data
+  /v2/vehicle/{tokenID}/analytics/daily-distance:
+    get:
+      description: Get kilometers driven for a tokenID each day.
+      parameters:
+      - description: token id
+        in: path
+        name: tokenID
+        required: true
+        type: integer
+      - description: IANAS time zone id, e.g., America/Los_Angeles
+        in: query
+        name: time_zone
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_controllers.DailyDistanceResp'
+        "404":
+          description: no device found for user with provided parameters
+      security:
+      - BearerAuth: []
+      tags:
+      - device-data
   /v2/vehicle/{tokenID}/history:
     get:
       description: Get all historical data for a tokenID, within start and end range
@@ -691,42 +718,15 @@ paths:
       - BearerAuth: []
       tags:
       - device-data
-  /v2/vehicles/{tokenID}/analytics/daily-distance:
-    get:
-      description: Get kilometers driven for a userDeviceID each day.
-      parameters:
-      - description: user device id
-        in: path
-        name: userDeviceID
-        required: true
-        type: string
-      - description: IANAS time zone id, e.g., America/Los_Angeles
-        in: query
-        name: time_zone
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/internal_controllers.DailyDistanceResp'
-        "404":
-          description: no device found for user with provided parameters
-      security:
-      - BearerAuth: []
-      tags:
-      - device-data
   /v2/vehicles/{tokenID}/analytics/total-distance:
     get:
       description: |-
-        Get kilometers driven for a userDeviceID since connected (ie. since we have data available)
+        Get kilometers driven for a tokenID since connected (ie. since we have data available)
         if it returns 0 for distanceDriven it means we have no odometer data.
       parameters:
-      - description: user device id
+      - description: token id
         in: path
-        name: userDeviceID
+        name: tokenID
         required: true
         type: string
       produces:
