@@ -23,7 +23,7 @@ type vehicleSignalsEventPropertyService struct {
 }
 
 type VehicleSignalsEventPropertyService interface {
-	GenerateData(ctx context.Context, dateKey string, integrationID string, ud *models.UserDeviceDatum, deviceDefinition *pb.GetDeviceDefinitionItemResponse, eventAvailableProperties map[string]string) error
+	GenerateData(ctx context.Context, dateKey string, integrationID string, ud *models.UserDeviceDatum, deviceDefinition *pb.GetDeviceDefinitionItemResponse, eventAvailableProperties map[string]models.VehicleSignalsAvailableProperty) error
 }
 
 func NewVehicleSignalsEventPropertyService(db func() *db.ReaderWriter, log *zerolog.Logger) VehicleSignalsEventPropertyService {
@@ -35,7 +35,7 @@ func NewVehicleSignalsEventPropertyService(db func() *db.ReaderWriter, log *zero
 	}
 }
 
-func (v *vehicleSignalsEventPropertyService) GenerateData(ctx context.Context, dateKey string, integrationID string, ud *models.UserDeviceDatum, deviceDefinition *pb.GetDeviceDefinitionItemResponse, eventAvailableProperties map[string]string) error {
+func (v *vehicleSignalsEventPropertyService) GenerateData(ctx context.Context, dateKey string, integrationID string, ud *models.UserDeviceDatum, deviceDefinition *pb.GetDeviceDefinitionItemResponse, eventAvailableProperties map[string]models.VehicleSignalsAvailableProperty) error {
 
 	var data map[string]interface{}
 	err := json.Unmarshal(ud.Signals.JSON, &data)
@@ -44,6 +44,11 @@ func (v *vehicleSignalsEventPropertyService) GenerateData(ctx context.Context, d
 	}
 
 	for key, value := range eventAvailableProperties {
+
+		// Validate if the property should be considered
+		if !v.shouldValueBeConsidered(key, value, data) {
+			continue
+		}
 
 		deviceMakeID := deviceDefinition.Make.Id
 		model := deviceDefinition.Type.Model
@@ -70,7 +75,7 @@ func (v *vehicleSignalsEventPropertyService) GenerateData(ctx context.Context, d
 				DateID:             dateKey,
 				IntegrationID:      integrationID,
 				DeviceMakeID:       deviceDefinition.Make.Id,
-				PropertyID:         value,
+				PropertyID:         value.ID,
 				Year:               int(deviceDefinition.Type.Year),
 				Model:              deviceDefinition.Type.Model,
 				DeviceDefinitionID: deviceDefinition.DeviceDefinitionId,
@@ -116,7 +121,7 @@ func (v *vehicleSignalsEventPropertyService) GenerateData(ctx context.Context, d
 					DateID:             dateKey,
 					IntegrationID:      integrationID,
 					DeviceMakeID:       deviceDefinition.Make.Id,
-					PropertyID:         value,
+					PropertyID:         value.ID,
 					Year:               int(deviceDefinition.Type.Year),
 					Model:              deviceDefinition.Type.Model,
 					DeviceDefinitionID: deviceDefinition.DeviceDefinitionId,
@@ -143,4 +148,28 @@ func (v *vehicleSignalsEventPropertyService) GenerateData(ctx context.Context, d
 	}
 
 	return nil
+}
+
+func (v *vehicleSignalsEventPropertyService) shouldValueBeConsidered(key string, value models.VehicleSignalsAvailableProperty, data map[string]interface{}) bool {
+	if _, ok := data[key]; ok {
+		if value.ValidMinLength.Valid && value.ValidMinLength.Int > 0 {
+			object, ok := data[key].(map[string]interface{})
+			if !ok {
+				return false
+			}
+
+			objectValue, ok := object["value"].(string)
+			if !ok {
+				return false
+			}
+
+			if len(objectValue) < value.ValidMinLength.Int {
+				return false
+			}
+		}
+
+		return true
+	}
+
+	return false
 }

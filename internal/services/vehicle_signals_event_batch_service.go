@@ -46,16 +46,16 @@ func (v *vehicleSignalsEventBatchService) GenerateVehicleDataTracking(ctx contex
 	const CacheKey = "VehicleDataTrackingProperties"
 	get, found := v.memoryCache.Get(CacheKey)
 
-	eventAvailableProperties := make(map[string]string)
+	eventAvailableProperties := make(map[string]models.VehicleSignalsAvailableProperty)
 	if found {
-		eventAvailableProperties = get.(map[string]string)
+		eventAvailableProperties = get.(map[string]models.VehicleSignalsAvailableProperty)
 	} else {
 		availableProperties, err := models.VehicleSignalsAvailableProperties().All(ctx, v.db().Reader)
 		if err != nil {
 			return err
 		}
 		for i := 0; i < len(availableProperties); i++ {
-			eventAvailableProperties[availableProperties[i].Name] = availableProperties[i].ID
+			eventAvailableProperties[availableProperties[i].Name] = *availableProperties[i]
 		}
 		v.memoryCache.Set(CacheKey, eventAvailableProperties, 30*time.Minute)
 	}
@@ -76,7 +76,6 @@ func (v *vehicleSignalsEventBatchService) GenerateVehicleDataTracking(ctx contex
 	deviceDefinitionCount := make(map[string]int)
 
 	for _, item := range deviceDataEvents {
-
 		device := &pb.UserDevice{}
 		cachedUD, foundCached := v.memoryCache.Get(item.UserDeviceID + "_" + item.IntegrationID)
 		if foundCached {
