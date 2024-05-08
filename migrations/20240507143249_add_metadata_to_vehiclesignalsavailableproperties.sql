@@ -2,9 +2,9 @@
 -- +goose StatementBegin
 SELECT 'up SQL query';
 SET search_path = device_data_api, public;
-alter table vehicle_signals_available_properties add column min_length int;
+alter table vehicle_signals_available_properties add column valid_min_length int;
 
-update vehicle_signals_available_properties set min_length = 17 where name = 'vin';
+update vehicle_signals_available_properties set valid_min_length = 17 where name = 'vin';
 
 -- +goose StatementEnd
 
@@ -12,5 +12,5 @@ update vehicle_signals_available_properties set min_length = 17 where name = 'vi
 -- +goose StatementBegin
 SELECT 'down SQL query';
 SET search_path = device_data_api, public;
-alter table vehicle_signals_available_properties drop column min_length;
+alter table vehicle_signals_available_properties drop column valid_min_length;
 -- +goose StatementEnd

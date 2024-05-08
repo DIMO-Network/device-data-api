@@ -45,25 +45,9 @@ func (v *vehicleSignalsEventPropertyService) GenerateData(ctx context.Context, d
 
 	for key, value := range eventAvailableProperties {
 
-		// Validate if value is required.
-		if _, ok := data[key]; ok {
-			if value.MinLength.Valid && value.MinLength.Int > 0 {
-				object, ok := data[key].(map[string]interface{})
-				if !ok {
-					continue
-				}
-
-				objectValue, ok := object["value"].(string)
-				if !ok {
-					continue
-				}
-
-				if len(objectValue) < value.MinLength.Int {
-					continue
-				}
-
-			}
-
+		// Validate if the property should be considered
+		if !v.shouldValueBeConsidered(key, value, data) {
+			continue
 		}
 
 		deviceMakeID := deviceDefinition.Make.Id
@@ -164,4 +148,28 @@ func (v *vehicleSignalsEventPropertyService) GenerateData(ctx context.Context, d
 	}
 
 	return nil
+}
+
+func (v *vehicleSignalsEventPropertyService) shouldValueBeConsidered(key string, value models.VehicleSignalsAvailableProperty, data map[string]interface{}) bool {
+	if _, ok := data[key]; ok {
+		if value.ValidMinLength.Valid && value.ValidMinLength.Int > 0 {
+			object, ok := data[key].(map[string]interface{})
+			if !ok {
+				return false
+			}
+
+			objectValue, ok := object["value"].(string)
+			if !ok {
+				return false
+			}
+
+			if len(objectValue) < value.ValidMinLength.Int {
+				return false
+			}
+		}
+
+		return true
+	}
+
+	return false
 }

@@ -30,7 +30,7 @@ type VehicleSignalsAvailableProperty struct {
 	CreatedAt      time.Time         `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 	UpdatedAt      time.Time         `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
 	PowerTrainType types.StringArray `boil:"power_train_type" json:"power_train_type,omitempty" toml:"power_train_type" yaml:"power_train_type,omitempty"`
-	MinLength      null.Int          `boil:"min_length" json:"min_length,omitempty" toml:"min_length" yaml:"min_length,omitempty"`
+	ValidMinLength null.Int          `boil:"valid_min_length" json:"valid_min_length,omitempty" toml:"valid_min_length" yaml:"valid_min_length,omitempty"`
 
 	R *vehicleSignalsAvailablePropertyR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L vehicleSignalsAvailablePropertyL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -42,14 +42,14 @@ var VehicleSignalsAvailablePropertyColumns = struct {
 	CreatedAt      string
 	UpdatedAt      string
 	PowerTrainType string
-	MinLength      string
+	ValidMinLength string
 }{
 	ID:             "id",
 	Name:           "name",
 	CreatedAt:      "created_at",
 	UpdatedAt:      "updated_at",
 	PowerTrainType: "power_train_type",
-	MinLength:      "min_length",
+	ValidMinLength: "valid_min_length",
 }
 
 var VehicleSignalsAvailablePropertyTableColumns = struct {
@@ -58,14 +58,14 @@ var VehicleSignalsAvailablePropertyTableColumns = struct {
 	CreatedAt      string
 	UpdatedAt      string
 	PowerTrainType string
-	MinLength      string
+	ValidMinLength string
 }{
 	ID:             "vehicle_signals_available_properties.id",
 	Name:           "vehicle_signals_available_properties.name",
 	CreatedAt:      "vehicle_signals_available_properties.created_at",
 	UpdatedAt:      "vehicle_signals_available_properties.updated_at",
 	PowerTrainType: "vehicle_signals_available_properties.power_train_type",
-	MinLength:      "vehicle_signals_available_properties.min_length",
+	ValidMinLength: "vehicle_signals_available_properties.valid_min_length",
 }
 
 // Generated where
@@ -140,14 +140,14 @@ var VehicleSignalsAvailablePropertyWhere = struct {
 	CreatedAt      whereHelpertime_Time
 	UpdatedAt      whereHelpertime_Time
 	PowerTrainType whereHelpertypes_StringArray
-	MinLength      whereHelpernull_Int
+	ValidMinLength whereHelpernull_Int
 }{
 	ID:             whereHelperstring{field: "\"device_data_api\".\"vehicle_signals_available_properties\".\"id\""},
 	Name:           whereHelperstring{field: "\"device_data_api\".\"vehicle_signals_available_properties\".\"name\""},
 	CreatedAt:      whereHelpertime_Time{field: "\"device_data_api\".\"vehicle_signals_available_properties\".\"created_at\""},
 	UpdatedAt:      whereHelpertime_Time{field: "\"device_data_api\".\"vehicle_signals_available_properties\".\"updated_at\""},
 	PowerTrainType: whereHelpertypes_StringArray{field: "\"device_data_api\".\"vehicle_signals_available_properties\".\"power_train_type\""},
-	MinLength:      whereHelpernull_Int{field: "\"device_data_api\".\"vehicle_signals_available_properties\".\"min_length\""},
+	ValidMinLength: whereHelpernull_Int{field: "\"device_data_api\".\"vehicle_signals_available_properties\".\"valid_min_length\""},
 }
 
 // VehicleSignalsAvailablePropertyRels is where relationship names are stored.
@@ -167,9 +167,9 @@ func (*vehicleSignalsAvailablePropertyR) NewStruct() *vehicleSignalsAvailablePro
 type vehicleSignalsAvailablePropertyL struct{}
 
 var (
-	vehicleSignalsAvailablePropertyAllColumns            = []string{"id", "name", "created_at", "updated_at", "power_train_type", "min_length"}
+	vehicleSignalsAvailablePropertyAllColumns            = []string{"id", "name", "created_at", "updated_at", "power_train_type", "valid_min_length"}
 	vehicleSignalsAvailablePropertyColumnsWithoutDefault = []string{"id", "name"}
-	vehicleSignalsAvailablePropertyColumnsWithDefault    = []string{"created_at", "updated_at", "power_train_type", "min_length"}
+	vehicleSignalsAvailablePropertyColumnsWithDefault    = []string{"created_at", "updated_at", "power_train_type", "valid_min_length"}
 	vehicleSignalsAvailablePropertyPrimaryKeyColumns     = []string{"id"}
 	vehicleSignalsAvailablePropertyGeneratedColumns      = []string{}
 )
