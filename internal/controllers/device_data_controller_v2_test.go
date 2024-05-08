@@ -79,7 +79,7 @@ func (d *DeviceDataControllerV2Suite) TestGetDistanceDriven() {
 			},
 			expectedResponse: fiber.StatusBadRequest,
 			expectedDevice:   nil,
-			customClaims: []privileges.Privilege{privileges.VehicleNonLocationData},
+			customClaims:     []privileges.Privilege{privileges.VehicleNonLocationData},
 		},
 	}
 	d.esMock.EXPECT().GetTotalDistanceDriven(gomock.Any(), expectedDeviceID).Return([]byte(`{"aggregations": {"max_odometer": {"value": 200},"min_odometer": {"value": 50}}}`), nil).AnyTimes()
@@ -90,7 +90,7 @@ func (d *DeviceDataControllerV2Suite) TestGetDistanceDriven() {
 	for _, tc := range tests {
 		app.Use(test.ClaimsInjectorTestHandler(tc.customClaims))
 		app.Get("/v2/vehicles/:tokenID/analytics/total-distance", test.AuthInjectorTestHandler(testUserID), d.SUT.GetDistanceDriven)
-		
+
 		var errDevice error
 		if tc.expectedDevice == nil {
 			errDevice = errors.New("device not found")

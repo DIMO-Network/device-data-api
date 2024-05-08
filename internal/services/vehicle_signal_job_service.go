@@ -47,7 +47,7 @@ func (v vehicleSignalJobService) GetJobContext(ctx context.Context) (*internalmo
 		}
 	}
 
-	now := time.Now()
+	now := time.Now().AddDate(0, -3, 0)
 	startDate := now.AddDate(0, 0, -7)
 	endDate := now
 	fromTime := time.Date(endDate.Year(), endDate.Month(), endDate.Day(), 0, 0, 0, 0, endDate.Location())
