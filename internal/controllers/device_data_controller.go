@@ -37,10 +37,6 @@ import (
 	"github.com/DIMO-Network/device-data-api/models"
 )
 
-const (
-	defaultTimeout = time.Minute * 5
-)
-
 type DeviceDataController struct {
 	Settings        *config.Settings
 	log             *zerolog.Logger
