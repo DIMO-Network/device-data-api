@@ -663,38 +663,6 @@ paths:
       - BearerAuth: []
       tags:
       - device-data
-  /v2/vehicle/{tokenID}/history:
-    get:
-      description: Get all historical data for a tokenID, within start and end range
-      parameters:
-      - description: token id
-        in: path
-        name: tokenID
-        required: true
-        type: integer
-      - description: startTime is an RFC3339 formatted date-time string. If empty
-          two weeks from endTime
-        in: query
-        name: startTime
-        type: string
-      - description: endTime is an RFC3339 formatted date-time string. If empty the
-          current time
-        in: query
-        name: endTime
-        type: string
-      - description: number of data points to return, default 1000
-        in: query
-        name: buckets
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      security:
-      - BearerAuth: []
-      tags:
-      - device-data
   /v2/vehicle/{tokenId}/status:
     get:
       description: Returns the latest status update for the vehicle with a given token
