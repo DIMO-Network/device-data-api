@@ -34,7 +34,6 @@ import (
 	"github.com/DIMO-Network/device-data-api/internal/config"
 	_ "github.com/DIMO-Network/device-data-api/internal/response" // also needed for swagger gen
 	"github.com/DIMO-Network/device-data-api/internal/services"
-	"github.com/DIMO-Network/device-data-api/internal/services/elastic"
 	"github.com/DIMO-Network/device-data-api/models"
 )
 
@@ -54,7 +53,6 @@ type DeviceDataController struct {
 
 // EsInterface is an interface for the elastic service.
 type EsInterface interface {
-	GetHistory(ctx context.Context, params elastic.GetHistoryParams) ([]json.RawMessage, error)
 	GetTotalDistanceDriven(ctx context.Context, deviceID string) ([]byte, error)
 	GetTotalDailyDistanceDriven(ctx context.Context, tz, deviceID string) ([]byte, error)
 	ESClient() *elasticsearch.TypedClient
