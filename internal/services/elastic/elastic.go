@@ -3,13 +3,10 @@ package elastic
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 
-	"github.com/DIMO-Network/shared/privileges"
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/core/search"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/some"
@@ -21,15 +18,8 @@ import (
 )
 
 const (
-	docByInterval  = "documents_by_interval"
-	singleDoc      = "select_single_doc"
-	timeField      = "time"
-	subjectField   = "subject"
 	defaultRetries = 5
 )
-
-// ErrInvalidParams is returned when the parameters for the history query are invalid.
-var ErrInvalidParams = errors.New("invalid parameters")
 
 // Service is a service for performing queries on elastic.
 type Service struct {
@@ -64,37 +54,6 @@ func New(settings *config.Settings, logger *zerolog.Logger, caCert []byte) (*Ser
 // This function exists to maintain previous behavior for endpoint who are not yet using the elastic service.
 func (s *Service) ESClient() *elasticsearch.TypedClient {
 	return s.esClient
-}
-
-// GetHistoryParams defines the parameters for retrieving history from elastic.
-type GetHistoryParams struct {
-	// StartTime is the start time of the history.
-	StartTime time.Time
-	// EndTime is the end time of the history.
-	EndTime time.Time
-	// DeviceID is the ID of the device.
-	DeviceID string
-	// PrivilegeIDs is the list of privilege IDs that the user has.
-	PrivilegeIDs []privileges.Privilege
-	// Buckets is the number of time intervals to divide the history into.
-	Buckets int
-}
-
-// SetDefaultHistoryParams sets the default values for the history params.
-// If the buckets are less than or equal to 0, it will be set to 1000.
-// If the end time is zero, it will be set to the current time.
-// If the start time is zero, it will be set to 2 weeks from the end time.
-func (g *GetHistoryParams) SetDefaultHistoryParams() {
-	if g.Buckets <= 0 {
-		g.Buckets = 1000
-	}
-	if g.EndTime.IsZero() {
-		g.EndTime = time.Now()
-	}
-
-	if g.StartTime.IsZero() {
-		g.StartTime = g.EndTime.Add(-time.Hour * 24 * 14) // default to 2 weeks ago
-	}
 }
 
 func (s *Service) GetTotalDailyDistanceDriven(ctx context.Context, tz, deviceID string) ([]byte, error) {
