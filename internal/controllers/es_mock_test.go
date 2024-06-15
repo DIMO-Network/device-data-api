@@ -11,10 +11,8 @@ package controllers_test
 
 import (
 	context "context"
-	json "encoding/json"
 	reflect "reflect"
 
-	elastic "github.com/DIMO-Network/device-data-api/internal/services/elastic"
 	elasticsearch "github.com/elastic/go-elasticsearch/v8"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -54,21 +52,6 @@ func (m *MockEsInterface) ESClient() *elasticsearch.TypedClient {
 func (mr *MockEsInterfaceMockRecorder) ESClient() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ESClient", reflect.TypeOf((*MockEsInterface)(nil).ESClient))
-}
-
-// GetHistory mocks base method.
-func (m *MockEsInterface) GetHistory(arg0 context.Context, arg1 elastic.GetHistoryParams) ([]json.RawMessage, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetHistory", arg0, arg1)
-	ret0, _ := ret[0].([]json.RawMessage)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetHistory indicates an expected call of GetHistory.
-func (mr *MockEsInterfaceMockRecorder) GetHistory(arg0, arg1 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHistory", reflect.TypeOf((*MockEsInterface)(nil).GetHistory), arg0, arg1)
 }
 
 // GetTotalDailyDistanceDriven mocks base method.

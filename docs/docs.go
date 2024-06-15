@@ -393,54 +393,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/v2/vehicle/{tokenID}/history": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Get all historical data for a tokenID, within start and end range",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "device-data"
-                ],
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "token id",
-                        "name": "tokenID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "startTime is an RFC3339 formatted date-time string. If empty two weeks from endTime",
-                        "name": "startTime",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "endTime is an RFC3339 formatted date-time string. If empty the current time",
-                        "name": "endTime",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "number of data points to return, default 1000",
-                        "name": "buckets",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                }
-            }
-        },
         "/v2/vehicle/{tokenId}/status": {
             "get": {
                 "security": [

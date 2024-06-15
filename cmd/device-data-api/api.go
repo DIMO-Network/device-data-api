@@ -104,7 +104,6 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 	vTokenV1.Get("/status-raw", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleCurrentLocation, privileges.VehicleAllTimeLocation}), cacheHandler, deviceDataController.GetVehicleStatusRaw)
 
 	vTokenV2.Get("/status", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleCurrentLocation, privileges.VehicleAllTimeLocation}), cacheHandler, deviceDataControllerV2.GetVehicleStatus)
-	vTokenV2.Get("/history", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleAllTimeLocation}), cacheHandler, deviceDataControllerV2.GetHistoricalPermissioned)
 	vTokenV2.Get("/analytics/daily-distance", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData}), cacheHandler, deviceDataControllerV2.GetDailyDistance)
 	vTokenV2.Get("/analytics/total-distance", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData}), cacheHandler, deviceDataControllerV2.GetDistanceDriven)
 
