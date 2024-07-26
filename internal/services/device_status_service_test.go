@@ -105,13 +105,18 @@ func Test_calculateRange(t *testing.T) {
 			Value: "20",
 		},
 	}
-	deviceDefSvc.EXPECT().GetDeviceDefinitionByID(gomock.Any(), ddID).Times(1).Return(&ddgrpc.GetDeviceDefinitionItemResponse{
+	deviceDefSvc.EXPECT().GetDeviceDefinitionByID(gomock.Any(), ddID).Times(2).Return(&ddgrpc.GetDeviceDefinitionItemResponse{
 		DeviceDefinitionId: ddID,
 		Verified:           true,
 		DeviceAttributes:   attrs,
 	}, nil)
 
 	rge, err := deviceStatusSvc.CalculateRange(ctx, ddID, &styleID, .7)
+	require.NoError(t, err)
+	require.NotNil(t, rge)
+	assert.Equal(t, 337.9614, *rge)
+
+	rge, err = deviceStatusSvc.CalculateRange(ctx, ddID, &styleID, 70)
 	require.NoError(t, err)
 	require.NotNil(t, rge)
 	assert.Equal(t, 337.9614, *rge)

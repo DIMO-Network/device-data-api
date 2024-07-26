@@ -172,13 +172,15 @@ func (dss *deviceStatusService) CalculateRange(ctx context.Context, deviceDefini
 	}
 
 	dd, err := dss.ddSvc.GetDeviceDefinitionByID(ctx, deviceDefinitionID)
-
 	if err != nil {
 		return nil, shared.GrpcErrorToFiber(err, "deviceDefSvc error getting definition id: "+deviceDefinitionID)
 	}
+	// want the decimal form of the percentage for this calculation
+	if fuelPercentRemaining > 1 {
+		fuelPercentRemaining = fuelPercentRemaining / 100
+	}
 
 	rangeData := GetActualDeviceDefinitionMetadataValues(dd, deviceStyleID)
-
 	// calculate, convert to Km
 	if rangeData.FuelTankCapGal > 0 && rangeData.Mpg > 0 {
 		fuelTankAtGal := rangeData.FuelTankCapGal * fuelPercentRemaining
