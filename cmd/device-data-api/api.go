@@ -102,7 +102,6 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 	vTokenV1.Get("/history", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleAllTimeLocation}), cacheHandler, deviceDataController.GetHistoricalRawPermissioned)
 	vTokenV1.Get("/status", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleCurrentLocation, privileges.VehicleAllTimeLocation}), cacheHandler, deviceDataController.GetVehicleStatus)
 	vTokenV1.Get("/status-raw", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleCurrentLocation, privileges.VehicleAllTimeLocation}), cacheHandler, deviceDataController.GetVehicleStatusRaw)
-	vTokenV1.Get("/data-raw", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleCurrentLocation, privileges.VehicleAllTimeLocation}), cacheHandler, deviceDataController.GetDeviceDefinitionRawData)
 
 	vTokenV2.Get("/status", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData, privileges.VehicleCurrentLocation, privileges.VehicleAllTimeLocation}), cacheHandler, deviceDataControllerV2.GetVehicleStatus)
 	vTokenV2.Get("/analytics/daily-distance", tk.OneOf(vehicleAddr, []privileges.Privilege{privileges.VehicleNonLocationData}), cacheHandler, deviceDataControllerV2.GetDailyDistance)
@@ -116,6 +115,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 	udOwner.Get("/historical", cacheHandler, deviceDataController.GetHistoricalRaw)
 	udOwner.Get("/distance-driven", cacheHandler, deviceDataController.GetDistanceDriven)
 	udOwner.Get("/daily-distance", cacheHandler, deviceDataController.GetDailyDistance)
+	udOwner.Get("/data-raw", cacheHandler, deviceDataController.GetDeviceDefinitionRawData)
 
 	dataDownloadController, err := controllers.NewDataDownloadController(settings, &logger, esService.ESClient(), deviceAPIService)
 	if err != nil {
