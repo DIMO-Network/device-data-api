@@ -691,3 +691,23 @@ func (d *DeviceDataController) GetLastSeen(c *fiber.Ctx) error {
 		"last_data_seen": udd.UpdatedAt.Format(time.RFC3339),
 	})
 }
+
+//TODO: remove after hackathon
+
+// GetRawData godoc
+// @Description  Get all raw data for a userDeviceID, within start and end range
+// @Tags         device-data
+// @Produce      json
+// @Success      200
+// @Param        userDeviceID  path   string  true   "user device id"
+func (d *DeviceDataController) GetDeviceDefinitionRawData(c *fiber.Ctx) error {
+	userDeviceID := c.Params("userDeviceId")
+
+	deviceData, err := models.UserDeviceData(models.UserDeviceDatumWhere.UserDeviceID.EQ(userDeviceID)).One(c.Context(), d.dbs().Reader)
+
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(deviceData.Signals.JSON)
+}

@@ -19,3 +19,5 @@ settings.yaml
 # Igonre the device-data-api binary only
 device-data-api
 !device-data-api/
+
+vendor/
