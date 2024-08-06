@@ -702,7 +702,7 @@ func (d *DeviceDataController) GetLastSeen(c *fiber.Ctx) error {
 // @Router       /v1/user/device-data/{userDeviceId}/data-raw [get]
 func (d *DeviceDataController) GetDeviceDefinitionRawData(c *fiber.Ctx) error {
 	//TODO: This is a temporary endpoint to get the raw data for a device definition
-	userDeviceID := c.Params("userDeviceId")
+	userDeviceID := c.Params("userDeviceID")
 
 	deviceData, err := models.UserDeviceData(models.UserDeviceDatumWhere.UserDeviceID.EQ(userDeviceID)).One(c.Context(), d.dbs().Reader)
 
