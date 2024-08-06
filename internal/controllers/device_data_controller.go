@@ -694,7 +694,7 @@ func (d *DeviceDataController) GetLastSeen(c *fiber.Ctx) error {
 
 func (d *DeviceDataController) GetDeviceDefinitionRawData(c *fiber.Ctx) error {
 	//TODO: This is a temporary endpoint to get the raw data for a device definition
-	userDeviceID := c.Params("userDeviceID")
+	userDeviceID := c.Params("userDeviceID", "")
 
 	deviceData, err := models.UserDeviceData(models.UserDeviceDatumWhere.UserDeviceID.EQ(userDeviceID)).One(c.Context(), d.dbs().Reader)
 
@@ -702,5 +702,9 @@ func (d *DeviceDataController) GetDeviceDefinitionRawData(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(deviceData.Signals.JSON)
+	d.log.Info().Interface("signals", deviceData.Signals.JSON).Msg("Returning raw data for device definition")
+
+	return c.JSON(fiber.Map{
+		"raw_data": deviceData.Signals.JSON,
+	})
 }
