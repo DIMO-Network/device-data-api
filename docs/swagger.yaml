@@ -563,6 +563,24 @@ paths:
       - BearerAuth: []
       tags:
       - device-data
+  /v1/user/device-data/{userDeviceId}/data-raw:
+    get:
+      description: Get the raw data for a device definition
+      parameters:
+      - description: user device id
+        in: path
+        name: userDeviceId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerAuth: []
+      tags:
+      - device-data
   /v1/vehicle/{tokenID}/history:
     get:
       description: Get all historical data for a tokenID, within start and end range

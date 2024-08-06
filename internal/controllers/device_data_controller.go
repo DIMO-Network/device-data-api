@@ -692,15 +692,16 @@ func (d *DeviceDataController) GetLastSeen(c *fiber.Ctx) error {
 	})
 }
 
-//TODO: remove after hackathon
-
-// GetRawData godoc
-// @Description  Get all raw data for a userDeviceID, within start and end range
+// GetDeviceDefinitionRawData godoc
+// @Description  Get the raw data for a device definition
 // @Tags         device-data
 // @Produce      json
 // @Success      200
-// @Param        userDeviceID  path   string  true   "user device id"
+// @Param        userDeviceId  path   string  true   "user device id"
+// @Security     BearerAuth
+// @Router       /v1/user/device-data/{userDeviceId}/data-raw [get]
 func (d *DeviceDataController) GetDeviceDefinitionRawData(c *fiber.Ctx) error {
+	//TODO: This is a temporary endpoint to get the raw data for a device definition
 	userDeviceID := c.Params("userDeviceId")
 
 	deviceData, err := models.UserDeviceData(models.UserDeviceDatumWhere.UserDeviceID.EQ(userDeviceID)).One(c.Context(), d.dbs().Reader)
