@@ -702,9 +702,9 @@ func (d *DeviceDataController) GetDeviceDefinitionRawData(c *fiber.Ctx) error {
 		return err
 	}
 
-	d.log.Info().Interface("signals", deviceData.Signals.JSON).Msg("Returning raw data for device definition")
+	d.log.Info().Interface("signals", deviceData.Signals).Msg("Returning raw data for device definition")
 
 	return c.JSON(fiber.Map{
-		"raw_data": deviceData.Signals.JSON,
+		"raw_data": deviceData.Signals,
 	})
 }
