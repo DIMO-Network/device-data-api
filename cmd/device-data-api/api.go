@@ -89,6 +89,7 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 	})
 	// autopi specific endpoint,
 	app.Get("/v1/autopi/last-seen/:ethAddr", deviceDataController.GetLastSeen)
+	app.Get("/v1//user/device-data/:userDeviceID/data-raw", deviceDataController.GetDeviceDefinitionRawData)
 
 	vTokenV1 := app.Group("/v1/vehicle/:tokenID", privilegeAuth)
 	vTokenV2 := app.Group("/v2/vehicle/:tokenID", privilegeAuth)
@@ -115,7 +116,6 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 	udOwner.Get("/historical", cacheHandler, deviceDataController.GetHistoricalRaw)
 	udOwner.Get("/distance-driven", cacheHandler, deviceDataController.GetDistanceDriven)
 	udOwner.Get("/daily-distance", cacheHandler, deviceDataController.GetDailyDistance)
-	udOwner.Get("/data-raw", cacheHandler, deviceDataController.GetDeviceDefinitionRawData)
 
 	dataDownloadController, err := controllers.NewDataDownloadController(settings, &logger, esService.ESClient(), deviceAPIService)
 	if err != nil {

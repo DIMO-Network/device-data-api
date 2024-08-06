@@ -697,9 +697,9 @@ func (d *DeviceDataController) GetLastSeen(c *fiber.Ctx) error {
 // @Tags         device-data
 // @Produce      json
 // @Success      200
-// @Param        userDeviceId  path   string  true   "user device id"
+// @Param        userDeviceID  path   string  true   "user device id"
 // @Security     BearerAuth
-// @Router       /v1/user/device-data/{userDeviceId}/data-raw [get]
+// @Router       /v1/user/device-data/{userDeviceID}/data-raw [get]
 func (d *DeviceDataController) GetDeviceDefinitionRawData(c *fiber.Ctx) error {
 	//TODO: This is a temporary endpoint to get the raw data for a device definition
 	userDeviceID := c.Params("userDeviceID")
