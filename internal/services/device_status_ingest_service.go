@@ -145,15 +145,12 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 
 	// update status to Active if not already set
 	if apiIntegration.Status != constants.UserDeviceAPIIntegrationStatusActive {
-		i.log.Info().Str("user_device_id", userDeviceID).Str("integration_id", apiIntegration.Id).
-			Msgf("updating integration status for user device. current status %s", apiIntegration.Status)
 		apiIntegration.Status = constants.UserDeviceAPIIntegrationStatusActive
-		if _, err := i.deviceSvc.UpdateStatus(ctx, userDeviceID, apiIntegration.Id, apiIntegration.Status); err != nil {
-			return fmt.Errorf("failed to update API integration: %w", err)
-		}
 
 		if integration.Vendor == constants.AutoPiVendor {
-			err := i.autoPiSvc.UpdateState(apiIntegration.ExternalId, apiIntegration.Status)
+			i.log.Info().Str("userDeviceId", userDeviceID).Str("integrationId", apiIntegration.Id).
+				Msg("Marking device as active with AutoPi.")
+			err := i.autoPiSvc.UpdateState(apiIntegration.ExternalId, constants.UserDeviceAPIIntegrationStatusActive)
 			if err != nil {
 				return fmt.Errorf("failed to update status when calling autopi api for deviceId: %s", apiIntegration.ExternalId)
 			}
