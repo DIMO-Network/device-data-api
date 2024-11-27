@@ -68,8 +68,6 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/DATA-DOG/go-sqlmock v1.4.1 h1:ThlnYciV1iM/V0OSF/dtkqWb6xo5qITT1TJBG1MRDJM=
 github.com/DATA-DOG/go-sqlmock v1.4.1/go.mod h1:f/Ixk793poVmq4qj/V1dPUg2JEAKC73Q5eFN3EC/SaM=
-github.com/DIMO-Network/device-definitions-api v1.2.65 h1:/5cMk1dHwjxHnvhtOGo+H6xgW+uc6kJt1ZYZ3PFnMAE=
-github.com/DIMO-Network/device-definitions-api v1.2.65/go.mod h1:6k8KSNzSh6svRWEG6EkGtZqttiHESW92OsLPNQ0nnsY=
 github.com/DIMO-Network/device-definitions-api v1.2.66 h1:WRKZ+4CPH3+8QzVPG/Cl7DUcZ2p4AjDFHNxRqc9Kjzk=
 github.com/DIMO-Network/device-definitions-api v1.2.66/go.mod h1:0br3QBs+fNH1WtC/VMTYk0ekwebCnRk5OrXivo96NwA=
 github.com/DIMO-Network/devices-api v1.24.7 h1:ZrNByEa62X7+kWs24mmbhe79a7NEkSbi0y1wYgwcE1I=
@@ -796,8 +794,6 @@ github.com/syndtr/goleveldb v1.0.1-0.20220614013038-64ee5596c38a h1:1ur3QoCqvE5f
 github.com/syndtr/goleveldb v1.0.1-0.20220614013038-64ee5596c38a/go.mod h1:RRCYJbIwD5jmqPI9XoAFR0OcDxqUctll6zUj/+B4S48=
 github.com/testcontainers/testcontainers-go v0.32.0 h1:ug1aK08L3gCHdhknlTTwWjPHPS+/alvLJU/DRxTD/ME=
 github.com/testcontainers/testcontainers-go v0.32.0/go.mod h1:CRHrzHLQhlXUsa5gXjTOfqIEJcrK5+xMDmBr/WMI88E=
-github.com/testcontainers/testcontainers-go/modules/elasticsearch v0.27.0 h1:BkJPG6s1aXJ7yeFweG6nq2VMRl6xToRn8ht2z0RocR8=
-github.com/testcontainers/testcontainers-go/modules/elasticsearch v0.27.0/go.mod h1:WMaQCBStEkJXHdFEL9vvb5RWDjdAd3NrdR9tbTcsetU=
 github.com/tidwall/gjson v1.14.2/go.mod h1:/wbyibRr2FHMks5tjHJ5F8dMZh3AcwJEMf5vlfC0lxk=
 github.com/tidwall/gjson v1.17.1 h1:wlYEnwqAHgzmhNUFfw7Xalt2JzQvsMx2Se4PcoFCT/U=
 github.com/tidwall/gjson v1.17.1/go.mod h1:/wbyibRr2FHMks5tjHJ5F8dMZh3AcwJEMf5vlfC0lxk=
