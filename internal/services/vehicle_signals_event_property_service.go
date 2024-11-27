@@ -51,8 +51,8 @@ func (v *vehicleSignalsEventPropertyService) GenerateData(ctx context.Context, d
 		}
 
 		deviceMakeID := deviceDefinition.Make.Id
-		model := deviceDefinition.Type.Model
-		year := int(deviceDefinition.Type.Year)
+		model := deviceDefinition.Model
+		year := int(deviceDefinition.Year)
 
 		event, err := models.ReportVehicleSignalsEventsAlls(
 			models.ReportVehicleSignalsEventsAllWhere.DateID.EQ(dateKey),
@@ -76,8 +76,8 @@ func (v *vehicleSignalsEventPropertyService) GenerateData(ctx context.Context, d
 				IntegrationID:      integrationID,
 				DeviceMakeID:       deviceDefinition.Make.Id,
 				PropertyID:         value.ID,
-				Year:               int(deviceDefinition.Type.Year),
-				Model:              deviceDefinition.Type.Model,
+				Year:               int(deviceDefinition.Year),
+				Model:              deviceDefinition.Model,
 				DeviceDefinitionID: deviceDefinition.DeviceDefinitionId,
 				DeviceMake:         deviceDefinition.Make.Name,
 				Count:              1,
@@ -122,8 +122,8 @@ func (v *vehicleSignalsEventPropertyService) GenerateData(ctx context.Context, d
 					IntegrationID:      integrationID,
 					DeviceMakeID:       deviceDefinition.Make.Id,
 					PropertyID:         value.ID,
-					Year:               int(deviceDefinition.Type.Year),
-					Model:              deviceDefinition.Type.Model,
+					Year:               int(deviceDefinition.Year),
+					Model:              deviceDefinition.Model,
 					DeviceDefinitionID: deviceDefinition.DeviceDefinitionId,
 					DeviceMake:         deviceDefinition.Make.Name,
 					Count:              1,

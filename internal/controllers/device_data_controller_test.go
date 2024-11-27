@@ -43,7 +43,6 @@ func TestDeviceDataController_addRangeIfNotExists(t *testing.T) {
 	deviceDefSvc.EXPECT().GetDeviceDefinitionByID(gomock.Any(), ddID).Times(1).Return(&ddgrpc.GetDeviceDefinitionItemResponse{
 		DeviceDefinitionId: ddID,
 		Name:               "test car",
-		Type:               nil,
 		Verified:           true,
 		Make:               nil,
 		DeviceStyles:       nil,

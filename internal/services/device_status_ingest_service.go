@@ -342,8 +342,8 @@ func (i *DeviceStatusIngestService) emitOdometerEvent(device *pb.UserDevice, dd 
 			Device: odometerEventDevice{
 				ID:    device.Id,
 				Make:  dd.Make.Name,
-				Model: dd.Type.Model,
-				Year:  int(dd.Type.Year),
+				Model: dd.Model,
+				Year:  int(dd.Year),
 			},
 			Odometer: odometer,
 		},
