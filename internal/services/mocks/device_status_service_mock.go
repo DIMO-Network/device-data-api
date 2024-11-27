@@ -42,21 +42,6 @@ func (m *MockDeviceStatusService) EXPECT() *MockDeviceStatusServiceMockRecorder 
 	return m.recorder
 }
 
-// CalculateRange mocks base method.
-func (m *MockDeviceStatusService) CalculateRange(ctx context.Context, deviceDefinitionID string, deviceStyleID *string, fuelPercentRemaining float64) (*float64, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CalculateRange", ctx, deviceDefinitionID, deviceStyleID, fuelPercentRemaining)
-	ret0, _ := ret[0].(*float64)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CalculateRange indicates an expected call of CalculateRange.
-func (mr *MockDeviceStatusServiceMockRecorder) CalculateRange(ctx, deviceDefinitionID, deviceStyleID, fuelPercentRemaining any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CalculateRange", reflect.TypeOf((*MockDeviceStatusService)(nil).CalculateRange), ctx, deviceDefinitionID, deviceStyleID, fuelPercentRemaining)
-}
-
 // PrepareDeviceStatusInformation mocks base method.
 func (m *MockDeviceStatusService) PrepareDeviceStatusInformation(ctx context.Context, deviceData models.UserDeviceDatumSlice, deviceDefinitionID string, deviceStyleID *string, privilegeIDs []privileges.Privilege) response.DeviceSnapshot {
 	m.ctrl.T.Helper()

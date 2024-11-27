@@ -30,15 +30,14 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func NewUserDeviceData(dbs func() *db.ReaderWriter, logger *zerolog.Logger, deviceDefSvc services.DeviceDefinitionsAPIService, deviceStatusSvc services.DeviceStatusService) pb.UserDeviceDataServiceServer {
-	return &userDeviceData{dbs: dbs, logger: logger, deviceDefSvc: deviceDefSvc, deviceStatusSvc: deviceStatusSvc}
+func NewUserDeviceData(dbs func() *db.ReaderWriter, logger *zerolog.Logger, deviceStatusSvc services.DeviceStatusService) pb.UserDeviceDataServiceServer {
+	return &userDeviceData{dbs: dbs, logger: logger, deviceStatusSvc: deviceStatusSvc}
 }
 
 type userDeviceData struct {
 	pb.UserDeviceDataServiceServer
 	dbs             func() *db.ReaderWriter
 	logger          *zerolog.Logger
-	deviceDefSvc    services.DeviceDefinitionsAPIService
 	deviceStatusSvc services.DeviceStatusService
 }
 

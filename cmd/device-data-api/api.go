@@ -29,7 +29,6 @@ import (
 )
 
 func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *db.ReaderWriter,
-	definitionsAPIService services.DeviceDefinitionsAPIService,
 	deviceAPIService services.DeviceAPIService,
 	usersClient pb.UserServiceClient) *fiber.App {
 	app := fiber.New(fiber.Config{
@@ -75,8 +74,8 @@ func startWebAPI(logger zerolog.Logger, settings *config.Settings, dbs func() *d
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Error constructing Elasticsearch service.")
 	}
-	deviceStatusSvc := services.NewDeviceStatusService(definitionsAPIService)
-	deviceDataController := controllers.NewDeviceDataController(settings, &logger, deviceAPIService, esService, definitionsAPIService, deviceStatusSvc, dbs)
+	deviceStatusSvc := services.NewDeviceStatusService()
+	deviceDataController := controllers.NewDeviceDataController(settings, &logger, deviceAPIService, esService, deviceStatusSvc, dbs)
 	deviceDataControllerV2 := controllers.NewDeviceDataControllerV2(settings, &logger, deviceAPIService, esService, deviceStatusSvc, dbs)
 
 	logger.Info().Str("jwkUrl", settings.TokenExchangeJWTKeySetURL).Str("vehicleAddr", settings.VehicleNFTAddress).Msg("Privileges enabled.")

@@ -83,8 +83,6 @@ func main() {
 	subcommands.Register(subcommands.FlagsCommand(), "")
 	subcommands.Register(subcommands.CommandsCommand(), "")
 
-	deviceDefsSvc, deviceDefsConn := deps.getDeviceDefinitionService()
-	defer deviceDefsConn.Close()
 	devicesSvc, devicesConn := deps.getDeviceService()
 	defer devicesConn.Close()
 
@@ -92,11 +90,11 @@ func main() {
 	if len(os.Args) == 1 {
 		startPrometheus(logger)
 
-		go startGRPCServer(&settings, pdb.DBS, &logger, deviceDefsSvc)
+		go startGRPCServer(&settings, pdb.DBS, &logger)
 
 		if settings.IsKafkaEnabled(&logger) {
 			eventService := services.NewEventService(&logger, &settings, deps.getKafkaProducer())
-			startDeviceStatusConsumer(logger, &settings, pdb, eventService, deviceDefsSvc, devicesSvc)
+			startDeviceStatusConsumer(logger, &settings, pdb, eventService, devicesSvc)
 			startDeviceFingerprint(logger, &settings, pdb, devicesSvc)
 		}
 		if settings.IsWebAPIEnabled(&logger) {
@@ -106,7 +104,7 @@ func main() {
 			}
 			defer usersConn.Close()
 			usersClient := pb.NewUserServiceClient(usersConn)
-			app := startWebAPI(logger, &settings, pdb.DBS, deviceDefsSvc, devicesSvc, usersClient)
+			app := startWebAPI(logger, &settings, pdb.DBS, devicesSvc, usersClient)
 			// nolint
 			defer app.Shutdown()
 		}
@@ -118,14 +116,13 @@ func main() {
 		// shutdown anything else
 	} else {
 		subcommands.Register(&migrateDBCmd{logger: logger, settings: settings}, "database")
-		subcommands.Register(&vehicleSignalsBatchCmd{db: pdb.DBS, logger: logger, deviceDefSvc: deviceDefsSvc, deviceSvc: devicesSvc}, "events")
 
 		flag.Parse()
 		os.Exit(int(subcommands.Execute(ctx)))
 	}
 }
 
-func startGRPCServer(settings *config.Settings, dbs func() *db.ReaderWriter, logger *zerolog.Logger, definitionsAPIService services.DeviceDefinitionsAPIService) {
+func startGRPCServer(settings *config.Settings, dbs func() *db.ReaderWriter, logger *zerolog.Logger) {
 	lis, err := net.Listen("tcp", ":"+settings.GRPCPort)
 	if err != nil {
 		logger.Fatal().Err(err).Msgf("Couldn't listen on gRPC port %s", settings.GRPCPort)
@@ -143,8 +140,8 @@ func startGRPCServer(settings *config.Settings, dbs func() *db.ReaderWriter, log
 		grpc.StreamInterceptor(grpc_prometheus.StreamServerInterceptor),
 	)
 
-	deviceStatusSvc := services.NewDeviceStatusService(definitionsAPIService)
-	dddatagrpc.RegisterUserDeviceDataServiceServer(server, rpc.NewUserDeviceData(dbs, logger, definitionsAPIService, deviceStatusSvc))
+	deviceStatusSvc := services.NewDeviceStatusService()
+	dddatagrpc.RegisterUserDeviceDataServiceServer(server, rpc.NewUserDeviceData(dbs, logger, deviceStatusSvc))
 
 	if err := server.Serve(lis); err != nil {
 		logger.Fatal().Err(err).Msg("gRPC server terminated unexpectedly")
@@ -162,11 +159,10 @@ func startPrometheus(logger zerolog.Logger) {
 	logger.Info().Msg("prometheus metrics at :8888/metrics")
 }
 
-func startDeviceStatusConsumer(logger zerolog.Logger, settings *config.Settings, pdb db.Store, eventService services.EventService,
-	ddSvc services.DeviceDefinitionsAPIService, deviceSvc services.DeviceAPIService) {
+func startDeviceStatusConsumer(logger zerolog.Logger, settings *config.Settings, pdb db.Store, eventService services.EventService, deviceSvc services.DeviceAPIService) {
 
 	autoPISvc := services.NewAutoPiAPIService(settings, pdb.DBS)
-	ingestSvc := services.NewDeviceStatusIngestService(pdb.DBS, &logger, eventService, ddSvc, autoPISvc, deviceSvc)
+	ingestSvc := services.NewDeviceStatusIngestService(pdb.DBS, &logger, eventService, autoPISvc, deviceSvc)
 
 	sc := goka.DefaultConfig()
 	sc.Version = sarama.V2_8_1_0

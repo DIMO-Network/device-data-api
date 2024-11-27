@@ -4,17 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	pb "github.com/DIMO-Network/devices-api/pkg/grpc"
 
 	"github.com/tidwall/gjson"
 
-	"github.com/DIMO-Network/device-data-api/internal/appmetrics"
-	"github.com/DIMO-Network/device-data-api/internal/constants"
 	"github.com/DIMO-Network/device-data-api/models"
-	"github.com/DIMO-Network/device-definitions-api/pkg/grpc"
 	"github.com/DIMO-Network/shared/db"
 	"github.com/lovoo/goka"
 	gocache "github.com/patrickmn/go-cache"
@@ -33,27 +29,18 @@ type DeviceStatusIngestService struct {
 	db           func() *db.ReaderWriter
 	log          *zerolog.Logger
 	eventService EventService
-	deviceDefSvc DeviceDefinitionsAPIService
-	integrations []*grpc.Integration
 	autoPiSvc    AutoPiAPIService
 	deviceSvc    DeviceAPIService
 	memoryCache  *gocache.Cache
 }
 
-func NewDeviceStatusIngestService(db func() *db.ReaderWriter, log *zerolog.Logger, eventService EventService, ddSvc DeviceDefinitionsAPIService, autoPiSvc AutoPiAPIService, deviceSvc DeviceAPIService) *DeviceStatusIngestService {
-	// Cache the list of integrations.
-	integrations, err := ddSvc.GetIntegrations(context.Background())
-	if err != nil {
-		log.Fatal().Err(err).Str("func", "NewDeviceStatusIngestService").Msg("Couldn't retrieve global integration list.")
-	}
+func NewDeviceStatusIngestService(db func() *db.ReaderWriter, log *zerolog.Logger, eventService EventService, autoPiSvc AutoPiAPIService, deviceSvc DeviceAPIService) *DeviceStatusIngestService {
 	c := gocache.New(30*time.Minute, 60*time.Minute) // band-aid on top of band-aids
 
 	return &DeviceStatusIngestService{
 		db:           db,
 		log:          log,
-		deviceDefSvc: ddSvc,
 		eventService: eventService,
-		integrations: integrations,
 		autoPiSvc:    autoPiSvc,
 		deviceSvc:    deviceSvc,
 		memoryCache:  c,
@@ -72,18 +59,6 @@ func (i *DeviceStatusIngestService) processMessage(ctx goka.Context, event *Devi
 		return fmt.Errorf("received vehicle status event with unexpected type %s", event.Type)
 	}
 
-	integration, err := i.getIntegrationFromEvent(event)
-	if err != nil {
-		return err
-	}
-
-	switch integration.Vendor {
-	case constants.SmartCarVendor:
-		defer appmetrics.SmartcarIngestTotalOps.Inc()
-	case constants.AutoPiVendor:
-		defer appmetrics.AutoPiIngestTotalOps.Inc()
-	}
-
 	return i.processEvent(ctx, event)
 }
 
@@ -98,83 +73,6 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 	ctx := context.Background() // todo: will this still work with goka context instead?
 	userDeviceID := event.Subject
 
-	integration, err := i.getIntegrationFromEvent(event)
-	if err != nil {
-		return err
-	}
-
-	ck := cacheKey(userDeviceID, integration.Id)
-
-	var device *pb.UserDevice
-	maybeDevice, ok := i.memoryCache.Get(ck)
-	if ok {
-		device = maybeDevice.(*pb.UserDevice)
-	} else {
-		device, err = i.deviceSvc.GetUserDevice(ctx, userDeviceID)
-		if err != nil {
-			// this error tends to pollute the logs, if we return it will get logged as "error" level. Could increment a metric instead.
-			i.log.Debug().Msgf("failed to find user_device with id %s. error: %s", userDeviceID, err)
-			return nil
-		}
-
-		// Validate integration Id
-		i.memoryCache.Set(ck, device, 30*time.Minute)
-	}
-
-	var apiIntegration *pb.UserDeviceIntegration
-
-	for _, connIntegration := range device.Integrations {
-		if connIntegration.Id == integration.Id {
-			apiIntegration = connIntegration
-			break
-		}
-	}
-
-	if apiIntegration == nil {
-		return fmt.Errorf("device %s got a status for unpaired integration %s", userDeviceID, integration.Id)
-	}
-
-	deviceDefinitionResponse, err := i.deviceDefSvc.GetDeviceDefinitionBySlug(ctx, device.DeviceDefinitionId)
-	if err != nil {
-		return fmt.Errorf("failed to look up device definition %s: %w", device.DeviceDefinitionId, err)
-	}
-
-	if deviceDefinitionResponse == nil {
-		return fmt.Errorf("failed to look up device definition %s", device.DeviceDefinitionId)
-	}
-
-	// update status to Active if not already set
-	if apiIntegration.Status != constants.UserDeviceAPIIntegrationStatusActive {
-		apiIntegration.Status = constants.UserDeviceAPIIntegrationStatusActive
-
-		if integration.Vendor == constants.AutoPiVendor {
-			i.log.Info().Str("userDeviceId", userDeviceID).Str("integrationId", apiIntegration.Id).
-				Msg("Marking device as active with AutoPi.")
-			err := i.autoPiSvc.UpdateState(apiIntegration.ExternalId, constants.UserDeviceAPIIntegrationStatusActive)
-			if err != nil {
-				return fmt.Errorf("failed to update status when calling autopi api for deviceId: %s", apiIntegration.ExternalId)
-			}
-		}
-
-		i.memoryCache.Delete(userDeviceID + "_" + integration.Id)
-	}
-	// techdebt: could likely get rid of this with tweak in app so that people just see that data came through - not specific to odometer
-	// Null for most AutoPis.
-	var newOdometer null.Float64
-	if o, err := extractOdometer(event.Data); err == nil {
-		newOdometer = null.Float64From(o)
-	} else if integration.Vendor == constants.AutoPiVendor {
-		// For AutoPis, for the purpose of odometer events we are pretending to always have
-		// an odometer reading. Users became accustomed to seeing the associated events, even
-		// though we mostly don't have odometer readings for AutoPis. For now, we fake it.
-
-		// Update PLA-934:  Now that we are starting to receive real odometer values from
-		//             		the AutoPi, we need the real odometer timestamp. To avoid alarming
-		//					users as mentioned above, we resolved to create another column
-		//					called "real_last_odometer_event_at" to store this value
-		newOdometer = null.Float64From(0.0)
-	}
-
 	var newLastLocation null.Float64
 	if o, err := extractLastLocation(event.Data); err == nil {
 		newLastLocation = null.Float64From(o)
@@ -184,7 +82,6 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 
 	deviceData, err := models.UserDeviceData(
 		models.UserDeviceDatumWhere.UserDeviceID.EQ(userDeviceID),
-		models.UserDeviceDatumWhere.IntegrationID.EQ(integration.Id),
 		models.UserDeviceDatumWhere.Signals.IsNotNull(),
 		models.UserDeviceDatumWhere.UpdatedAt.GT(time.Now().Add(-14*24*time.Hour)),
 	).All(ctx, i.db().Reader)
@@ -198,11 +95,9 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 		datum = deviceData[0]
 	} else {
 		// Insert a new record.
-		datum = &models.UserDeviceDatum{UserDeviceID: userDeviceID, IntegrationID: integration.Id}
-		i.memoryCache.Delete(userDeviceID + "_" + integration.Id)
+		datum = &models.UserDeviceDatum{UserDeviceID: userDeviceID, IntegrationID: event.Source}
+		i.memoryCache.Delete(userDeviceID + "_" + event.Source)
 	}
-
-	i.processOdometer(datum, newOdometer, device, deviceDefinitionResponse, integration.Id)
 
 	i.processLastLocation(datum, newLastLocation)
 
@@ -234,10 +129,8 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 		return errors.Wrap(err, "could not unmarshall event data")
 	}
 	// if autopi, do not ingest VIN, remove vin from eventData. vin comes from fingerprint now for AP.
-	if integration.Vendor == constants.AutoPiVendor {
-		delete(eventData, "vin")
-	}
-	newSignals, err := mergeSignals(existingSignalData, eventData, event.Time, "dimo/integration/"+integration.Id)
+
+	newSignals, err := mergeSignals(existingSignalData, eventData, event.Time, event.Source)
 	if err != nil {
 		return err
 	}
@@ -250,13 +143,6 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 		return fmt.Errorf("error upserting datum: %w", err)
 	}
 
-	switch integration.Vendor {
-	case constants.SmartCarVendor:
-		appmetrics.SmartcarIngestSuccessOps.Inc()
-	case constants.AutoPiVendor:
-		appmetrics.AutoPiIngestSuccessOps.Inc()
-	}
-
 	return nil
 }
 
@@ -266,7 +152,7 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 //   - the incoming status update has an odometer value, and
 //   - the old status update lacks an odometer value, or has an odometer value that differs from
 //     the new odometer reading
-func (i *DeviceStatusIngestService) processOdometer(datum *models.UserDeviceDatum, newOdometer null.Float64, device *pb.UserDevice, dd *grpc.GetDeviceDefinitionItemResponse, integrationID string) {
+func (i *DeviceStatusIngestService) processOdometer(datum *models.UserDeviceDatum, newOdometer null.Float64, device *pb.UserDevice, integrationID string) {
 	if !newOdometer.Valid {
 		return
 	}
@@ -288,7 +174,7 @@ func (i *DeviceStatusIngestService) processOdometer(datum *models.UserDeviceDatu
 
 	if odometerOffCooldown && odometerChanged {
 		oldOdometerTimestamp = null.TimeFrom(now)
-		i.emitOdometerEvent(device, dd, integrationID, newOdometer.Float64)
+		i.emitOdometerEvent(device, integrationID, newOdometer.Float64)
 	}
 }
 
@@ -331,7 +217,7 @@ func (i *DeviceStatusIngestService) processObd2(datum *models.UserDeviceDatum) {
 
 }
 
-func (i *DeviceStatusIngestService) emitOdometerEvent(device *pb.UserDevice, dd *grpc.GetDeviceDefinitionItemResponse, integrationID string, odometer float64) {
+func (i *DeviceStatusIngestService) emitOdometerEvent(device *pb.UserDevice, integrationID string, odometer float64) {
 	event := &Event{
 		Type:    "com.dimo.zone.device.odometer.update",
 		Subject: device.Id,
@@ -340,10 +226,7 @@ func (i *DeviceStatusIngestService) emitOdometerEvent(device *pb.UserDevice, dd 
 			Timestamp: time.Now(),
 			UserID:    device.UserId,
 			Device: odometerEventDevice{
-				ID:    device.Id,
-				Make:  dd.Make.Name,
-				Model: dd.Model,
-				Year:  int(dd.Year),
+				ID: device.Id,
 			},
 			Odometer: odometer,
 		},
@@ -412,15 +295,6 @@ func mergeSignals(currentData map[string]interface{}, newData map[string]interfa
 		}
 	}
 	return merged, nil
-}
-
-func (i *DeviceStatusIngestService) getIntegrationFromEvent(event *DeviceStatusEvent) (*grpc.Integration, error) {
-	for _, integration := range i.integrations {
-		if strings.HasSuffix(event.Source, integration.Id) {
-			return integration, nil
-		}
-	}
-	return nil, fmt.Errorf("no matching integration found in DB for event source: %s", event.Source)
 }
 
 type odometerEventDevice struct {

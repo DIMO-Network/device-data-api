@@ -42,7 +42,6 @@ type DeviceDataController struct {
 	log             *zerolog.Logger
 	deviceAPI       services.DeviceAPIService
 	esService       EsInterface
-	definitionsAPI  services.DeviceDefinitionsAPIService
 	deviceStatusSvc services.DeviceStatusService
 	dbs             func() *db.ReaderWriter
 }
@@ -55,13 +54,12 @@ type EsInterface interface {
 }
 
 // NewDeviceDataController constructor
-func NewDeviceDataController(settings *config.Settings, logger *zerolog.Logger, deviceAPIService services.DeviceAPIService, esService EsInterface, definitionsAPIService services.DeviceDefinitionsAPIService, deviceStatusSvc services.DeviceStatusService, dbs func() *db.ReaderWriter) DeviceDataController {
+func NewDeviceDataController(settings *config.Settings, logger *zerolog.Logger, deviceAPIService services.DeviceAPIService, esService EsInterface, deviceStatusSvc services.DeviceStatusService, dbs func() *db.ReaderWriter) DeviceDataController {
 	return DeviceDataController{
 		Settings:        settings,
 		log:             logger,
 		deviceAPI:       deviceAPIService,
 		esService:       esService,
-		definitionsAPI:  definitionsAPIService,
 		dbs:             dbs,
 		deviceStatusSvc: deviceStatusSvc,
 	}
@@ -105,41 +103,6 @@ func (d *DeviceDataController) GetHistoricalRaw(c *fiber.Ctx) error {
 	}
 
 	return d.getHistoryV1(c, userDevice, startDate, endDate, types.SourceFilter{})
-}
-
-// addRangeIfNotExists will add range based on mpg and fuelTankCapacity to the json body, only if there are no existing range entries (eg. smartcar added)
-func addRangeIfNotExists(ctx context.Context, deviceDefSvc services.DeviceDefinitionsAPIService, body []byte, deviceDefinitionID string, deviceStyleID *string) ([]byte, error) {
-	if len(body) == 0 {
-		return body, nil
-	}
-	// check if range is already present in any document
-	if gjson.GetBytes(body, "hits.hits.#(_source.data.range>0)0._source.data.range").Exists() {
-		return body, nil
-	}
-
-	definition, err := deviceDefSvc.GetDeviceDefinitionBySlug(ctx, deviceDefinitionID)
-	if err != nil {
-		return body, errors.Wrapf(err, "could not get device definition by id: %s", deviceDefinitionID)
-	}
-	// extract the range values from definition, already done in devices-api, copy that code or move to shared
-	rangeData := services.GetActualDeviceDefinitionMetadataValues(definition, deviceStyleID)
-
-	resultData := gjson.GetBytes(body, "hits.hits.#._source.data")
-	for i, r := range resultData.Array() {
-		// note range is reported in km
-		fuelResult := r.Get("fuelPercentRemaining")
-		if fuelResult.Exists() {
-			rangeKm := CalculateRange(rangeData, fuelResult.Num)
-			if rangeKm != nil {
-				body, err = sjson.SetBytes(body, fmt.Sprintf("hits.hits.%d._source.data.range", i), rangeKm)
-				if err != nil {
-					return body, err
-				}
-			}
-		}
-	}
-
-	return body, nil
 }
 
 // GetHistoricalRawPermissioned godoc
@@ -234,10 +197,6 @@ func (d *DeviceDataController) getHistoryV1(c *fiber.Ctx, userDevice *grpc.UserD
 
 	b := len(body)
 	t := time.Now()
-	body, err = addRangeIfNotExists(c.Context(), d.definitionsAPI, body, userDevice.DeviceDefinitionId, userDevice.DeviceStyleId)
-	if err != nil {
-		localLog.Warn().Err(err).Str("response", string(body)).Msg("could not add range calculation to document")
-	}
 	body = removeOdometerIfInvalid(body)
 	if d := time.Since(t); d > time.Second {
 		localLog.Info().Dur("duration", d).Msgf("Performed JSON operations on %d bytes of history.", b)

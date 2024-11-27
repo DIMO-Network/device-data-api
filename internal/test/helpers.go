@@ -14,9 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/DIMO-Network/device-data-api/internal/config"
-	"github.com/DIMO-Network/device-data-api/internal/constants"
 	"github.com/DIMO-Network/device-data-api/models"
-	ddgrpc "github.com/DIMO-Network/device-definitions-api/pkg/grpc"
 	"github.com/DIMO-Network/shared/db"
 	"github.com/DIMO-Network/shared/middleware/privilegetoken"
 	"github.com/DIMO-Network/shared/privileges"
@@ -27,7 +25,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/pressly/goose/v3"
 	"github.com/rs/zerolog"
-	"github.com/segmentio/ksuid"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -259,85 +256,6 @@ func getLogger(c *fiber.Ctx, d *zerolog.Logger) *zerolog.Logger {
 //	}
 //	return u, nil
 //}
-
-// BuildIntegrationWithOutAutoPiPowertrainTemplateGRPC depending on integration vendor, defines an integration object with typical settings. Smartcar refresh limit default is 100 seconds.
-func BuildIntegrationGRPC(integrationVendor string, autoPiDefaultTemplateID int, bevTemplateID int) *ddgrpc.Integration {
-	return BuildIntegrationDefaultGRPC(integrationVendor, autoPiDefaultTemplateID, bevTemplateID, false)
-}
-
-// BuildDeviceDefinitionGRPC generates an array with single device definition, adds integration to response if integration passed in not nil. uses Americas region
-func BuildDeviceDefinitionGRPC(deviceDefinitionID string, mk string, model string, year int, integration *ddgrpc.Integration) []*ddgrpc.GetDeviceDefinitionItemResponse {
-	// todo can we get rid of deviceDefinitionID?
-	integrationsToAdd := make([]*ddgrpc.DeviceIntegration, 2)
-	if integration != nil {
-		integrationsToAdd[0] = &ddgrpc.DeviceIntegration{
-			Integration: integration,
-			Region:      constants.AmericasRegion.String(),
-		}
-		integrationsToAdd[1] = &ddgrpc.DeviceIntegration{
-			Integration: integration,
-			Region:      constants.EuropeRegion.String(),
-		}
-	}
-
-	rp := &ddgrpc.GetDeviceDefinitionItemResponse{
-		DeviceDefinitionId: deviceDefinitionID,
-		Name:               "Name",
-		Make: &ddgrpc.DeviceMake{
-			Id:   ksuid.New().String(),
-			Name: mk,
-		},
-		Model: model,
-		Year:  int32(year),
-		//Metadata: dd.Metadata,
-		Verified: true,
-	}
-	if integration != nil {
-		rp.DeviceIntegrations = integrationsToAdd
-	}
-
-	return []*ddgrpc.GetDeviceDefinitionItemResponse{rp}
-}
-
-// BuildIntegrationDefaultGRPC depending on integration vendor, defines an integration object with typical settings. Smartcar refresh limit default is 100 seconds.
-func BuildIntegrationDefaultGRPC(integrationVendor string, autoPiDefaultTemplateID int, bevTemplateID int, includeAutoPiPowertrainTemplate bool) *ddgrpc.Integration {
-	var integration *ddgrpc.Integration
-	switch integrationVendor {
-	case constants.AutoPiVendor:
-		integration = &ddgrpc.Integration{
-			Id:                      ksuid.New().String(),
-			Type:                    constants.IntegrationTypeHardware,
-			Style:                   constants.IntegrationStyleAddon,
-			Vendor:                  constants.AutoPiVendor,
-			AutoPiDefaultTemplateId: int32(autoPiDefaultTemplateID),
-		}
-
-		if includeAutoPiPowertrainTemplate {
-			integration.AutoPiPowertrainTemplate = &ddgrpc.Integration_AutoPiPowertrainTemplate{
-				BEV:  int32(bevTemplateID),
-				HEV:  10,
-				ICE:  10,
-				PHEV: 4,
-			}
-		}
-	case constants.SmartCarVendor:
-		integration = &ddgrpc.Integration{
-			Id:               ksuid.New().String(),
-			Type:             constants.IntegrationTypeAPI,
-			Style:            constants.IntegrationStyleWebhook,
-			Vendor:           constants.SmartCarVendor,
-			RefreshLimitSecs: 100,
-		}
-	case constants.TeslaVendor:
-		integration = &ddgrpc.Integration{
-			Id:     ksuid.New().String(),
-			Type:   constants.IntegrationTypeAPI,
-			Style:  constants.IntegrationStyleOEM,
-			Vendor: constants.TeslaVendor,
-		}
-	}
-	return integration
-}
 
 type UsersClient struct {
 	Store map[string]*pb.User

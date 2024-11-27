@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"fmt"
 	"sort"
 
 	"github.com/DIMO-Network/device-data-api/internal/response"
@@ -16,18 +15,14 @@ import (
 
 //go:generate mockgen -source device_status_service.go -destination mocks/device_status_service_mock.go
 type deviceStatusService struct {
-	ddSvc DeviceDefinitionsAPIService
 }
 
 type DeviceStatusService interface {
 	PrepareDeviceStatusInformation(ctx context.Context, deviceData models.UserDeviceDatumSlice, deviceDefinitionID string, deviceStyleID *string, privilegeIDs []privileges.Privilege) response.DeviceSnapshot
-	CalculateRange(ctx context.Context, deviceDefinitionID string, deviceStyleID *string, fuelPercentRemaining float64) (*float64, error)
 }
 
-func NewDeviceStatusService(deviceDefinitionsSvc DeviceDefinitionsAPIService) DeviceStatusService {
-	return &deviceStatusService{
-		ddSvc: deviceDefinitionsSvc,
-	}
+func NewDeviceStatusService() DeviceStatusService {
+	return &deviceStatusService{}
 }
 
 func (dss *deviceStatusService) PrepareDeviceStatusInformation(ctx context.Context, deviceData models.UserDeviceDatumSlice, deviceDefinitionID string, deviceStyleID *string, privilegeIDs []privileges.Privilege) response.DeviceSnapshot {
@@ -139,13 +134,6 @@ func (dss *deviceStatusService) PrepareDeviceStatusInformation(ctx context.Conte
 		}
 	}
 
-	if ds.Range == nil && ds.FuelPercentRemaining != nil {
-		calcRange, err := dss.CalculateRange(ctx, deviceDefinitionID, deviceStyleID, *ds.FuelPercentRemaining)
-		if err == nil {
-			ds.Range = calcRange
-		}
-	}
-
 	return ds
 }
 
@@ -163,33 +151,6 @@ func findMostRecentSignal(udd models.UserDeviceDatumSlice, path string, highestF
 		}
 	}
 	return gjson.GetBytes(udd[0].Signals.JSON, path)
-}
-
-// CalculateRange returns the current estimated range based on fuel tank capacity, mpg, and fuelPercentRemaining and returns it in Kilometers
-func (dss *deviceStatusService) CalculateRange(ctx context.Context, deviceDefinitionID string, deviceStyleID *string, fuelPercentRemaining float64) (*float64, error) {
-	if fuelPercentRemaining <= 0.01 {
-		return nil, fmt.Errorf("fuelPercentRemaining lt 0.01 so cannot calculate range")
-	}
-
-	dd, err := dss.ddSvc.GetDeviceDefinitionBySlug(ctx, deviceDefinitionID)
-	if err != nil {
-		return nil, shared.GrpcErrorToFiber(err, "deviceDefSvc error getting definition id: "+deviceDefinitionID)
-	}
-	// want the decimal form of the percentage for this calculation
-	if fuelPercentRemaining > 1 {
-		fuelPercentRemaining = fuelPercentRemaining / 100
-	}
-
-	rangeData := GetActualDeviceDefinitionMetadataValues(dd, deviceStyleID)
-	// calculate, convert to Km
-	if rangeData.FuelTankCapGal > 0 && rangeData.Mpg > 0 {
-		fuelTankAtGal := rangeData.FuelTankCapGal * fuelPercentRemaining
-		rangeMiles := rangeData.Mpg * fuelTankAtGal
-		rangeKm := 1.60934 * rangeMiles
-		return &rangeKm, nil
-	}
-
-	return nil, nil
 }
 
 // sortBySignalValueDesc Sort user device data so the highest value is first

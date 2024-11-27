@@ -57,16 +57,6 @@ func createKafkaProducer(settings *config.Settings) (sarama.SyncProducer, error)
 	return p, nil
 }
 
-func (dc *dependencyContainer) getDeviceDefinitionService() (services.DeviceDefinitionsAPIService, *grpc.ClientConn) {
-	definitionsConn, err := grpc.Dial(dc.settings.DeviceDefinitionsGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		dc.logger.Fatal().Err(err).Str("definitions-api-grpc-addr", dc.settings.DeviceDefinitionsGRPCAddr).
-			Msg("failed to dial device definitions grpc")
-	}
-	ddSvc := services.NewDeviceDefinitionsAPIService(definitionsConn)
-	return ddSvc, definitionsConn
-}
-
 // getDeviceService dials a grpc connection to devices-api. If fails just returns nil svc, this is ok since not a required svc in all cases
 func (dc *dependencyContainer) getDeviceService() (services.DeviceAPIService, *grpc.ClientConn) {
 	devicesConn, err := grpc.Dial(dc.settings.DevicesAPIGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
