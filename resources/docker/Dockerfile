@@ -1,4 +1,4 @@
-FROM golang:1.21 AS build
+FROM golang:1.23 AS build
 
 RUN useradd -u 10001 dimo
 
