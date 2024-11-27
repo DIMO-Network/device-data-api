@@ -5,7 +5,7 @@ go 1.22.3
 toolchain go1.23.1
 
 require (
-	github.com/DIMO-Network/device-definitions-api v1.2.65
+	github.com/DIMO-Network/device-definitions-api v1.2.66
 	github.com/DIMO-Network/devices-api v1.24.7
 	github.com/DIMO-Network/shared v0.12.1
 	github.com/IBM/sarama v1.43.3

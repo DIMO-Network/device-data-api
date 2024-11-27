@@ -70,6 +70,8 @@ github.com/DATA-DOG/go-sqlmock v1.4.1 h1:ThlnYciV1iM/V0OSF/dtkqWb6xo5qITT1TJBG1M
 github.com/DATA-DOG/go-sqlmock v1.4.1/go.mod h1:f/Ixk793poVmq4qj/V1dPUg2JEAKC73Q5eFN3EC/SaM=
 github.com/DIMO-Network/device-definitions-api v1.2.65 h1:/5cMk1dHwjxHnvhtOGo+H6xgW+uc6kJt1ZYZ3PFnMAE=
 github.com/DIMO-Network/device-definitions-api v1.2.65/go.mod h1:6k8KSNzSh6svRWEG6EkGtZqttiHESW92OsLPNQ0nnsY=
+github.com/DIMO-Network/device-definitions-api v1.2.66 h1:WRKZ+4CPH3+8QzVPG/Cl7DUcZ2p4AjDFHNxRqc9Kjzk=
+github.com/DIMO-Network/device-definitions-api v1.2.66/go.mod h1:0br3QBs+fNH1WtC/VMTYk0ekwebCnRk5OrXivo96NwA=
 github.com/DIMO-Network/devices-api v1.24.7 h1:ZrNByEa62X7+kWs24mmbhe79a7NEkSbi0y1wYgwcE1I=
 github.com/DIMO-Network/devices-api v1.24.7/go.mod h1:HaeFDPFovccg1M8NfmNjopEOn0xwcnKNOCYG+yl7FT4=
 github.com/DIMO-Network/shared v0.12.1 h1:vYnXZSZKR3tzixXreTAuDx9OFe37m7Xzoacx9C5+UAM=
