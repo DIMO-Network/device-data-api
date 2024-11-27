@@ -117,7 +117,7 @@ func addRangeIfNotExists(ctx context.Context, deviceDefSvc services.DeviceDefini
 		return body, nil
 	}
 
-	definition, err := deviceDefSvc.GetDeviceDefinitionByID(ctx, deviceDefinitionID)
+	definition, err := deviceDefSvc.GetDeviceDefinitionBySlug(ctx, deviceDefinitionID)
 	if err != nil {
 		return body, errors.Wrapf(err, "could not get device definition by id: %s", deviceDefinitionID)
 	}

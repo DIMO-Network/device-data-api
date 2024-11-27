@@ -40,7 +40,7 @@ func TestDeviceDataController_addRangeIfNotExists(t *testing.T) {
 	deviceDefSvc := mock_services.NewMockDeviceDefinitionsAPIService(controller)
 	ddID := ksuid.New().String()
 
-	deviceDefSvc.EXPECT().GetDeviceDefinitionByID(gomock.Any(), ddID).Times(1).Return(&ddgrpc.GetDeviceDefinitionItemResponse{
+	deviceDefSvc.EXPECT().GetDeviceDefinitionBySlug(gomock.Any(), ddID).Times(1).Return(&ddgrpc.GetDeviceDefinitionItemResponse{
 		DeviceDefinitionId: ddID,
 		Name:               "test car",
 		Verified:           true,
@@ -82,7 +82,7 @@ func TestDeviceDataController_addRangeIfNotExists_NoChangeIfRangeExists(t *testi
 	deviceDefSvc := mock_services.NewMockDeviceDefinitionsAPIService(controller)
 	ddID := ksuid.New().String()
 
-	deviceDefSvc.EXPECT().GetDeviceDefinitionByID(gomock.Any(), ddID).Times(0)
+	deviceDefSvc.EXPECT().GetDeviceDefinitionBySlug(gomock.Any(), ddID).Times(0)
 
 	// if range exists anywhere in the body, do not add range anywhere
 	bodySetRange, err2 := sjson.Set(elasticDeviceData, "hits.hits.0._source.data.range", 100.50)

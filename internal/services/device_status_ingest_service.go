@@ -134,7 +134,7 @@ func (i *DeviceStatusIngestService) processEvent(_ goka.Context, event *DeviceSt
 		return fmt.Errorf("device %s got a status for unpaired integration %s", userDeviceID, integration.Id)
 	}
 
-	deviceDefinitionResponse, err := i.deviceDefSvc.GetDeviceDefinitionByID(ctx, device.DeviceDefinitionId)
+	deviceDefinitionResponse, err := i.deviceDefSvc.GetDeviceDefinitionBySlug(ctx, device.DeviceDefinitionId)
 	if err != nil {
 		return fmt.Errorf("failed to look up device definition %s: %w", device.DeviceDefinitionId, err)
 	}

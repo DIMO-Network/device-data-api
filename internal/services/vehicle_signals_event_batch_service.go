@@ -91,7 +91,7 @@ func (v *vehicleSignalsEventBatchService) GenerateVehicleDataTracking(ctx contex
 			v.memoryCache.Set(item.UserDeviceID+"_"+item.IntegrationID, device, 30*time.Minute)
 		}
 
-		deviceDefinition, err := v.deviceDefSvc.GetDeviceDefinitionByID(ctx, device.DeviceDefinitionId)
+		deviceDefinition, err := v.deviceDefSvc.GetDeviceDefinitionBySlug(ctx, device.DeviceDefinitionId)
 		if err != nil {
 			v.log.Err(err).Msgf("(%s) deviceDefSvc error getting definition id: %s", device.Id, device.DeviceDefinitionId)
 			continue

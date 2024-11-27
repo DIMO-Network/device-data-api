@@ -14,7 +14,7 @@ import (
 
 //go:generate mockgen -source device_definitions_service.go -destination mocks/device_definitions_service_mock.go
 type DeviceDefinitionsAPIService interface {
-	GetDeviceDefinitionByID(ctx context.Context, id string) (*pb.GetDeviceDefinitionItemResponse, error)
+	GetDeviceDefinitionBySlug(ctx context.Context, id string) (*pb.GetDeviceDefinitionItemResponse, error)
 	GetIntegrations(ctx context.Context) ([]*pb.Integration, error)
 	GetDeviceDefinitionsByIDs(ctx context.Context, ids []string) ([]*pb.GetDeviceDefinitionItemResponse, error)
 }
@@ -37,15 +37,18 @@ func (dda *deviceDefinitionsAPIService) GetDeviceDefinitionsByIDs(ctx context.Co
 
 	definitionsClient := pb.NewDeviceDefinitionServiceClient(dda.deviceDefinitionsConn)
 
-	definitions, err2 := definitionsClient.GetDeviceDefinitionByID(ctx, &pb.GetDeviceDefinitionRequest{
-		Ids: ids,
-	})
-
-	if err2 != nil {
-		return nil, err2
+	resp := make([]*pb.GetDeviceDefinitionItemResponse, len(ids))
+	for i, id := range ids {
+		dd, err := definitionsClient.GetDeviceDefinitionBySlug(ctx, &pb.GetDeviceDefinitionBySlugRequest{
+			Slug: id,
+		})
+		if err != nil {
+			return nil, err
+		}
+		resp[i] = dd
 	}
 
-	return definitions.GetDeviceDefinitions(), nil
+	return resp, nil
 }
 
 // GetIntegrations calls device definitions integrations api via GRPC to get the definition. idea for testing: http://www.inanzzz.com/index.php/post/w9qr/unit-testing-golang-grpc-client-and-server-application-with-bufconn-package
@@ -60,20 +63,20 @@ func (dda *deviceDefinitionsAPIService) GetIntegrations(ctx context.Context) ([]
 	return definitions.GetIntegrations(), nil
 }
 
-func (dda *deviceDefinitionsAPIService) GetDeviceDefinitionByID(ctx context.Context, id string) (*pb.GetDeviceDefinitionItemResponse, error) {
+func (dda *deviceDefinitionsAPIService) GetDeviceDefinitionBySlug(ctx context.Context, id string) (*pb.GetDeviceDefinitionItemResponse, error) {
 	if len(id) == 0 {
 		return nil, fmt.Errorf("device definition id was empty - invalid")
 	}
 	definitionsClient := pb.NewDeviceDefinitionServiceClient(dda.deviceDefinitionsConn)
 
-	def, err := definitionsClient.GetDeviceDefinitionByID(ctx, &pb.GetDeviceDefinitionRequest{
-		Ids: []string{id},
+	def, err := definitionsClient.GetDeviceDefinitionBySlug(ctx, &pb.GetDeviceDefinitionBySlugRequest{
+		Slug: id,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return def.DeviceDefinitions[0], nil
+	return def, nil
 }
 
 func (dda *deviceDefinitionsAPIService) GetDeviceStyle(ctx context.Context, id string) (*pb.DeviceStyle, error) {

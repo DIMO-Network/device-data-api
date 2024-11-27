@@ -76,7 +76,7 @@ func TestAutoPiStatus(t *testing.T) {
 		DeviceDefinitionId: deviceDefinitionID,
 		VinConfirmed:       true,
 	}, nil)
-	deviceDefSvc.EXPECT().GetDeviceDefinitionByID(gomock.Any(), deviceDefinitionID).Return(&ddgrpc.GetDeviceDefinitionItemResponse{
+	deviceDefSvc.EXPECT().GetDeviceDefinitionBySlug(gomock.Any(), deviceDefinitionID).Return(&ddgrpc.GetDeviceDefinitionItemResponse{
 		DeviceDefinitionId: deviceDefinitionID,
 		Name:               "Malibu",
 		Verified:           true,
@@ -194,7 +194,7 @@ func TestUserDeviceIntegrationsDifferent(t *testing.T) {
 		VinConfirmed:       true,
 	}, nil)
 
-	deviceDefSvc.EXPECT().GetDeviceDefinitionByID(gomock.Any(), deviceDefinitionID).Times(2).Return(&ddgrpc.GetDeviceDefinitionItemResponse{
+	deviceDefSvc.EXPECT().GetDeviceDefinitionBySlug(gomock.Any(), deviceDefinitionID).Times(2).Return(&ddgrpc.GetDeviceDefinitionItemResponse{
 		DeviceDefinitionId: deviceDefinitionID,
 		Name:               "Malibu",
 		Verified:           true,
@@ -296,7 +296,7 @@ func TestDeviceStatusIngestService_processEvent(t *testing.T) {
 		VinConfirmed:       true,
 	}, nil)
 
-	deviceDefSvc.EXPECT().GetDeviceDefinitionByID(gomock.Any(), deviceDefinitionID).Return(&ddgrpc.GetDeviceDefinitionItemResponse{
+	deviceDefSvc.EXPECT().GetDeviceDefinitionBySlug(gomock.Any(), deviceDefinitionID).Return(&ddgrpc.GetDeviceDefinitionItemResponse{
 		DeviceDefinitionId: deviceDefinitionID,
 		Name:               "Malibu",
 		Verified:           true,

@@ -171,7 +171,7 @@ func (dss *deviceStatusService) CalculateRange(ctx context.Context, deviceDefini
 		return nil, fmt.Errorf("fuelPercentRemaining lt 0.01 so cannot calculate range")
 	}
 
-	dd, err := dss.ddSvc.GetDeviceDefinitionByID(ctx, deviceDefinitionID)
+	dd, err := dss.ddSvc.GetDeviceDefinitionBySlug(ctx, deviceDefinitionID)
 	if err != nil {
 		return nil, shared.GrpcErrorToFiber(err, "deviceDefSvc error getting definition id: "+deviceDefinitionID)
 	}

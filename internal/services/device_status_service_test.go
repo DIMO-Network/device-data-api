@@ -105,7 +105,7 @@ func Test_calculateRange(t *testing.T) {
 			Value: "20",
 		},
 	}
-	deviceDefSvc.EXPECT().GetDeviceDefinitionByID(gomock.Any(), ddID).Times(2).Return(&ddgrpc.GetDeviceDefinitionItemResponse{
+	deviceDefSvc.EXPECT().GetDeviceDefinitionBySlug(gomock.Any(), ddID).Times(2).Return(&ddgrpc.GetDeviceDefinitionItemResponse{
 		DeviceDefinitionId: ddID,
 		Verified:           true,
 		DeviceAttributes:   attrs,
@@ -134,7 +134,7 @@ func Test_deviceStatusService_PrepareDeviceStatusInformation(t *testing.T) {
 	dd := test.BuildDeviceDefinitionGRPC(ksuid.New().String(), "Ford", "Mach E", 2020, autoPiInteg)
 
 	// because we have range data from SC, below is not needed since CalculateRange won't be called, which calls Get DD
-	// deviceDefSvc.EXPECT().GetDeviceDefinitionByID(gomock.Any(), dd[0].DeviceDefinitionId).Times(1).Return(dd[0], nil)
+	// deviceDefSvc.EXPECT().GetDeviceDefinitionBySlug(gomock.Any(), dd[0].DeviceDefinitionId).Times(1).Return(dd[0], nil)
 
 	deviceStatusSvc := NewDeviceStatusService(deviceDefSvc)
 
