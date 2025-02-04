@@ -7,6 +7,7 @@ cronJob:
   enabled: true
   schedule: 0 0 * * 0
 env:
+  DB_SSL_MODE: disable
   ENVIRONMENT: prod
   PORT: '8080'
   LOG_LEVEL: info
